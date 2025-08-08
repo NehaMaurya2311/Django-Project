@@ -160,14 +160,6 @@ AUTH_USER_MODEL = 'accounts.CustomUser'
 # Crispy Forms
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
-# PayPal Settings
-PAYPAL_CLIENT_ID = config('PAYPAL_CLIENT_ID', default='ASKWPsOZIjfn91X2biPyfLcjnP-9NRKkmwT4PdK8bLXWaWIhKs183jsrSN8ZOscZWaOJf9Cb14XaN9qA')
-PAYPAL_CLIENT_SECRET = config('PAYPAL_CLIENT_SECRET', default='EMnDRSGjW9cvU3_301bhThoF-y_IxbP28lhPAzXRLfW5PKsFXBoRvOj2f1OnsPzpJJ89X0oRW9YpQfeb')
-PAYPAL_MODE = config('PAYPAL_MODE', default='sandbox')
-
-# Google Books API
-GOOGLE_BOOKS_API_KEY = config('GOOGLE_BOOKS_API_KEY', default='AIzaSyAns_93vRLcLhEfgztk9MJGHc46liM8g3k')
-
 # Email Settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
@@ -179,3 +171,12 @@ EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 # Session settings
 SESSION_COOKIE_AGE = 86400  # 1 day
 SESSION_SAVE_EVERY_REQUEST = True
+
+# PayPal Settings
+PAYPAL_CLIENT_ID = config('PAYPAL_CLIENT_ID', default='ASKWPsOZIjfn91X2biPyfLcjnP-9NRKkmwT4PdK8bLXWaWIhKs183jsrSN8ZOscZWaOJf9Cb14XaN9qA')
+PAYPAL_CLIENT_SECRET = config('PAYPAL_CLIENT_SECRET', default='EMnDRSGjW9cvU3_301bhThoF-y_IxbP28lhPAzXRLfW5PKsFXBoRvOj2f1OnsPzpJJ89X0oRW9YpQfeb')
+PAYPAL_MODE = config('PAYPAL_MODE', default='sandbox')
+
+# Google Books API
+GOOGLE_BOOKS_API_KEY = config('GOOGLE_BOOKS_API_KEY', default='AIzaSyAns_93vRLcLhEfgztk9MJGHc46liM8g3k')
+
