@@ -1,0 +1,63 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Django stuff:
+*.log
+*.pot
+*.pyc
+*.pyo
+*.sqlite3
+*.sqlite3-journal
+db.sqlite3
+*.db
+media/
+*.mo
+
+# Environment
+.env
+venv/
+env/
+ENV/
+.venv/
+.Python
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Git
+*.orig
+
+# Migrations (optional to ignore, if you want clean repo start)
+**/migrations/*.py
+!**/migrations/__init__.py
+
+# Pytest
+.pytest_cache/
+
+# Coverage reports
+htmlcov/
+.coverage
+.tox/
+.nox/
+.cache/
+nosetests.xml
+coverage.xml
+*.cover
+.hypothesis/
+
+# Staticfiles
+staticfiles/
+static_root/
+
+# Node (if using npm/yarn for front-end)
+node_modules/

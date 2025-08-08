@@ -1,0 +1,11 @@
+Django==4.2.7
+Pillow==10.1.0
+django-crispy-forms==2.1
+crispy-bootstrap4==2023.1
+requests==2.31.0
+python-decouple==3.8
+paypal-sdk==1.14.0
+channels==4.0.0
+channels-redis==4.1.0
+django-extensions==3.2.3
+django-debug-toolbar==4.2.0
