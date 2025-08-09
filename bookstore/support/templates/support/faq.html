@@ -1,0 +1,104 @@
+{% extends "base.html" %}
+{% load static %}
+{% load i18n %}
+
+{% block title %}{% trans "Frequently Asked Questions" %} | {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <h1 class="mb-4">{% trans "Frequently Asked Questions" %}</h1>
+    
+    {% if not faq_by_category %}
+        <div class="alert alert-info">
+            {% trans "No FAQs are available at the moment." %}
+        </div>
+    {% else %}
+        <div class="row">
+            <div class="col-md-4 mb-4">
+                <div class="list-group" id="faq-categories" role="tablist">
+                    {% for category, faqs in faq_by_category.items %}
+                        <a class="list-group-item list-group-item-action {% if forloop.first %}active{% endif %}"
+                           id="category-{{ category.id }}-tab"
+                           data-bs-toggle="list"
+                           href="#category-{{ category.id }}"
+                           role="tab">
+                            {{ category.name }}
+                            <span class="badge bg-secondary float-end">{{ faqs|length }}</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            </div>
+            
+            <div class="col-md-8">
+                <div class="tab-content">
+                    {% for category, faqs in faq_by_category.items %}
+                        <div class="tab-pane fade {% if forloop.first %}show active{% endif %}"
+                             id="category-{{ category.id }}"
+                             role="tabpanel">
+                            
+                            <div class="accordion" id="accordion-{{ category.id }}">
+                                {% for faq in faqs %}
+                                    <div class="accordion-item">
+                                        <h2 class="accordion-header" id="heading-{{ faq.id }}">
+                                            <button class="accordion-button collapsed"
+                                                    type="button"
+                                                    data-bs-toggle="collapse"
+                                                    data-bs-target="#collapse-{{ faq.id }}"
+                                                    aria-expanded="false"
+                                                    aria-controls="collapse-{{ faq.id }}">
+                                                {{ faq.question }}
+                                            </button>
+                                        </h2>
+                                        <div id="collapse-{{ faq.id }}"
+                                             class="accordion-collapse collapse"
+                                             aria-labelledby="heading-{{ faq.id }}"
+                                             data-bs-parent="#accordion-{{ category.id }}">
+                                            <div class="accordion-body">
+                                                {{ faq.answer|linebreaks }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        
+        <div class="mt-5">
+            <h4>{% trans "Can't find what you're looking for?" %}</h4>
+            <p>{% trans "If you couldn't find the answer to your question, feel free to" %} 
+               <a href="{% url 'support:create_ticket' %}">{% trans "open a support ticket" %}</a> 
+               {% trans "or" %} 
+               <a href="{% url 'support:start_chat' %}">{% trans "start a live chat" %}</a> 
+               {% trans "with our support team." %}
+            </p>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Get the URL hash and activate the corresponding tab
+        let hash = window.location.hash;
+        if (hash) {
+            let tab = document.querySelector(hash + '-tab');
+            if (tab) {
+                tab.click();
+            }
+        }
+        
+        // Update the URL hash when changing tabs
+        let categoryTabs = document.querySelectorAll('#faq-categories a');
+        categoryTabs.forEach(function(tab) {
+            tab.addEventListener('shown.bs.tab', function(e) {
+                let id = e.target.getAttribute('href').replace('#category-', '');
+                window.location.hash = id;
+            });
+        });
+    });
+</script>
+{% endblock %}

@@ -1,6 +1,20 @@
 # support/admin.py
 from django.contrib import admin
-from .models import SupportCategory, SupportTicket, TicketResponse, LiveChat, ChatMessage
+from .models import SupportCategory, SupportTicket, TicketResponse, LiveChat, ChatMessage, FAQCategory, FAQ
+
+@admin.register(FAQCategory)
+class FAQCategoryAdmin(admin.ModelAdmin):
+    list_display = ('name', 'order', 'is_active')
+    list_filter = ('is_active',)
+    search_fields = ('name',)
+    ordering = ('order', 'name')
+
+@admin.register(FAQ)
+class FAQAdmin(admin.ModelAdmin):
+    list_display = ('question', 'category', 'order', 'is_active', 'updated_at')
+    list_filter = ('category', 'is_active', 'created_at')
+    search_fields = ('question', 'answer', 'category__name')
+    ordering = ('category', 'order', 'question')
 
 @admin.register(SupportCategory)
 class SupportCategoryAdmin(admin.ModelAdmin):

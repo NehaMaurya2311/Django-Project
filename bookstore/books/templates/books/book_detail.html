@@ -1,0 +1,252 @@
+<!-- books/templates/books/book_detail.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ book.title }} - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'books:home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'books:category_books' book.category.slug %}">{{ book.category.name }}</a></li>
+            <li class="breadcrumb-item active">{{ book.title|truncatechars:30 }}</li>
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <!-- Book Image -->
+        <div class="col-md-4">
+            <div class="sticky-top" style="top: 20px;">
+                {% if book.cover_image %}
+                    <img src="{{ book.cover_image.url }}" class="img-fluid rounded shadow" alt="{{ book.title }}">
+                {% else %}
+                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 400px;">
+                        <i class="fas fa-book fa-4x text-muted"></i>
+                    </div>
+                {% endif %}
+                
+                <!-- Action buttons -->
+                <div class="mt-3 d-grid gap-2">
+                    <button class="btn btn-primary btn-lg" onclick="addToCart({{ book.id }})">
+                        <i class="fas fa-shopping-cart me-2"></i>Add to Cart
+                    </button>
+                    
+                    {% if user.is_authenticated %}
+                        <button class="btn btn-outline-danger" onclick="toggleWishlist({{ book.id }})">
+                            {% if in_wishlist %}
+                                <i class="fas fa-heart me-2"></i>Remove from Wishlist
+                            {% else %}
+                                <i class="far fa-heart me-2"></i>Add to Wishlist
+                            {% endif %}
+                        </button>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+        
+        <!-- Book Details -->
+        <div class="col-md-8">
+            <h1 class="display-5 mb-3">{{ book.title }}</h1>
+            
+            <div class="mb-3">
+                <span class="text-muted">by</span>
+                {% for author in book.authors.all %}
+                    <a href="#" class="text-decoration-none">{{ author.name }}</a>{% if not forloop.last %}, {% endif %}
+                {% endfor %}
+            </div>
+            
+            <!-- Rating and Reviews -->
+            <div class="mb-3">
+                <div class="d-flex align-items-center">
+                    <div class="me-3">
+                        {% for i in "12345" %}
+                            {% if book.average_rating >= forloop.counter %}
+                                <i class="fas fa-star text-warning"></i>
+                            {% else %}
+                                <i class="far fa-star text-muted"></i>
+                            {% endif %}
+                        {% endfor %}
+                        <span class="ms-2">{{ book.average_rating|floatformat:1 }}</span>
+                    </div>
+                    <span class="text-muted">({{ book.total_reviews }} reviews)</span>
+                </div>
+            </div>
+            
+            <!-- Price -->
+            <div class="mb-4">
+                <h3 class="text-success mb-0">
+                    ₹{{ book.price }}
+                    {% if book.original_price and book.discount_percentage > 0 %}
+                        <span class="text-muted text-decoration-line-through fs-5">₹{{ book.original_price }}</span>
+                        <span class="badge bg-danger ms-2">{{ book.discount_percentage }}% OFF</span>
+                    {% endif %}
+                </h3>
+            </div>
+            
+            <!-- Book Info -->
+            <div class="row mb-4">
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        <li><strong>Format:</strong> {{ book.get_format_display }}</li>
+                        <li><strong>Category:</strong> <a href="{% url 'books:category_books' book.category.slug %}">{{ book.category.name }}</a></li>
+                        {% if book.subcategory %}
+                            <li><strong>Subcategory:</strong> {{ book.subcategory.name }}</li>
+                        {% endif %}
+                        {% if book.publisher %}
+                            <li><strong>Publisher:</strong> {{ book.publisher.name }}</li>
+                        {% endif %}
+                        {% if book.publication_date %}
+                            <li><strong>Publication Date:</strong> {{ book.publication_date }}</li>
+                        {% endif %}
+                    </ul>
+                </div>
+                <div class="col-md-6">
+                    <ul class="list-unstyled">
+                        {% if book.pages %}
+                            <li><strong>Pages:</strong> {{ book.pages }}</li>
+                        {% endif %}
+                        <li><strong>Language:</strong> {{ book.language }}</li>
+                        {% if book.isbn %}
+                            <li><strong>ISBN:</strong> {{ book.isbn }}</li>
+                        {% endif %}
+                        {% if book.isbn13 %}
+                            <li><strong>ISBN-13:</strong> {{ book.isbn13 }}</li>
+                        {% endif %}
+                        {% if book.weight %}
+                            <li><strong>Weight:</strong> {{ book.weight }}g</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+            
+            <!-- Status badges -->
+            <div class="mb-4">
+                {% if book.is_featured %}
+                    <span class="badge bg-warning text-dark me-2">Featured</span>
+                {% endif %}
+                {% if book.is_bestseller %}
+                    <span class="badge bg-success me-2">Bestseller</span>
+                {% endif %}
+                {% if book.is_on_sale %}
+                    <span class="badge bg-danger me-2">On Sale</span>
+                {% endif %}
+                <span class="badge bg-info">{{ book.get_status_display }}</span>
+            </div>
+            
+            <!-- Description -->
+            <div class="mb-4">
+                <h5>Description</h5>
+                <div class="border-start border-primary border-3 ps-3">
+                    {{ book.description|linebreaks }}
+                </div>
+            </div>
+            
+            <!-- Admin actions -->
+            {% if user.is_superuser %}
+                <div class="mt-4 pt-4 border-top">
+                    <h6>Admin Actions</h6>
+                    <a href="{% url 'admin:books_book_change' book.id %}" class="btn btn-outline-primary btn-sm me-2">
+                        <i class="fas fa-edit me-1"></i>Edit
+                    </a>
+                    <a href="{% url 'books:delete_book' book.slug %}" class="btn btn-outline-danger btn-sm">
+                        <i class="fas fa-trash me-1"></i>Delete
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <!-- Related Books -->
+    {% if related_books %}
+        <div class="mt-5">
+            <h4 class="mb-4">Related Books</h4>
+            <div class="row">
+                {% for related_book in related_books %}
+                <div class="col-md-3 mb-4">
+                    <div class="card h-100">
+                        <a href="{% url 'books:book_detail' related_book.slug %}">
+                            {% if related_book.cover_image %}
+                                <img src="{{ related_book.cover_image.url }}" class="card-img-top" style="height: 200px; object-fit: cover;" alt="{{ related_book.title }}">
+                            {% else %}
+                                <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                    <i class="fas fa-book fa-2x text-muted"></i>
+                                </div>
+                            {% endif %}
+                        </a>
+                        <div class="card-body">
+                            <h6 class="card-title">
+                                <a href="{% url 'books:book_detail' related_book.slug %}" class="text-decoration-none">
+                                    {{ related_book.title|truncatechars:40 }}
+                                </a>
+                            </h6>
+                            <p class="text-muted small mb-2">
+                                {% for author in related_book.authors.all %}
+                                    {{ author.name }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            </p>
+                            <p class="text-success fw-bold">₹{{ related_book.price }}</p>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function addToCart(bookId) {
+    {% if user.is_authenticated %}
+        $.ajax({
+            url: "{% url 'books:add_to_cart' 0 %}".replace('0', bookId),
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+            },
+            success: function(response) {
+                if (response.success) {
+                    showAlert(response.message, 'success');
+                    // Update cart total in navbar if it exists
+                    $('.cart-total').text(response.cart_total);
+                }
+            },
+            error: function() {
+                showAlert('Error adding book to cart', 'danger');
+            }
+        });
+    {% else %}
+        window.location.href = "{% url 'account_login' %}";
+    {% endif %}
+}
+
+function toggleWishlist(bookId) {
+    {% if user.is_authenticated %}
+        // Implement wishlist toggle functionality here
+        // This would need to be connected to your wishlist app
+        showAlert('Wishlist functionality coming soon!', 'info');
+    {% else %}
+        window.location.href = "{% url 'account_login' %}";
+    {% endif %}
+}
+
+function showAlert(message, type) {
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    $('.container').first().prepend(alertHtml);
+    
+    // Auto dismiss after 5 seconds
+    setTimeout(function() {
+        $('.alert').fadeOut();
+    }, 5000);
+}
+</script>
+{% endblock %}

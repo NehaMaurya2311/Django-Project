@@ -1,0 +1,203 @@
+<!-- books/templates/books/search_google_books.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Search Google Books - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .book-card {
+        transition: transform 0.2s;
+        height: 100%;
+    }
+    .book-card:hover {
+        transform: translateY(-5px);
+    }
+    .book-cover {
+        height: 200px;
+        object-fit: cover;
+        width: 100%;
+    }
+    .book-description {
+        max-height: 100px;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .search-header {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        padding: 2rem 0;
+        margin-bottom: 2rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="search-header">
+    <div class="container">
+        <div class="row">
+            <div class="col-md-8 mx-auto text-center">
+                <h1 class="display-4 mb-4">Search Google Books</h1>
+                <p class="lead">Find and add books to your library from Google's vast collection</p>
+                
+                <!-- Search Form -->
+                <form method="get" class="mt-4">
+                    <div class="row">
+                        <div class="col-md-8">
+                            <div class="input-group">
+                                <input type="text" name="q" class="form-control form-control-lg" 
+                                       placeholder="Search for books..." value="{{ query }}" required>
+                                <select name="search_type" class="form-select" style="max-width: 150px;">
+                                    <option value="title" {% if search_type == 'title' %}selected{% endif %}>Title</option>
+                                    <option value="author" {% if search_type == 'author' %}selected{% endif %}>Author</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="submit" class="btn btn-light btn-lg w-100">
+                                <i class="fas fa-search me-2"></i>Search
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    {% if query %}
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Search Results for "{{ query }}"</h2>
+            <span class="badge bg-primary">{{ books|length }} results</span>
+        </div>
+        
+        {% if books %}
+            <div class="row">
+                {% for book in books %}
+                <div class="col-md-4 col-lg-3 mb-4">
+                    <div class="card book-card h-100">
+                        {% if book.cover_image %}
+                            <img src="{{ book.cover_image }}" class="card-img-top book-cover" alt="{{ book.title }}">
+                        {% else %}
+                            <div class="card-img-top book-cover bg-light d-flex align-items-center justify-content-center">
+                                <i class="fas fa-book fa-3x text-muted"></i>
+                            </div>
+                        {% endif %}
+                        
+                        <div class="card-body d-flex flex-column">
+                            <h6 class="card-title">{{ book.title|truncatechars:50 }}</h6>
+                            <p class="text-muted small mb-2">
+                                <i class="fas fa-user me-1"></i>{{ book.authors|truncatechars:40 }}
+                            </p>
+                            
+                            {% if book.categories %}
+                                <p class="text-info small mb-2">
+                                    <i class="fas fa-tag me-1"></i>{{ book.categories|truncatechars:30 }}
+                                </p>
+                            {% endif %}
+                            
+                            <div class="book-description small text-muted mb-3">
+                                {{ book.description|truncatechars:100|striptags }}
+                            </div>
+                            
+                            <div class="mt-auto">
+                                <form method="post" action="{% url 'books:add_book' %}" class="add-book-form">
+                                    {% csrf_token %}
+                                    <input type="hidden" name="title" value="{{ book.title }}">
+                                    <input type="hidden" name="authors" value="{{ book.authors }}">
+                                    <input type="hidden" name="description" value="{{ book.description }}">
+                                    <input type="hidden" name="categories" value="{{ book.categories }}">
+                                    <input type="hidden" name="cover_image" value="{{ book.cover_image }}">
+                                    <input type="hidden" name="google_books_id" value="{{ book.google_books_id }}">
+                                    
+                                    <div class="mb-2">
+                                        <label class="form-label small">Price (₹)</label>
+                                        <input type="number" name="price" class="form-control form-control-sm" 
+                                               step="0.01" min="0" value="299.00" required>
+                                    </div>
+                                    
+                                    <button type="submit" class="btn btn-success btn-sm w-100">
+                                        <i class="fas fa-plus me-1"></i>Add to Library
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-search fa-3x text-muted mb-3"></i>
+                <h4>No books found</h4>
+                <p class="text-muted">Try searching with different keywords or check your spelling.</p>
+            </div>
+        {% endif %}
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-book-open fa-4x text-muted mb-4"></i>
+            <h3>Search Google Books</h3>
+            <p class="text-muted">Enter a search term above to find books from Google's collection</p>
+        </div>
+    {% endif %}
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+$(document).ready(function() {
+    // Handle AJAX form submission for adding books
+    $('.add-book-form').on('submit', function(e) {
+        e.preventDefault();
+        
+        const form = $(this);
+        const button = form.find('button[type="submit"]');
+        const originalText = button.html();
+        
+        // Show loading state
+        button.html('<i class="fas fa-spinner fa-spin me-1"></i>Adding...').prop('disabled', true);
+        
+        $.ajax({
+            url: form.attr('action'),
+            method: 'POST',
+            data: form.serialize(),
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                if (response.success) {
+                    button.html('<i class="fas fa-check me-1"></i>Added!').removeClass('btn-success').addClass('btn-secondary');
+                    // Show success message
+                    showAlert('Book added successfully!', 'success');
+                } else {
+                    button.html(originalText).prop('disabled', false);
+                    showAlert(response.error || 'Error adding book', 'danger');
+                }
+            },
+            error: function(xhr) {
+                button.html(originalText).prop('disabled', false);
+                const errorMsg = xhr.responseJSON ? xhr.responseJSON.error : 'Error adding book';
+                showAlert(errorMsg, 'danger');
+            }
+        });
+    });
+    
+    function showAlert(message, type) {
+        const alertHtml = `
+            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                ${message}
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        $('.container').first().prepend(alertHtml);
+        
+        // Auto dismiss after 5 seconds
+        setTimeout(function() {
+            $('.alert').fadeOut();
+        }, 5000);
+    }
+});
+</script>
+{% endblock %}

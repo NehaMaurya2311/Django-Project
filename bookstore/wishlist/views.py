@@ -44,6 +44,32 @@ def add_to_wishlist(request, book_id):
     return redirect('books:book_detail', slug=book.slug)
 
 @login_required
+def toggle_wishlist(request, book_id):
+    book = get_object_or_404(Book, id=book_id)
+    wishlist_item = WishlistItem.objects.filter(user=request.user, book=book).first()
+    
+    if wishlist_item:
+        # Remove from wishlist
+        wishlist_item.delete()
+        message = f'"{book.title}" removed from your wishlist!'
+        in_wishlist = False
+    else:
+        # Add to wishlist
+        WishlistItem.objects.create(user=request.user, book=book)
+        message = f'"{book.title}" added to your wishlist!'
+        in_wishlist = True
+
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({
+            'success': True,
+            'message': message,
+            'in_wishlist': in_wishlist
+        })
+    
+    messages.success(request, message)
+    return redirect(request.META.get('HTTP_REFERER', 'books:home'))
+
+@login_required
 def remove_from_wishlist(request, book_id):
     book = get_object_or_404(Book, id=book_id)
     

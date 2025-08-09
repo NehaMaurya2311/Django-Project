@@ -6,6 +6,7 @@ app_name = 'wishlist'
 
 urlpatterns = [
     path('', views.wishlist, name='wishlist'),
+    path('toggle/<int:book_id>/', views.toggle_wishlist, name='toggle'),
     path('add/<int:book_id>/', views.add_to_wishlist, name='add_to_wishlist'),
     path('remove/<int:book_id>/', views.remove_from_wishlist, name='remove_from_wishlist'),
     path('move-to-cart/<int:book_id>/', views.move_to_cart, name='move_to_cart'),

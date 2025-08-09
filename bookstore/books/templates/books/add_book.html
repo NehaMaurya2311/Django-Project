@@ -1,0 +1,207 @@
+<!-- books/templates/books/add_book.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Add Book - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title mb-0">Add New Book</h3>
+                </div>
+                <div class="card-body">
+                    <!-- Navigation tabs -->
+                    <ul class="nav nav-tabs mb-4" id="addBookTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="google-tab" data-bs-toggle="tab" data-bs-target="#google" type="button" role="tab">
+                                <i class="fas fa-search me-2"></i>Search Google Books
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="manual-tab" data-bs-toggle="tab" data-bs-target="#manual" type="button" role="tab">
+                                <i class="fas fa-edit me-2"></i>Add Manually
+                            </button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="addBookTabsContent">
+                        <!-- Google Books Search Tab -->
+                        <div class="tab-pane fade show active" id="google" role="tabpanel">
+                            <div class="text-center mb-4">
+                                <h5>Search and add books from Google Books</h5>
+                                <p class="text-muted">Search for books and add them to your library with one click</p>
+                                <a href="{% url 'books:search_google_books' %}" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-search me-2"></i>Search Google Books
+                                </a>
+                            </div>
+                        </div>
+                        
+                        <!-- Manual Entry Tab -->
+                        <div class="tab-pane fade" id="manual" role="tabpanel">
+                            <form method="post" enctype="multipart/form-data">
+                                {% csrf_token %}
+                                
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <label for="{{ form.title.id_for_label }}" class="form-label">Title *</label>
+                                        {{ form.title }}
+                                        {% if form.title.errors %}
+                                            <div class="text-danger">{{ form.title.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.authors.id_for_label }}" class="form-label">Authors *</label>
+                                        {{ form.authors }}
+                                        <small class="form-text text-muted">{{ form.authors.help_text }}</small>
+                                        {% if form.authors.errors %}
+                                            <div class="text-danger">{{ form.authors.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.publisher.id_for_label }}" class="form-label">Publisher</label>
+                                        {{ form.publisher }}
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.isbn.id_for_label }}" class="form-label">ISBN</label>
+                                        {{ form.isbn }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.isbn13.id_for_label }}" class="form-label">ISBN-13</label>
+                                        {{ form.isbn13 }}
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.category.id_for_label }}" class="form-label">Category *</label>
+                                        {{ form.category }}
+                                        {% if form.category.errors %}
+                                            <div class="text-danger">{{ form.category.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.subcategory.id_for_label }}" class="form-label">Subcategory</label>
+                                        {{ form.subcategory }}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.description.id_for_label }}" class="form-label">Description *</label>
+                                    {{ form.description }}
+                                    {% if form.description.errors %}
+                                        <div class="text-danger">{{ form.description.errors }}</div>
+                                    {% endif %}
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.short_description.id_for_label }}" class="form-label">Short Description</label>
+                                    {{ form.short_description }}
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.format.id_for_label }}" class="form-label">Format</label>
+                                        {{ form.format }}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.pages.id_for_label }}" class="form-label">Pages</label>
+                                        {{ form.pages }}
+                                    </div>
+                                    <div class="col-md-4 mb-3">
+                                        <label for="{{ form.language.id_for_label }}" class="form-label">Language</label>
+                                        {{ form.language }}
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.price.id_for_label }}" class="form-label">Price *</label>
+                                        {{ form.price }}
+                                        {% if form.price.errors %}
+                                            <div class="text-danger">{{ form.price.errors }}</div>
+                                        {% endif %}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.original_price.id_for_label }}" class="form-label">Original Price</label>
+                                        {{ form.original_price }}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label for="{{ form.cover_image.id_for_label }}" class="form-label">Cover Image</label>
+                                    {{ form.cover_image }}
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.publication_date.id_for_label }}" class="form-label">Publication Date</label>
+                                        {{ form.publication_date }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.edition.id_for_label }}" class="form-label">Edition</label>
+                                        {{ form.edition }}
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.weight.id_for_label }}" class="form-label">Weight (grams)</label>
+                                        {{ form.weight }}
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label for="{{ form.dimensions.id_for_label }}" class="form-label">Dimensions</label>
+                                        {{ form.dimensions }}
+                                    </div>
+                                </div>
+                                
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            {{ form.is_featured }}
+                                            <label class="form-check-label" for="{{ form.is_featured.id_for_label }}">
+                                                Featured Book
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            {{ form.is_bestseller }}
+                                            <label class="form-check-label" for="{{ form.is_bestseller.id_for_label }}">
+                                                Bestseller
+                                            </label>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="form-check">
+                                            {{ form.is_on_sale }}
+                                            <label class="form-check-label" for="{{ form.is_on_sale.id_for_label }}">
+                                                On Sale
+                                            </label>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <a href="{% url 'books:all_books' %}" class="btn btn-secondary me-md-2">Cancel</a>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="fas fa-save me-2"></i>Add Book
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,170 @@
+<!-- books/templates/books/cart.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Shopping Cart - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <h2 class="mb-4">
+        <i class="fas fa-shopping-cart me-2"></i>Shopping Cart
+        {% if cart.total_items > 0 %}
+            <span class="badge bg-primary">{{ cart.total_items }} items</span>
+        {% endif %}
+    </h2>
+    
+    {% if cart.items.all %}
+        <div class="row">
+            <div class="col-md-8">
+                {% for item in cart.items.all %}
+                <div class="card mb-3" id="cart-item-{{ item.id }}">
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-2">
+                                {% if item.book.cover_image %}
+                                    <img src="{{ item.book.cover_image.url }}" class="img-fluid rounded" alt="{{ item.book.title }}">
+                                {% else %}
+                                    <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 80px;">
+                                        <i class="fas fa-book text-muted"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="col-md-5">
+                                <h6 class="mb-1">
+                                    <a href="{% url 'books:book_detail' item.book.slug %}" class="text-decoration-none">
+                                        {{ item.book.title }}
+                                    </a>
+                                </h6>
+                                <p class="text-muted small mb-1">
+                                    {% for author in item.book.authors.all %}
+                                        {{ author.name }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                </p>
+                                <p class="text-info small mb-0">{{ item.book.get_format_display }}</p>
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <div class="input-group input-group-sm">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="updateQuantity({{ item.id }}, {{ item.quantity|add:'-1' }})">-</button>
+                                    <input type="number" class="form-control text-center" value="{{ item.quantity }}" id="qty-{{ item.id }}" min="1" onchange="updateQuantity({{ item.id }}, this.value)">
+                                    <button class="btn btn-outline-secondary" type="button" onclick="updateQuantity({{ item.id }}, {{ item.quantity|add:'1' }})">+</button>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-2">
+                                <p class="mb-0 fw-bold text-success" id="item-total-{{ item.id }}">₹{{ item.total_price }}</p>
+                            </div>
+                            
+                            <div class="col-md-1">
+                                <a href="{% url 'books:remove_from_cart' item.id %}" class="btn btn-outline-danger btn-sm" 
+                                   onclick="return confirm('Remove this item from cart?')">
+                                    <i class="fas fa-trash"></i>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Cart Summary -->
+            <div class="col-md-4">
+                <div class="card sticky-top" style="top: 20px;">
+                    <div class="card-header">
+                        <h5 class="mb-0">Order Summary</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Subtotal ({{ cart.total_items }} items):</span>
+                            <span id="cart-subtotal">₹{{ cart.total_price }}</span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-2">
+                            <span>Shipping:</span>
+                            <span class="text-success">Free</span>
+                        </div>
+                        <hr>
+                        <div class="d-flex justify-content-between mb-3">
+                            <strong>Total:</strong>
+                            <strong class="text-success" id="cart-total">₹{{ cart.total_price }}</strong>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button class="btn btn-primary btn-lg">
+                                <i class="fas fa-credit-card me-2"></i>Proceed to Checkout
+                            </button>
+                            <a href="{% url 'books:all_books' %}" class="btn btn-outline-secondary">
+                                <i class="fas fa-arrow-left me-2"></i>Continue Shopping
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-shopping-cart fa-4x text-muted mb-3"></i>
+            <h4>Your cart is empty</h4>
+            <p class="text-muted">Add some books to get started!</p>
+            <a href="{% url 'books:all_books' %}" class="btn btn-primary">
+                <i class="fas fa-book me-2"></i>Browse Books
+            </a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function updateQuantity(itemId, newQuantity) {
+    if (newQuantity < 1) {
+        if (confirm('Remove this item from cart?')) {
+            newQuantity = 0;
+        } else {
+            return;
+        }
+    }
+    
+    $.ajax({
+        url: "{% url 'books:update_cart_item' 0 %}".replace('0', itemId),
+        method: 'POST',
+        data: JSON.stringify({quantity: parseInt(newQuantity)}),
+        contentType: 'application/json',
+        headers: {
+            'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+        },
+        success: function(response) {
+            if (response.success) {
+                if (response.item_deleted) {
+                    $('#cart-item-' + itemId).fadeOut();
+                    // Check if cart is now empty
+                    if ($('.card[id^="cart-item-"]').length === 1) {
+                        setTimeout(() => {
+                            location.reload();
+                        }, 500);
+                    }
+                } else {
+                    $('#item-total-' + itemId).text('₹' + response.item_total.toFixed(2));
+                    $('#qty-' + itemId).val(newQuantity);
+                }
+                
+                $('#cart-subtotal, #cart-total').text('₹' + response.cart_total.toFixed(2));
+                $('.cart-total').text(response.cart_total);
+            }
+        },
+        error: function() {
+            alert('Error updating cart item');
+        }
+    });
+}
+
+// Add CSRF token to all AJAX requests
+$.ajaxSetup({
+    beforeSend: function(xhr, settings) {
+        if (!this.crossDomain) {
+            xhr.setRequestHeader("X-CSRFToken", $('[name=csrfmiddlewaretoken]').val());
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -5,6 +5,36 @@ from orders.models import Order
 
 User = get_user_model()
 
+class FAQCategory(models.Model):
+    name = models.CharField(max_length=100)
+    description = models.TextField(blank=True)
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        verbose_name_plural = "FAQ Categories"
+        ordering = ['order', 'name']
+    
+    def __str__(self):
+        return self.name
+
+class FAQ(models.Model):
+    category = models.ForeignKey(FAQCategory, on_delete=models.CASCADE, related_name='faqs')
+    question = models.CharField(max_length=255)
+    answer = models.TextField()
+    order = models.PositiveIntegerField(default=0)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "FAQ"
+        verbose_name_plural = "FAQs"
+        ordering = ['order', 'question']
+
+    def __str__(self):
+        return self.question
+
 class SupportCategory(models.Model):
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)

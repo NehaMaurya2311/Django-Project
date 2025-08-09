@@ -7,8 +7,26 @@ from django.utils import timezone
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.db.models import Q
-from .models import SupportTicket, TicketResponse, SupportCategory, LiveChat, ChatMessage
+from .models import SupportTicket, TicketResponse, SupportCategory, LiveChat, ChatMessage, FAQ
 from .forms import SupportTicketForm, TicketResponseForm
+
+def faq(request):
+    # Get all FAQ categories and their questions
+    faqs = FAQ.objects.filter(is_active=True).order_by('category', 'order')
+    
+    # Group FAQs by category
+    faq_by_category = {}
+    for faq in faqs:
+        if faq.category not in faq_by_category:
+            faq_by_category[faq.category] = []
+        faq_by_category[faq.category].append(faq)
+    
+    context = {
+        'faq_by_category': faq_by_category,
+        'total_faqs': faqs.count(),
+    }
+    
+    return render(request, 'support/faq.html', context)
 
 @login_required
 def create_ticket(request):

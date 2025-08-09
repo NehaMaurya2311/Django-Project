@@ -8,7 +8,14 @@ urlpatterns = [
     path('', views.home, name='home'),
     path('book/<slug:slug>/', views.book_detail, name='book_detail'),
     path('category/<slug:slug>/', views.category_books, name='category_books'),
+    path('category/<slug:category_slug>/<slug:subcategory_slug>/', views.subcategory_books, name='subcategory'),
+    path('books/', views.all_books, name='all_books'),
     path('search/', views.search_books, name='search'),
+    
+    # Book management URLs
+    path('add-book/', views.add_book, name='add_book'),
+    path('search-google-books/', views.search_google_books, name='search_google_books'),
+    path('delete-book/<slug:slug>/', views.delete_book, name='delete_book'),
     
     # Cart URLs
     path('cart/', views.cart_view, name='cart'),

@@ -1,0 +1,228 @@
+{% load static %}
+{% load i18n %}
+
+<footer class="footer bg-purple text-white mt-5">
+    <div class="container-fluid py-5">
+        <div class="row g-4">
+            <!-- Company Information -->
+            <div class="col-lg-3 col-md-6">
+                <div class="footer-section">
+                    <h5 class="footer-title mb-3">
+                        <i class="fas fa-book-open me-2"></i>
+                        <span class="fw-bold">BookStore</span>
+                    </h5>
+                    <div class="footer-content">
+                        <p class="mb-3 text-light-purple">
+                            {% trans "Your one-stop destination for all kinds of books. From fiction to non-fiction, we have something for every reader." %}
+                        </p>
+                        
+                        <!-- Contact Information -->
+                        <div class="contact-info">
+                            <div class="contact-item mb-2">
+                                <i class="fas fa-map-marker-alt me-2 text-footer-accent"></i>
+                                <small>{% trans "123 Book Street, Literature City" %}</small>
+                            </div>
+                            <div class="contact-item mb-2">
+                                <i class="fas fa-phone me-2 text-footer-accent"></i>
+                                <small>+1 (555) 123-BOOK</small>
+                            </div>
+                            <div class="contact-item mb-2">
+                                <i class="fas fa-envelope me-2 text-footer-accent"></i>
+                                <small>info@bookstore.com</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- About Us Links -->
+            <div class="col-lg-2 col-md-6">
+                <div class="footer-section">
+                    <h6 class="footer-title mb-3 fw-semibold">{% trans "About Us" %}</h6>
+                    <ul class="footer-links list-unstyled">
+                        <li class="mb-2">
+                            <a href="#" class="footer-link">
+                                <i class="fas fa-chevron-right me-2"></i>{% trans "About Us" %}
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="#" class="footer-link">
+                                <i class="fas fa-chevron-right me-2"></i>{% trans "Careers" %}
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="#" class="footer-link">
+                                <i class="fas fa-chevron-right me-2"></i>{% trans "Sell with us" %}
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="#" class="footer-link">
+                                <i class="fas fa-chevron-right me-2"></i>{% trans "Press Releases" %}
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Categories -->
+            <div class="col-lg-2 col-md-6">
+                <div class="footer-section">
+                    <h6 class="footer-title mb-3 fw-semibold">{% trans "Categories" %}</h6>
+                    <ul class="footer-links list-unstyled">
+                        <li class="mb-2">
+                            <a href="{% url 'books:category_books' 'fiction' %}" class="footer-link">
+                                <i class="fas fa-chevron-right me-2"></i>{% trans "Fiction" %}
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{% url 'books:category_books' 'non-fiction' %}" class="footer-link">
+                                <i class="fas fa-chevron-right me-2"></i>{% trans "Non Fiction" %}
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{% url 'books:category_books' 'children-books' %}" class="footer-link">
+                                <i class="fas fa-chevron-right me-2"></i>{% trans "Children Books" %}
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{% url 'books:category_books' 'comics-manga' %}" class="footer-link">
+                                <i class="fas fa-chevron-right me-2"></i>{% trans "Comics & Manga" %}
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Quick Help -->
+            <div class="col-lg-2 col-md-6">
+                <div class="footer-section">
+                    <h6 class="footer-title mb-3 fw-semibold">{% trans "Quick Help" %}</h6>
+                    <ul class="footer-links list-unstyled">
+                        <li class="mb-2">
+                            <a href="{% url 'support:faq' %}" class="footer-link">
+                                <i class="fas fa-chevron-right me-2"></i>{% trans "Help Center" %}
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="#" class="footer-link">
+                                <i class="fas fa-chevron-right me-2"></i>{% trans "Order Tracking" %}
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="" class="footer-link">
+                                <i class="fas fa-chevron-right me-2"></i>{% trans "Shipping & Returns" %}
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="" class="footer-link">
+                                <i class="fas fa-chevron-right me-2"></i>{% trans "Size Guide" %}
+                            </a>
+                        </li>
+                        <li class="mb-2">
+                            <a href="{% url 'support:create_ticket' %}" class="footer-link">
+                                <i class="fas fa-chevron-right me-2"></i>{% trans "Contact Support" %}
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!-- Newsletter Subscription -->
+            <div class="col-lg-3 col-md-12">
+                <div class="footer-section">
+                    <h6 class="footer-title mb-3 fw-semibold">{% trans "Subscribe to our newsletter!" %}</h6>
+                    <p class="text-light-purple mb-3">
+                        {% trans "Get updates on new arrivals, exclusive offers, and literary news." %}
+                    </p>
+                    
+                    <!-- Newsletter Form -->
+                    <form id="newsletter-form" class="newsletter-form mb-4">
+                        {% csrf_token %}
+                        <div class="input-group">
+                            <input type="email" class="form-control newsletter-input" 
+                                   placeholder="{% trans 'Enter your email' %}" 
+                                   name="email" required>
+                            <button class="btn btn-footer-accent" type="submit">
+                                {% trans "Submit" %}
+                            </button>
+                        </div>
+                        <small class="form-text text-light-purple mt-2">
+                            {% trans "We respect your privacy. Unsubscribe anytime." %}
+                        </small>
+                    </form>
+
+                    <!-- Social Media Links -->
+                    <div class="social-links">
+                        <h6 class="fw-semibold mb-2">{% trans "Follow Us" %}</h6>
+                        <div class="d-flex gap-3">
+                            <a href="https://facebook.com/bookstore" class="social-link" target="_blank" title="Facebook">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="https://twitter.com/bookstore" class="social-link" target="_blank" title="Twitter">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="https://instagram.com/bookstore" class="social-link" target="_blank" title="Instagram">
+                                <i class="fab fa-instagram"></i>
+                            </a>
+                            <a href="https://youtube.com/bookstore" class="social-link" target="_blank" title="YouTube">
+                                <i class="fab fa-youtube"></i>
+                            </a>
+                            <a href="https://linkedin.com/company/bookstore" class="social-link" target="_blank" title="LinkedIn">
+                                <i class="fab fa-linkedin-in"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Footer -->
+    <div class="footer-bottom border-top border-footer-accent">
+        <div class="container-fluid py-4">
+            <div class="row align-items-center">
+                <!-- Copyright -->
+                <div class="col-lg-6 col-md-12 text-center text-lg-start mb-3 mb-lg-0">
+                    <p class="mb-0 text-light-purple">
+                        <i class="fas fa-copyright me-1"></i>
+                        {% now "Y" %} BookStore. {% trans "All rights reserved." %}
+                    </p>
+                </div>
+
+                <!-- Payment Methods & Policies -->
+                <div class="col-lg-6 col-md-12">
+                    <div class="row align-items-center">
+                        <!-- Legal Links -->
+                        <div class="col-md-6 text-center text-md-start mb-2 mb-md-0">
+                            <div class="footer-legal-links">
+                                <a href="" class="footer-link small me-3">
+                                    {% trans "Privacy Policy" %}
+                                </a>
+                                <a href="" class="footer-link small me-3">
+                                    {% trans "Terms & Conditions" %}
+                                </a>
+                                <a href="" class="footer-link small">
+                                    {% trans "Cookie Policy" %}
+                                </a>
+                            </div>
+                        </div>
+
+                        <!-- Payment Methods -->
+                        <div class="col-md-6 text-center text-md-end">
+                            <div class="payment-methods">
+                                <span class="small me-2">{% trans "We Accept:" %}</span>
+                                <img src="{% static 'images/payment/visa.png' %}" alt="Visa" class="payment-icon" title="Visa">
+                                <img src="{% static 'images/payment/mastercard.png' %}" alt="Mastercard" class="payment-icon" title="Mastercard">
+                                <img src="{% static 'images/payment/amex.png' %}" alt="American Express" class="payment-icon" title="American Express">
+                                <img src="{% static 'images/payment/paypal.png' %}" alt="PayPal" class="payment-icon" title="PayPal">
+                                <img src="{% static 'images/payment/gpay.png' %}" alt="Google Pay" class="payment-icon" title="Google Pay">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</footer>
+
+
