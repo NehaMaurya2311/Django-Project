@@ -1,0 +1,373 @@
+<!-- vendors/templates/vendors/register.html -->
+{% extends 'vendors/base.html' %}
+
+{% block title %}Vendor Registration - BookStore{% endblock %}
+
+{% block extra_css %}
+<style>
+    .registration-form {
+        max-width: 900px;
+        margin: 0 auto;
+    }
+    .form-section {
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 25px;
+        border-left: 4px solid #667eea;
+    }
+    .section-title {
+        color: #667eea;
+        font-weight: 700;
+        font-size: 1.3rem;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+    }
+    .section-title i {
+        margin-right: 10px;
+    }
+    .form-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+    }
+    .form-control, .form-select {
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    .required {
+        color: #dc3545;
+    }
+    .help-text {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 5px;
+    }
+</style>
+{% endblock %}
+
+{% block show_sidebar %}False{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="text-center mb-4">
+        <h1 class="page-title">
+            <i class="fas fa-store me-3"></i>Vendor Registration
+        </h1>
+        <p class="page-subtitle">Create your account and join our marketplace to start selling books!</p>
+    </div>
+
+    <div class="registration-form">
+        <form method="post" enctype="multipart/form-data" id="vendorRegistrationForm">
+            {% csrf_token %}
+            
+            <!-- Account Information Section -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-user"></i>Account Information
+                </h3>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Username <span class="required">*</span></label>
+                        {{ user_form.username }}
+                        <div class="help-text">Choose a unique username for your account</div>
+                        {% for error in user_form.username.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Email Address <span class="required">*</span></label>
+                        {{ user_form.email }}
+                        <div class="help-text">We'll use this for important notifications</div>
+                        {% for error in user_form.email.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">First Name <span class="required">*</span></label>
+                        {{ user_form.first_name }}
+                        {% for error in user_form.first_name.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Last Name <span class="required">*</span></label>
+                        {{ user_form.last_name }}
+                        {% for error in user_form.last_name.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Password <span class="required">*</span></label>
+                        {{ user_form.password1 }}
+                        <div class="help-text">Choose a strong password</div>
+                        {% for error in user_form.password1.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Confirm Password <span class="required">*</span></label>
+                        {{ user_form.password2 }}
+                        <div class="help-text">Enter the same password again</div>
+                        {% for error in user_form.password2.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Business Information Section -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-building"></i>Business Information
+                </h3>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Business Name <span class="required">*</span></label>
+                        {{ vendor_form.business_name }}
+                        {% if vendor_form.business_name.help_text %}
+                            <div class="help-text">{{ vendor_form.business_name.help_text }}</div>
+                        {% endif %}
+                        {% for error in vendor_form.business_name.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Registration Number</label>
+                        {{ vendor_form.business_registration_number }}
+                        <div class="help-text">Business registration or license number (if applicable)</div>
+                        {% for error in vendor_form.business_registration_number.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Contact Person <span class="required">*</span></label>
+                        {{ vendor_form.contact_person }}
+                        {% for error in vendor_form.contact_person.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Tax ID</label>
+                        {{ vendor_form.tax_id }}
+                        <div class="help-text">GST Number or Tax Identification Number</div>
+                        {% for error in vendor_form.tax_id.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Website</label>
+                    {{ vendor_form.website }}
+                    <div class="help-text">Your business website (optional)</div>
+                    {% for error in vendor_form.website.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Contact Information Section -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-address-card"></i>Contact Information
+                </h3>
+                
+                <div class="mb-3">
+                    <label class="form-label">Business Address <span class="required">*</span></label>
+                    {{ vendor_form.business_address }}
+                    {% for error in vendor_form.business_address.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">City <span class="required">*</span></label>
+                        {{ vendor_form.city }}
+                        {% for error in vendor_form.city.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">State <span class="required">*</span></label>
+                        {{ vendor_form.state }}
+                        {% for error in vendor_form.state.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">PIN Code <span class="required">*</span></label>
+                        {{ vendor_form.pincode }}
+                        {% for error in vendor_form.pincode.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Phone Number <span class="required">*</span></label>
+                        {{ vendor_form.phone }}
+                        {% for error in vendor_form.phone.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Email Address <span class="required">*</span></label>
+                        {{ vendor_form.email }}
+                        {% for error in vendor_form.email.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Banking Information Section -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-university"></i>Banking Information
+                </h3>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Bank Name</label>
+                        {{ vendor_form.bank_name }}
+                        {% for error in vendor_form.bank_name.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">IFSC Code</label>
+                        {{ vendor_form.ifsc_code }}
+                        {% for error in vendor_form.ifsc_code.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Account Number</label>
+                    {{ vendor_form.account_number }}
+                    <div class="help-text">Your bank account number for payments</div>
+                    {% for error in vendor_form.account_number.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Document Upload Section -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-file-upload"></i>Document Verification
+                </h3>
+                
+                <div class="mb-3">
+                    <label class="form-label">Business License</label>
+                    <div class="file-upload">
+                        {{ vendor_form.business_license }}
+                        <label class="file-upload-label" for="{{ vendor_form.business_license.id_for_label }}">
+                            <i class="fas fa-cloud-upload-alt me-2"></i>
+                            Click to upload business license or registration certificate
+                        </label>
+                    </div>
+                    <div class="help-text">Upload your business registration certificate or license (PDF, JPG, PNG)</div>
+                    {% for error in vendor_form.business_license.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Terms and Conditions -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-file-contract"></i>Terms & Conditions
+                </h3>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="termsCheck" required>
+                    <label class="form-check-label" for="termsCheck">
+                        I agree to the <a href="#" class="text-decoration-none">Terms of Service</a> and 
+                        <a href="#" class="text-decoration-none">Vendor Agreement</a>
+                    </label>
+                </div>
+                
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="privacyCheck" required>
+                    <label class="form-check-label" for="privacyCheck">
+                        I acknowledge that I have read and understood the 
+                        <a href="#" class="text-decoration-none">Privacy Policy</a>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="text-center">
+                <a href="{% url 'accounts:signup' %}" class="btn btn-outline-primary me-3">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Customer Registration
+                </a>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane me-2"></i>Create Vendor Account
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-fill contact person with first name + last name
+    const firstNameField = document.querySelector('input[name="first_name"]');
+    const lastNameField = document.querySelector('input[name="last_name"]');
+    const contactPersonField = document.querySelector('input[name="contact_person"]');
+    
+    function updateContactPerson() {
+        if (firstNameField.value || lastNameField.value) {
+            contactPersonField.value = (firstNameField.value + ' ' + lastNameField.value).trim();
+        }
+    }
+    
+    if (firstNameField && lastNameField && contactPersonField) {
+        firstNameField.addEventListener('input', updateContactPerson);
+        lastNameField.addEventListener('input', updateContactPerson);
+    }
+    
+    // Auto-fill email in vendor form with user email
+    const userEmailField = document.querySelector('input[name="email"]');
+    const vendorEmailField = document.querySelector('input[name="email"]');
+    
+    if (userEmailField && vendorEmailField && userEmailField !== vendorEmailField) {
+        userEmailField.addEventListener('input', function() {
+            vendorEmailField.value = this.value;
+        });
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,328 @@
+<!-- accounts/templates/accounts/signup.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - BookStore</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #ff9a8b 0%, #fad0c4 50%, #ffecd2 100%);
+            min-height: 100vh;
+            font-family: 'Arial', sans-serif;
+        }
+        .signup-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .signup-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(255, 154, 139, 0.2);
+            max-width: 600px;
+            width: 100%;
+            padding: 40px;
+            text-align: center;
+        }
+        .brand-logo {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, #ff9a8b, #ff6b6b);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .brand-name {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #ff6b6b;
+        }
+        .welcome-text {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+        .form-group {
+            margin-bottom: 20px;
+            text-align: left;
+        }
+        .form-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 8px;
+        }
+        .form-control, .form-select {
+            border-radius: 12px;
+            border: 2px solid #fad0c4;
+            padding: 12px 18px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.9);
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: #ff9a8b;
+            box-shadow: 0 0 0 0.2rem rgba(255, 154, 139, 0.25);
+            background: white;
+        }
+        .btn-signup {
+            background: linear-gradient(135deg, #ff9a8b 0%, #ff6b6b 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 12px 30px;
+            font-weight: 600;
+            color: white;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        .btn-signup:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+            color: white;
+        }
+        .vendor-link {
+            background: rgba(102, 126, 234, 0.1);
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 25px 0;
+            text-align: center;
+        }
+        .vendor-link h6 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        .vendor-link p {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+        .btn-vendor {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 10px 25px;
+            color: white;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+        .btn-vendor:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+            color: white;
+        }
+        .login-link {
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 154, 139, 0.2);
+            color: #666;
+        }
+        .login-link a {
+            color: #ff6b6b;
+            font-weight: 600;
+            text-decoration: none;
+        }
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+        .alert-danger {
+            background: linear-gradient(135deg, #ff6b6b, #ff8e8e);
+            border: none;
+            color: white;
+            border-radius: 12px;
+        }
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        .password-requirements {
+            background: rgba(255, 154, 139, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+            font-size: 0.9rem;
+            text-align: left;
+        }
+        .password-requirements h6 {
+            color: #ff6b6b;
+            margin-bottom: 10px;
+        }
+        .password-requirements ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .password-requirements li {
+            margin-bottom: 5px;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <div class="signup-container">
+        <div class="signup-card">
+            <i class="fas fa-book brand-logo"></i>
+            <h1 class="brand-name">BookStore</h1>
+            <p class="welcome-text">Create your customer account and start discovering amazing books!</p>
+            
+            <form method="post" novalidate>
+                {% csrf_token %}
+                {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input type="text" 
+                               class="form-control {% if form.username.errors %}is-invalid{% endif %}" 
+                               name="username" 
+                               placeholder="Choose a username"
+                               value="{{ form.username.value|default:'' }}"
+                               required>
+                        {% if form.username.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.username.errors|first }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" 
+                               class="form-control {% if form.email.errors %}is-invalid{% endif %}" 
+                               name="email" 
+                               placeholder="your.email@example.com"
+                               value="{{ form.email.value|default:'' }}"
+                               required>
+                        {% if form.email.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.email.errors|first }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">First Name</label>
+                        <input type="text" 
+                               class="form-control {% if form.first_name.errors %}is-invalid{% endif %}" 
+                               name="first_name" 
+                               placeholder="Your first name"
+                               value="{{ form.first_name.value|default:'' }}">
+                        {% if form.first_name.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.first_name.errors|first }}
+                            </div>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="form-label">Last Name</label>
+                        <input type="text" 
+                               class="form-control {% if form.last_name.errors %}is-invalid{% endif %}" 
+                               name="last_name" 
+                               placeholder="Your last name"
+                               value="{{ form.last_name.value|default:'' }}">
+                        {% if form.last_name.errors %}
+                            <div class="invalid-feedback">
+                                {{ form.last_name.errors|first }}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Phone Number (Optional)</label>
+                    <input type="tel" 
+                           class="form-control {% if form.phone.errors %}is-invalid{% endif %}" 
+                           name="phone" 
+                           placeholder="+91 9876543210"
+                           value="{{ form.phone.value|default:'' }}">
+                    {% if form.phone.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.phone.errors|first }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" 
+                           class="form-control {% if form.password1.errors %}is-invalid{% endif %}" 
+                           name="password1" 
+                           placeholder="Create a strong password"
+                           required>
+                    {% if form.password1.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.password1.errors|first }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Confirm Password</label>
+                    <input type="password" 
+                           class="form-control {% if form.password2.errors %}is-invalid{% endif %}" 
+                           name="password2" 
+                           placeholder="Confirm your password"
+                           required>
+                    {% if form.password2.errors %}
+                        <div class="invalid-feedback">
+                            {{ form.password2.errors|first }}
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="password-requirements">
+                    <h6><i class="fas fa-shield-alt me-2"></i>Password Requirements:</h6>
+                    <ul>
+                        <li>At least 8 characters long</li>
+                        <li>Contains both letters and numbers</li>
+                        <li>Not too similar to your personal information</li>
+                        <li>Not a commonly used password</li>
+                    </ul>
+                </div>
+                
+                <button type="submit" class="btn btn-signup mt-4">
+                    <i class="fas fa-user-plus me-2"></i>Create Account
+                </button>
+            </form>
+            
+            <!-- Vendor Registration Link -->
+            <div class="vendor-link">
+                <h6><i class="fas fa-store me-2"></i>Want to Sell Books?</h6>
+                <p>Join our marketplace as a vendor and start selling your books to customers worldwide.</p>
+                <a href="{% url 'vendors:register' %}" class="btn-vendor">
+                    <i class="fas fa-handshake me-2"></i>Register as Vendor
+                </a>
+            </div>
+            
+            <div class="login-link">
+                Already have an account? 
+                <a href="{% url 'accounts:login' %}">Sign in here</a>
+            </div>
+        </div>
+    </div>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

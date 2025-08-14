@@ -1,0 +1,94 @@
+/* warehouse/static/warehouse/css/warehouse.css */
+/* Custom styles for warehouse system */
+
+.warehouse-sidebar {
+    background-color: #f8f9fa;
+    min-height: calc(100vh - 56px);
+}
+
+.stock-card {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.stock-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+}
+
+.stock-level-indicator {
+    position: relative;
+    height: 20px;
+    background-color: #e9ecef;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+.stock-level-bar {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.5s ease;
+}
+
+.stock-level-critical { background-color: #dc3545; }
+.stock-level-low { background-color: #ffc107; }
+.stock-level-good { background-color: #28a745; }
+
+.movement-badge {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.quick-stats {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.warehouse-metric {
+    text-align: center;
+    padding: 1rem;
+}
+
+.warehouse-metric h3 {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+/* Print styles */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    
+    .card {
+        border: 1px solid #000 !important;
+        box-shadow: none !important;
+    }
+    
+    .table {
+        border-collapse: collapse !important;
+    }
+    
+    .table th,
+    .table td {
+        border: 1px solid #000 !important;
+    }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .warehouse-metric h3 {
+        font-size: 1.5rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .stock-card {
+        margin-bottom: 1rem;
+    }
+}

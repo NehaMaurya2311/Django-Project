@@ -44,6 +44,45 @@ class Stock(models.Model):
             return f"{self.location_section}-{self.location_row}-{self.location_shelf}"
         return "Not Assigned"
 
+    def save(self, *args, **kwargs):
+        # Update the book's status based on stock levels
+        super().save(*args, **kwargs)
+        self.update_book_status()
+    
+    def update_book_status(self):
+        """Update the related book's status based on stock levels"""
+        if self.is_out_of_stock:
+            self.book.status = 'out_of_stock'
+        elif self.needs_reorder:
+            # Book is still available but low stock
+            self.book.status = 'available'
+        else:
+            self.book.status = 'available'
+        
+        self.book.save(update_fields=['status'])
+
+    
+    def update_from_delivery(self, delivery_schedule, confirmed_quantity, staff_user):
+        """Automatically update stock when delivery is confirmed"""
+        # Create stock movement record
+        movement = StockMovement.objects.create(
+            stock=self,
+            movement_type='in',
+            quantity=confirmed_quantity,
+            reference=f"Delivery-{delivery_schedule.id}",
+            reason=f"Vendor delivery from {delivery_schedule.vendor.business_name}",
+            performed_by=staff_user,
+            delivery_schedule=delivery_schedule,
+            stock_offer=delivery_schedule.stock_offer,
+            auto_created_from_delivery=True
+        )
+        
+        # Update stock quantity
+        self.quantity += confirmed_quantity
+        self.save()
+        
+        return movement
+
 class StockMovement(models.Model):
     MOVEMENT_TYPES = (
         ('in', 'Stock In'),
@@ -62,6 +101,14 @@ class StockMovement(models.Model):
     
     performed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+     # Add delivery tracking
+    delivery_schedule = models.ForeignKey('logistics.DeliverySchedule', 
+                                        on_delete=models.SET_NULL, null=True, blank=True)
+    stock_offer = models.ForeignKey('vendors.StockOffer', 
+                                   on_delete=models.SET_NULL, null=True, blank=True)
+    auto_created_from_delivery = models.BooleanField(default=False)
+
     
     class Meta:
         ordering = ['-created_at']
@@ -77,10 +124,12 @@ class StockMovement(models.Model):
             elif self.movement_type in ['out', 'damaged'] and self.quantity < 0:
                 self.stock.quantity += self.quantity  # Subtract (quantity is negative)
             
+            # Save stock and update book status
             self.stock.save()
         
         super().save(*args, **kwargs)
 
+        
 class CategoryStock(models.Model):
     category = models.OneToOneField(Category, on_delete=models.CASCADE, related_name='category_stock')
     total_books = models.PositiveIntegerField(default=0)

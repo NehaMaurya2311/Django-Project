@@ -1,0 +1,306 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Pickup List - Logistics Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">All Pickups</h1>
+    <p class="page-subtitle">Manage and track vendor pickup requests</p>
+</div>
+
+<!-- Filter Bar -->
+<div class="filter-bar">
+    <div style="flex: 1;">
+        <label for="statusFilter" class="form-label">Filter by Status:</label>
+        <select id="statusFilter" class="form-control" style="width: auto;" onchange="filterPickups()">
+            <option value="">All Statuses</option>
+            <option value="scheduled" {% if request.GET.status == 'scheduled' %}selected{% endif %}>📅 Scheduled</option>
+            <option value="assigned" {% if request.GET.status == 'assigned' %}selected{% endif %}>👤 Assigned</option>
+            <option value="in_transit" {% if request.GET.status == 'in_transit' %}selected{% endif %}>🚚 In Transit</option>
+            <option value="delivered" {% if request.GET.status == 'delivered' %}selected{% endif %}>✅ Delivered</option>
+            <option value="failed" {% if request.GET.status == 'failed' %}selected{% endif %}>❌ Failed</option>
+            <option value="cancelled" {% if request.GET.status == 'cancelled' %}selected{% endif %}>🚫 Cancelled</option>
+        </select>
+    </div>
+    
+    <div>
+        <button class="btn btn-primary" onclick="window.location.reload()">
+            🔄 Refresh
+        </button>
+    </div>
+</div>
+
+<!-- Pickup Count Summary -->
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <h3 style="color: var(--secondary-burgundy); margin: 0;">
+            Pickup Records
+            {% if request.GET.status %}
+                - {{ request.GET.status|title }} Status
+            {% endif %}
+        </h3>
+        <div style="font-size: 1.1rem; color: var(--neutral-medium-gray);">
+            Total: <strong style="color: var(--primary-coral);">{{ pickups.paginator.count }}</strong> pickups
+        </div>
+    </div>
+</div>
+
+<!-- Pickups Table -->
+<div class="card">
+    {% if pickups %}
+        <div style="overflow-x: auto;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Pickup ID</th>
+                        <th>Vendor Details</th>
+                        <th>Book Information</th>
+                        <th>Status</th>
+                        <th>Logistics Partner</th>
+                        <th>Schedule</th>
+                        <th>Transport Cost</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pickup in pickups %}
+                    <tr>
+                        <td>
+                            <strong style="color: var(--primary-coral);">#{{ pickup.id }}</strong>
+                            <div style="font-size: 0.8rem; color: var(--neutral-medium-gray);">
+                                {{ pickup.created_at|date:"M d, Y" }}
+                            </div>
+                        </td>
+                        
+                        <td>
+                            <div style="font-weight: 600; color: var(--secondary-burgundy);">
+                                {{ pickup.vendor.business_name }}
+                            </div>
+                            <div style="font-size: 0.875rem; color: var(--neutral-medium-gray);">
+                                📞 {{ pickup.vendor.phone|default:"N/A" }}
+                            </div>
+                        </td>
+                        
+                        <td>
+                            <div style="font-weight: 500; color: var(--neutral-dark-gray);">
+                                {{ pickup.stock_offer.book.title|truncatechars:25 }}
+                            </div>
+                            <div style="font-size: 0.875rem; color: var(--neutral-medium-gray);">
+                                📚 {{ pickup.stock_offer.book.author|truncatechars:20 }}
+                            </div>
+                            <div style="font-size: 0.8rem; color: var(--primary-orange);">
+                                Qty: {{ pickup.stock_offer.quantity }}
+                            </div>
+                        </td>
+                        
+                        <td>
+                            <span class="status-badge status-{{ pickup.status }}">
+                                {% if pickup.status == 'scheduled' %}📅{% endif %}
+                                {% if pickup.status == 'assigned' %}👤{% endif %}
+                                {% if pickup.status == 'in_transit' %}🚚{% endif %}
+                                {% if pickup.status == 'delivered' %}✅{% endif %}
+                                {% if pickup.status == 'failed' %}❌{% endif %}
+                                {% if pickup.status == 'cancelled' %}🚫{% endif %}
+                                {{ pickup.get_status_display }}
+                            </span>
+                        </td>
+                        
+                        <td>
+                            {% if pickup.logistics_partner %}
+                                <div style="font-weight: 500; color: var(--secondary-burgundy);">
+                                    {{ pickup.logistics_partner.name }}
+                                </div>
+                                <div style="font-size: 0.875rem; color: var(--neutral-medium-gray);">
+                                    🚐 {{ pickup.logistics_partner.vehicle_type|title }} - {{ pickup.logistics_partner.vehicle_number }}
+                                </div>
+                                {% if pickup.logistics_partner.rating %}
+                                <div style="font-size: 0.8rem; color: var(--warning);">
+                                    ⭐ {{ pickup.logistics_partner.rating }}/5.0
+                                </div>
+                                {% endif %}
+                            {% else %}
+                                <span style="color: var(--neutral-medium-gray); font-style: italic;">
+                                    🔍 Not Assigned
+                                </span>
+                            {% endif %}
+                        </td>
+                        
+                        <td>
+                            <div style="font-weight: 500; color: var(--secondary-burgundy);">
+                                📅 {{ pickup.scheduled_date|date:"M d, Y" }}
+                            </div>
+                            <div style="font-size: 0.875rem; color: var(--neutral-medium-gray);">
+                                🕐 {{ pickup.scheduled_date|time:"H:i" }}
+                            </div>
+                            {% if pickup.pickup_date %}
+                                <div style="font-size: 0.8rem; color: var(--success);">
+                                    ✅ Picked: {{ pickup.pickup_date|date:"M d, H:i" }}
+                                </div>
+                            {% endif %}
+                        </td>
+                        
+                        <td>
+                            {% if pickup.transport_cost %}
+                                <div style="font-weight: 600; color: var(--primary-coral);">
+                                    ₹{{ pickup.transport_cost }}
+                                </div>
+                                {% if pickup.estimated_distance %}
+                                    <div style="font-size: 0.8rem; color: var(--neutral-medium-gray);">
+                                        📏 {{ pickup.estimated_distance }} km
+                                    </div>
+                                {% endif %}
+                            {% else %}
+                                <span style="color: var(--neutral-medium-gray);">
+                                    💰 TBD
+                                </span>
+                            {% endif %}
+                        </td>
+                        
+                        <td>
+                            <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                                <a href="{% url 'logistics:pickup_detail' pickup.id %}" 
+                                   class="btn btn-primary" 
+                                   style="padding: 0.5rem 1rem; font-size: 0.875rem; text-align: center;">
+                                    👁️ View
+                                </a>
+                                
+                                {% if pickup.status == 'scheduled' %}
+                                    <a href="/admin/logistics/vendorpickup/{{ pickup.id }}/change/" 
+                                       class="btn btn-warning" 
+                                       style="padding: 0.5rem 1rem; font-size: 0.875rem; text-align: center;">
+                                        ✏️ Edit
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if pickups.has_other_pages %}
+            <div class="pagination">
+                {% if pickups.has_previous %}
+                    <a href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">&laquo; First</a>
+                    <a href="?page={{ pickups.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">&lsaquo; Previous</a>
+                {% endif %}
+                
+                <span style="margin: 0 1rem; color: var(--neutral-medium-gray);">
+                    Page {{ pickups.number }} of {{ pickups.paginator.num_pages }}
+                </span>
+                
+                {% if pickups.has_next %}
+                    <a href="?page={{ pickups.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">Next &rsaquo;</a>
+                    <a href="?page={{ pickups.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">Last &raquo;</a>
+                {% endif %}
+            </div>
+        {% endif %}
+        
+    {% else %}
+        <!-- Empty State -->
+        <div style="text-align: center; padding: 4rem; color: var(--neutral-medium-gray);">
+            <div style="font-size: 4rem; margin-bottom: 1rem;">📦</div>
+            <h3>No Pickups Found</h3>
+            {% if request.GET.status %}
+                <p>No pickups found with "{{ request.GET.status }}" status.</p>
+                <button onclick="clearFilters()" class="btn btn-secondary" style="margin-top: 1rem;">
+                    Clear Filters
+                </button>
+            {% else %}
+                <p>No pickup requests have been created yet.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    function filterPickups() {
+        const status = document.getElementById('statusFilter').value;
+        const url = new URL(window.location);
+        
+        if (status) {
+            url.searchParams.set('status', status);
+        } else {
+            url.searchParams.delete('status');
+        }
+        
+        url.searchParams.delete('page'); // Reset to first page when filtering
+        window.location = url;
+    }
+    
+    function clearFilters() {
+        window.location = '{% url "logistics:pickup_list" %}';
+    }
+    
+    // Auto-refresh every 30 seconds for real-time updates
+    let autoRefresh = setInterval(() => {
+        const refreshButton = document.querySelector('button[onclick="window.location.reload()"]');
+        if (refreshButton && document.visibilityState === 'visible') {
+            refreshButton.style.backgroundColor = 'var(--primary-orange)';
+            setTimeout(() => {
+                refreshButton.style.backgroundColor = '';
+                window.location.reload();
+            }, 500);
+        }
+    }, 30000);
+    
+    // Pause auto-refresh when page is not visible
+    document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'hidden') {
+            clearInterval(autoRefresh);
+        } else {
+            autoRefresh = setInterval(() => {
+                const refreshButton = document.querySelector('button[onclick="window.location.reload()"]');
+                if (refreshButton) {
+                    refreshButton.style.backgroundColor = 'var(--primary-orange)';
+                    setTimeout(() => {
+                        refreshButton.style.backgroundColor = '';
+                        window.location.reload();
+                    }, 500);
+                }
+            }, 30000);
+        }
+    });
+</script>
+
+<style>
+    /* Pickup list specific styles */
+    .table tbody tr {
+        transition: all 0.3s ease;
+    }
+    
+    .table tbody tr:hover {
+        background: var(--primary-cream);
+        transform: translateY(-1px);
+        box-shadow: var(--shadow-sm);
+    }
+    
+    .status-badge {
+        animation: pulse 2s infinite;
+    }
+    
+    @keyframes pulse {
+        0%, 100% { opacity: 1; }
+        50% { opacity: 0.8; }
+    }
+    
+    .status-in_transit,
+    .status-scheduled {
+        animation: pulse 3s infinite;
+    }
+    
+    @media (max-width: 768px) {
+        .table th,
+        .table td {
+            padding: 0.5rem 0.25rem;
+            font-size: 0.8rem;
+        }
+        
+        .filter-bar {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}

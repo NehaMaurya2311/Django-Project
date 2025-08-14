@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Logistics Management{% endblock %}</title>
+    <style>
+        :root {
+            /* Primary Colors - Coral/Orange theme */
+            --primary-coral: #FF6B6B;
+            --primary-orange: #FF8E53;
+            --primary-peach: #FFB08A;
+            --primary-light-peach: #FFD3B6;
+            --primary-cream: #FFF0E6;
+            
+            /* Secondary Colors - Burgundy/Wine */
+            --secondary-burgundy: #8B3A3A;
+            --secondary-wine: #A0522D;
+            --secondary-brown: #CD853F;
+            
+            /* Neutral Colors */
+            --neutral-white: #FFFFFF;
+            --neutral-light-gray: #F8F9FA;
+            --neutral-gray: #E9ECEF;
+            --neutral-medium-gray: #6C757D;
+            --neutral-dark-gray: #495057;
+            --neutral-black: #212529;
+            
+            /* Status Colors */
+            --success: #28A745;
+            --warning: #FFC107;
+            --danger: #DC3545;
+            --info: #17A2B8;
+            
+            /* Gradient */
+            --gradient-primary: linear-gradient(135deg, var(--primary-coral) 0%, var(--primary-orange) 100%);
+            --gradient-light: linear-gradient(135deg, var(--primary-peach) 0%, var(--primary-light-peach) 100%);
+            
+            /* Shadows */
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            --shadow-md: 0 3px 6px rgba(0,0,0,0.16), 0 3px 6px rgba(0,0,0,0.23);
+            --shadow-lg: 0 10px 20px rgba(0,0,0,0.19), 0 6px 6px rgba(0,0,0,0.23);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--neutral-light-gray);
+            color: var(--neutral-dark-gray);
+            line-height: 1.6;
+        }
+
+        .navbar {
+            background: var(--gradient-primary);
+            padding: 1rem 0;
+            box-shadow: var(--shadow-md);
+        }
+
+        .navbar-content {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .navbar-brand {
+            color: var(--neutral-white);
+            text-decoration: none;
+            font-size: 1.5rem;
+            font-weight: bold;
+        }
+
+        .navbar-nav {
+            display: flex;
+            list-style: none;
+            gap: 2rem;
+        }
+
+        .navbar-nav a {
+            color: var(--neutral-white);
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: background-color 0.3s ease;
+        }
+
+        .navbar-nav a:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .main-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .page-header {
+            background: var(--neutral-white);
+            padding: 2rem;
+            border-radius: 10px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--primary-coral);
+        }
+
+        .page-title {
+            color: var(--secondary-burgundy);
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            color: var(--neutral-medium-gray);
+            font-size: 1.1rem;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: var(--gradient-primary);
+            color: var(--neutral-white);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--neutral-gray);
+            color: var(--neutral-dark-gray);
+        }
+
+        .btn-secondary:hover {
+            background: var(--neutral-medium-gray);
+            color: var(--neutral-white);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: var(--neutral-white);
+        }
+
+        .btn-warning {
+            background: var(--warning);
+            color: var(--neutral-dark-gray);
+        }
+
+        .btn-danger {
+            background: var(--danger);
+            color: var(--neutral-white);
+        }
+
+        .card {
+            background: var(--neutral-white);
+            border-radius: 10px;
+            padding: 2rem;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--primary-peach);
+        }
+
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 15px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-scheduled {
+            background: var(--primary-light-peach);
+            color: var(--secondary-burgundy);
+        }
+
+        .status-assigned {
+            background: #E3F2FD;
+            color: var(--info);
+        }
+
+        .status-in_transit {
+            background: #FFF3E0;
+            color: var(--warning);
+        }
+
+        .status-delivered {
+            background: #E8F5E8;
+            color: var(--success);
+        }
+
+        .status-failed {
+            background: #FFEBEE;
+            color: var(--danger);
+        }
+
+        .status-cancelled {
+            background: var(--neutral-gray);
+            color: var(--neutral-medium-gray);
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            background: var(--neutral-white);
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .table th {
+            background: var(--gradient-light);
+            color: var(--secondary-burgundy);
+            padding: 1rem;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .table td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--neutral-gray);
+        }
+
+        .table tr:hover {
+            background: var(--primary-cream);
+        }
+
+        .filter-bar {
+            background: var(--neutral-white);
+            padding: 1.5rem;
+            border-radius: 10px;
+            box-shadow: var(--shadow-sm);
+            margin-bottom: 2rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--neutral-dark-gray);
+            font-weight: 500;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--neutral-gray);
+            border-radius: 5px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-coral);
+            box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.1);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--neutral-white);
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            box-shadow: var(--shadow-sm);
+            transition: transform 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: var(--neutral-medium-gray);
+            font-size: 1.1rem;
+        }
+
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+            margin: 2rem 0;
+        }
+
+        .pagination a {
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            border: 1px solid var(--neutral-gray);
+            border-radius: 5px;
+            color: var(--neutral-dark-gray);
+            transition: all 0.3s ease;
+        }
+
+        .pagination a:hover {
+            background: var(--primary-peach);
+            color: var(--secondary-burgundy);
+            border-color: var(--primary-peach);
+        }
+
+        .pagination .current {
+            background: var(--gradient-primary);
+            color: var(--neutral-white);
+            border-color: var(--primary-coral);
+        }
+
+        @media (max-width: 768px) {
+            .navbar-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .navbar-nav {
+                flex-direction: column;
+                width: 100%;
+                text-align: center;
+            }
+
+            .main-container {
+                padding: 0 1rem;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .filter-bar {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .table {
+                font-size: 0.875rem;
+            }
+
+            .table th,
+            .table td {
+                padding: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-content">
+            <a href="{% url 'logistics:dashboard' %}" class="navbar-brand">
+                📦 Logistics Hub
+            </a>
+            <ul class="navbar-nav">
+                <li><a href="{% url 'logistics:dashboard' %}">Dashboard</a></li>
+                <li><a href="{% url 'logistics:pickup_list' %}">Pickups</a></li>
+                <li><a href="/admin/">Admin</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="main-container">
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <script>
+        // Add any common JavaScript functionality here
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add smooth scrolling
+            document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+                anchor.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    document.querySelector(this.getAttribute('href')).scrollIntoView({
+                        behavior: 'smooth'
+                    });
+                });
+            });
+        });
+    </script>
+</body>
+</html>

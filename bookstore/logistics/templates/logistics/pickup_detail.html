@@ -1,0 +1,388 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Pickup #{{ pickup.id }} - Logistics Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <h1 class="page-title">Pickup Details #{{ pickup.id }}</h1>
+            <p class="page-subtitle">Complete pickup information and tracking</p>
+        </div>
+        <div style="display: flex; gap: 1rem;">
+            <a href="{% url 'logistics:pickup_list' %}" class="btn btn-secondary">
+                ← Back to List
+            </a>
+            <a href="/admin/logistics/vendorpickup/{{ pickup.id }}/change/" class="btn btn-primary">
+                ✏️ Edit Pickup
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Status Overview -->
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 2rem;">
+        <div>
+            <h3 style="color: var(--secondary-burgundy); margin-bottom: 0.5rem;">Current Status</h3>
+            <span class="status-badge status-{{ pickup.status }}" style="font-size: 1.1rem; padding: 0.75rem 1.5rem;">
+                {% if pickup.status == 'scheduled' %}📅{% endif %}
+                {% if pickup.status == 'assigned' %}👤{% endif %}
+                {% if pickup.status == 'in_transit' %}🚚{% endif %}
+                {% if pickup.status == 'delivered' %}✅{% endif %}
+                {% if pickup.status == 'failed' %}❌{% endif %}
+                {% if pickup.status == 'cancelled' %}🚫{% endif %}
+                {{ pickup.get_status_display }}
+            </span>
+        </div>
+        
+        <div style="text-align: right;">
+            <div style="color: var(--neutral-medium-gray); margin-bottom: 0.5rem;">Created</div>
+            <div style="font-weight: 600; color: var(--secondary-burgundy);">
+                {{ pickup.created_at|date:"M d, Y H:i" }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Main Information Grid -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+    
+    <!-- Vendor Information -->
+    <div class="card">
+        <h3 style="color: var(--secondary-burgundy); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            🏪 Vendor Information
+        </h3>
+        
+        <div style="display: grid; gap: 1rem;">
+            <div>
+                <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Business Name</label>
+                <div style="font-weight: 600; color: var(--secondary-burgundy); font-size: 1.1rem;">
+                    {{ pickup.vendor.business_name }}
+                </div>
+            </div>
+            
+            <div>
+                <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Contact Person</label>
+                <div style="color: var(--neutral-dark-gray);">{{ pickup.vendor.owner_name|default:"N/A" }}</div>
+            </div>
+            
+            <div>
+                <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Phone</label>
+                <div style="color: var(--primary-coral); font-weight: 500;">
+                    📞 {{ pickup.vendor.phone|default:"N/A" }}
+                </div>
+            </div>
+            
+            <div>
+                <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Email</label>
+                <div style="color: var(--neutral-dark-gray);">{{ pickup.vendor.email|default:"N/A" }}</div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Book Information -->
+    <div class="card">
+        <h3 style="color: var(--secondary-burgundy); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            📚 Book Information
+        </h3>
+        
+        <div style="display: grid; gap: 1rem;">
+            <div>
+                <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Title</label>
+                <div style="font-weight: 600; color: var(--secondary-burgundy); font-size: 1.1rem;">
+                    {{ pickup.stock_offer.book.title }}
+                </div>
+            </div>
+            
+            <div>
+                <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Author</label>
+                <div style="color: var(--neutral-dark-gray);">{{ pickup.stock_offer.book.author }}</div>
+            </div>
+            
+            <div>
+                <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">ISBN</label>
+                <div style="color: var(--neutral-dark-gray); font-family: monospace;">
+                    {{ pickup.stock_offer.book.isbn|default:"N/A" }}
+                </div>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Quantity</label>
+                    <div style="font-weight: 600; color: var(--primary-coral);">
+                        {{ pickup.stock_offer.quantity }} books
+                    </div>
+                </div>
+                <div>
+                    <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Condition</label>
+                    <div style="color: var(--success); font-weight: 500;">
+                        {{ pickup.stock_offer.condition|title }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+
+<!-- Logistics Information -->
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 2rem; margin-bottom: 2rem;">
+    
+    <!-- Logistics Partner -->
+    <div class="card">
+        <h3 style="color: var(--secondary-burgundy); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            🚚 Logistics Partner
+        </h3>
+        
+        {% if pickup.logistics_partner %}
+            <div style="display: grid; gap: 1rem;">
+                <div>
+                    <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Partner Name</label>
+                    <div style="font-weight: 600; color: var(--secondary-burgundy); font-size: 1.1rem;">
+                        {{ pickup.logistics_partner.name }}
+                    </div>
+                </div>
+                
+                <div>
+                    <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Contact Person</label>
+                    <div style="color: var(--neutral-dark-gray);">{{ pickup.logistics_partner.contact_person }}</div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Phone</label>
+                        <div style="color: var(--primary-coral); font-weight: 500;">
+                            📞 {{ pickup.logistics_partner.phone }}
+                        </div>
+                    </div>
+                    <div>
+                        <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Rating</label>
+                        <div style="color: var(--warning); font-weight: 500;">
+                            ⭐ {{ pickup.logistics_partner.rating }}/5.0
+                        </div>
+                    </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                    <div>
+                        <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Vehicle Type</label>
+                        <div style="color: var(--neutral-dark-gray); font-weight: 500;">
+                            🚐 {{ pickup.logistics_partner.vehicle_type|title }}
+                        </div>
+                    </div>
+                    <div>
+                        <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Vehicle Number</label>
+                        <div style="color: var(--neutral-dark-gray); font-weight: 600; font-family: monospace;">
+                            {{ pickup.logistics_partner.vehicle_number }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% else %}
+            <div style="text-align: center; padding: 2rem; color: var(--neutral-medium-gray);">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+                <h4>No Partner Assigned</h4>
+                <p>A logistics partner will be assigned soon.</p>
+            </div>
+        {% endif %}
+    </div>
+    
+    <!-- Schedule & Dates -->
+    <div class="card">
+        <h3 style="color: var(--secondary-burgundy); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+            📅 Schedule & Timeline
+        </h3>
+        
+        <div style="display: grid; gap: 1rem;">
+            <div>
+                <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Scheduled Date</label>
+                <div style="font-weight: 600; color: var(--primary-coral); font-size: 1.1rem;">
+                    📅 {{ pickup.scheduled_date|date:"M d, Y H:i" }}
+                </div>
+            </div>
+            
+            {% if pickup.pickup_date %}
+                <div>
+                    <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Actual Pickup Date</label>
+                    <div style="font-weight: 600; color: var(--success);">
+                        ✅ {{ pickup.pickup_date|date:"M d, Y H:i" }}
+                    </div>
+                </div>
+            {% endif %}
+            
+            {% if pickup.delivery_date %}
+                <div>
+                    <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Delivery Date</label>
+                    <div style="font-weight: 600; color: var(--success);">
+                        🏪 {{ pickup.delivery_date|date:"M d, Y H:i" }}
+                    </div>
+                </div>
+            {% endif %}
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <div>
+                    <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Est. Distance</label>
+                    <div style="color: var(--neutral-dark-gray); font-weight: 500;">
+                        📏 {{ pickup.estimated_distance }} km
+                    </div>
+                </div>
+                {% if pickup.actual_distance %}
+                    <div>
+                        <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Actual Distance</label>
+                        <div style="color: var(--success); font-weight: 500;">
+                            📏 {{ pickup.actual_distance }} km
+                        </div>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div>
+                <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.25rem;">Transport Cost</label>
+                <div style="font-weight: 600; color: var(--primary-coral); font-size: 1.2rem;">
+                    💰 ₹{{ pickup.transport_cost|default:"TBD" }}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+</div>
+
+<!-- Address Information -->
+<div class="card">
+    <h3 style="color: var(--secondary-burgundy); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+        📍 Address Information
+    </h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem;">
+        <div>
+            <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.5rem;">Pickup Address</label>
+            <div style="background: var(--primary-cream); padding: 1rem; border-radius: 8px; border-left: 4px solid var(--primary-coral);">
+                {{ pickup.pickup_address }}
+            </div>
+        </div>
+        
+        <div>
+            <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.5rem;">Warehouse Address</label>
+            <div style="background: var(--primary-cream); padding: 1rem; border-radius: 8px; border-left: 4px solid var(--success);">
+                {{ pickup.warehouse_address }}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notes Section -->
+{% if pickup.pickup_notes or pickup.delivery_notes %}
+<div class="card">
+    <h3 style="color: var(--secondary-burgundy); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+        📝 Notes
+    </h3>
+    
+    <div style="display: grid; gap: 1.5rem;">
+        {% if pickup.pickup_notes %}
+            <div>
+                <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.5rem;">Pickup Notes</label>
+                <div style="background: var(--neutral-light-gray); padding: 1rem; border-radius: 8px; border-left: 4px solid var(--warning);">
+                    {{ pickup.pickup_notes }}
+                </div>
+            </div>
+        {% endif %}
+        
+        {% if pickup.delivery_notes %}
+            <div>
+                <label style="color: var(--neutral-medium-gray); font-size: 0.9rem; display: block; margin-bottom: 0.5rem;">Delivery Notes</label>
+                <div style="background: var(--neutral-light-gray); padding: 1rem; border-radius: 8px; border-left: 4px solid var(--success);">
+                    {{ pickup.delivery_notes }}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Tracking Updates -->
+<div class="card">
+    <h3 style="color: var(--secondary-burgundy); margin-bottom: 1.5rem; display: flex; align-items: center; gap: 0.5rem;">
+        📍 Tracking Updates
+    </h3>
+    
+    {% if pickup.tracking_updates.all %}
+        <div style="position: relative;">
+            <!-- Timeline line -->
+            <div style="position: absolute; left: 20px; top: 0; bottom: 0; width: 2px; background: var(--primary-light-peach);"></div>
+            
+            {% for tracking in pickup.tracking_updates.all %}
+                <div style="position: relative; padding-left: 50px; margin-bottom: 2rem;">
+                    <!-- Timeline dot -->
+                    <div style="position: absolute; left: 12px; top: 5px; width: 16px; height: 16px; background: var(--primary-coral); border-radius: 50%; border: 3px solid var(--neutral-white);"></div>
+                    
+                    <div style="background: var(--primary-cream); padding: 1.5rem; border-radius: 8px;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+                            <span class="status-badge status-{{ tracking.status }}">
+                                {{ tracking.get_status_display }}
+                            </span>
+                            <div style="color: var(--neutral-medium-gray); font-size: 0.9rem;">
+                                {{ tracking.timestamp|date:"M d, Y H:i" }}
+                            </div>
+                        </div>
+                        
+                        {% if tracking.location %}
+                            <div style="color: var(--primary-coral); font-weight: 500; margin-bottom: 0.5rem;">
+                                📍 {{ tracking.location }}
+                            </div>
+                        {% endif %}
+                        
+                        <div style="color: var(--neutral-dark-gray);">
+                            {{ tracking.description }}
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 3rem; color: var(--neutral-medium-gray);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">🔍</div>
+            <h4>No Tracking Updates</h4>
+            <p>Tracking updates will appear here as the pickup progresses.</p>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+    /* Detail page specific styles */
+    .card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+        box-shadow: var(--shadow-md);
+    }
+    
+    /* Responsive grid adjustments */
+    @media (max-width: 768px) {
+        .page-header > div {
+            flex-direction: column;
+            align-items: stretch;
+        }
+        
+        .page-header > div > div {
+            justify-content: center;
+        }
+    }
+    
+    /* Print styles */
+    @media print {
+        .page-header > div > div:last-child,
+        .navbar {
+            display: none;
+        }
+        
+        .card {
+            box-shadow: none;
+            border: 1px solid var(--neutral-gray);
+            break-inside: avoid;
+        }
+    }
+</style>
+{% endblock %}

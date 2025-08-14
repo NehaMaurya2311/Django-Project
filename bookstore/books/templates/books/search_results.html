@@ -20,14 +20,29 @@
                         <i class="fas fa-search"></i>
                     </button>
                 </div>
+                {% if source %}
+                    <input type="hidden" name="source" value="{{ source }}">
+                {% endif %}
             </form>
         </div>
     </div>
     
     {% if query %}
         <div class="d-flex justify-content-between align-items-center mb-4">
-            <h2>Search Results for "{{ query }}"</h2>
-            <span class="badge bg-primary">{{ total_results }} result{{ total_results|pluralize }}</span>
+            <div>
+                <h2>Search Results for "{{ query }}"</h2>
+                {% if source == 'google_books' %}
+                    <small class="text-muted">Showing results from your library</small>
+                {% endif %}
+            </div>
+            <div>
+                <span class="badge bg-primary me-2">{{ total_results }} result{{ total_results|pluralize }}</span>
+                {% if source != 'google_books' %}
+                    <a href="{% url 'books:search_google_books' %}?q={{ query }}" class="btn btn-outline-success btn-sm">
+                        <i class="fas fa-plus me-1"></i>Add from Google Books
+                    </a>
+                {% endif %}
+            </div>
         </div>
         
         {% if books %}
@@ -36,8 +51,9 @@
                 <div class="col-md-6 col-lg-4 mb-4">
                     <div class="card h-100 book-card">
                         <a href="{% url 'books:book_detail' book.slug %}">
-                            {% if book.cover_image %}
-                                <img src="{{ book.cover_image.url }}" class="card-img-top" style="height: 250px; object-fit: cover;" alt="{{ book.title }}">
+                            {% if book.get_cover_image_url %}
+                                <img src="{{ book.get_cover_image_url }}" class="card-img-top" style="height: 250px; object-fit: cover;" alt="{{ book.title }}"
+                                     onerror="this.onerror=null; this.src='{% static 'images/no-cover.jpg' %}'; this.alt='No cover available';">
                             {% else %}
                                 <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 250px;">
                                     <i class="fas fa-book fa-3x text-muted"></i>
@@ -63,6 +79,19 @@
                                 <i class="fas fa-tag me-1"></i>{{ book.category.name }}
                             </p>
                             
+                            <!-- Additional metadata for Google Books -->
+                            {% if book.google_books_id %}
+                                <div class="small text-muted mb-2">
+                                    <i class="fab fa-google me-1"></i>From Google Books
+                                    {% if book.isbn13 %}
+                                        <br><i class="fas fa-barcode me-1"></i>{{ book.isbn13 }}
+                                    {% endif %}
+                                    {% if book.pages %}
+                                        <br><i class="fas fa-file-alt me-1"></i>{{ book.pages }} pages
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                            
                             <div class="mb-2">
                                 {% for i in "12345" %}
                                     {% if book.average_rating >= forloop.counter %}
@@ -87,9 +116,14 @@
                                     {% endif %}
                                 </div>
                                 
-                                <button class="btn btn-primary btn-sm w-100" onclick="addToCart({{ book.id }})">
-                                    <i class="fas fa-shopping-cart me-1"></i>Add to Cart
-                                </button>
+                                <div class="d-grid gap-2">
+                                    <button class="btn btn-primary btn-sm" onclick="addToCart({{ book.id }})">
+                                        <i class="fas fa-shopping-cart me-1"></i>Add to Cart
+                                    </button>
+                                    <a href="{% url 'books:book_detail' book.slug %}" class="btn btn-outline-secondary btn-sm">
+                                        <i class="fas fa-eye me-1"></i>View Details
+                                    </a>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -103,7 +137,7 @@
                     <ul class="pagination justify-content-center">
                         {% if books.has_previous %}
                             <li class="page-item">
-                                <a class="page-link" href="?q={{ query }}&page={{ books.previous_page_number }}">
+                                <a class="page-link" href="?q={{ query }}&page={{ books.previous_page_number }}{% if source %}&source={{ source }}{% endif %}">
                                     <i class="fas fa-chevron-left"></i>
                                 </a>
                             </li>
@@ -116,14 +150,14 @@
                                 </li>
                             {% elif num > books.number|add:'-3' and num < books.number|add:'3' %}
                                 <li class="page-item">
-                                    <a class="page-link" href="?q={{ query }}&page={{ num }}">{{ num }}</a>
+                                    <a class="page-link" href="?q={{ query }}&page={{ num }}{% if source %}&source={{ source }}{% endif %}">{{ num }}</a>
                                 </li>
                             {% endif %}
                         {% endfor %}
                         
                         {% if books.has_next %}
                             <li class="page-item">
-                                <a class="page-link" href="?q={{ query }}&page={{ books.next_page_number }}">
+                                <a class="page-link" href="?q={{ query }}&page={{ books.next_page_number }}{% if source %}&source={{ source }}{% endif %}">
                                     <i class="fas fa-chevron-right"></i>
                                 </a>
                             </li>
@@ -136,9 +170,14 @@
                 <i class="fas fa-search fa-4x text-muted mb-3"></i>
                 <h4>No books found for "{{ query }}"</h4>
                 <p class="text-muted">Try different keywords or check your spelling.</p>
-                <a href="{% url 'books:all_books' %}" class="btn btn-primary">
-                    <i class="fas fa-book me-2"></i>Browse All Books
-                </a>
+                <div class="d-flex gap-2 justify-content-center">
+                    <a href="{% url 'books:all_books' %}" class="btn btn-primary">
+                        <i class="fas fa-book me-2"></i>Browse All Books
+                    </a>
+                    <a href="{% url 'books:search_google_books' %}?q={{ query }}" class="btn btn-success">
+                        <i class="fas fa-plus me-2"></i>Add from Google Books
+                    </a>
+                </div>
             </div>
         {% endif %}
     {% else %}
@@ -146,6 +185,34 @@
             <i class="fas fa-search fa-4x text-muted mb-3"></i>
             <h3>Search Our Book Collection</h3>
             <p class="text-muted">Enter keywords, author names, or ISBN to find books</p>
+            
+            <div class="row mt-4">
+                <div class="col-md-8 mx-auto">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fas fa-search fa-2x text-primary mb-3"></i>
+                                    <h5>Search Our Library</h5>
+                                    <p class="text-muted">Find books already in our collection</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <div class="card h-100">
+                                <div class="card-body text-center">
+                                    <i class="fab fa-google fa-2x text-success mb-3"></i>
+                                    <h5>Add New Books</h5>
+                                    <p class="text-muted">Add books from Google's collection</p>
+                                    <a href="{% url 'books:search_google_books' %}" class="btn btn-success btn-sm">
+                                        <i class="fas fa-plus me-1"></i>Search Google Books
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     {% endif %}
 </div>
@@ -194,8 +261,12 @@ function addToCart(bookId) {
 }
 
 function showAlert(message, type) {
+    // Remove existing alerts
+    $('.alert').remove();
+    
     const alertHtml = `
         <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2"></i>
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>

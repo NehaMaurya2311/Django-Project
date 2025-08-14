@@ -42,3 +42,6 @@ class CustomUser(AbstractUser):
     def create_superuser(cls, username, email, password, **extra_fields):
         extra_fields['user_type'] = 'admin'
         return super().create_superuser(username, email, password, **extra_fields)
+
+
+

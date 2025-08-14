@@ -20,7 +20,7 @@
         <div class="col-md-4">
             <div class="sticky-top" style="top: 20px;">
                 {% if book.cover_image %}
-                    <img src="{{ book.cover_image.url }}" class="img-fluid rounded shadow" alt="{{ book.title }}">
+                    <img src="{{ book.get_cover_image_url }}" class="img-fluid rounded shadow" alt="{{ book.title }}">
                 {% else %}
                     <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 400px;">
                         <i class="fas fa-book fa-4x text-muted"></i>

@@ -115,3 +115,73 @@ class VendorLocation(models.Model):
     
     def __str__(self):
         return f"{self.vendor.business_name} - {self.name}"
+
+
+# logistics/models.py - Enhanced tracking
+
+class DeliverySchedule(models.Model):
+    DELIVERY_STATUS = (
+        ('scheduled', 'Scheduled by Vendor'),
+        ('confirmed', 'Confirmed by Logistics'),
+        ('pickup_assigned', 'Pickup Partner Assigned'),
+        ('collected', 'Collected from Vendor'),
+        ('in_transit', 'In Transit to Warehouse'),
+        ('arrived', 'Arrived at Warehouse'),
+        ('verified', 'Stock Verified by Staff'),
+        ('completed', 'Stock Added to Inventory'),
+    )
+    
+    stock_offer = models.OneToOneField(StockOffer, on_delete=models.CASCADE)
+    vendor = models.ForeignKey(VendorProfile, on_delete=models.CASCADE)
+    
+    # Vendor provided details
+    scheduled_delivery_date = models.DateTimeField()
+    vendor_location = models.ForeignKey(VendorLocation, on_delete=models.CASCADE)
+    contact_person = models.CharField(max_length=100)
+    contact_phone = models.CharField(max_length=15)
+    special_instructions = models.TextField(blank=True)
+    
+    # Logistics details
+    assigned_partner = models.ForeignKey(LogisticsPartner, on_delete=models.SET_NULL, null=True)
+    estimated_pickup_time = models.DateTimeField(null=True, blank=True)
+    actual_pickup_time = models.DateTimeField(null=True, blank=True)
+    estimated_delivery_time = models.DateTimeField(null=True, blank=True)
+    actual_delivery_time = models.DateTimeField(null=True, blank=True)
+    
+    # Stock verification
+    delivered_quantity = models.PositiveIntegerField(null=True, blank=True)
+    verified_quantity = models.PositiveIntegerField(null=True, blank=True)
+    quality_notes = models.TextField(blank=True)
+    
+    status = models.CharField(max_length=20, choices=DELIVERY_STATUS, default='scheduled')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+class DeliveryTracking(models.Model):
+    delivery = models.ForeignKey(DeliverySchedule, on_delete=models.CASCADE, related_name='tracking_updates')
+    status = models.CharField(max_length=20, choices=DeliverySchedule.DELIVERY_STATUS)
+    location = models.CharField(max_length=200, blank=True)
+    notes = models.TextField()
+    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
+    photo_proof = models.ImageField(upload_to='delivery_photos/', blank=True)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+class StockReceiptConfirmation(models.Model):
+    delivery_schedule = models.OneToOneField(DeliverySchedule, on_delete=models.CASCADE)
+    received_by_staff = models.ForeignKey(User, on_delete=models.CASCADE)
+    
+    # Verification details
+    books_received = models.PositiveIntegerField()
+    books_accepted = models.PositiveIntegerField()
+    books_rejected = models.PositiveIntegerField(default=0)
+    rejection_reason = models.TextField(blank=True)
+    
+    # Quality assessment
+    condition_rating = models.IntegerField(choices=[(i, i) for i in range(1, 6)], default=5)
+    quality_notes = models.TextField(blank=True)
+    
+    # Stock update confirmation
+    stock_updated = models.BooleanField(default=False)
+    stock_movement_created = models.BooleanField(default=False)
+    
+    confirmed_at = models.DateTimeField(auto_now_add=True)

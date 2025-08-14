@@ -1,0 +1,365 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}All Deliveries{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        <i class="fas fa-shipping-fast"></i> All Deliveries
+    </h2>
+    <div>
+        <a href="{% url 'delivery:dashboard' %}" class="btn btn-outline-secondary me-2">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+        <a href="#" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Create New Delivery
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label for="status" class="form-label">Status</label>
+                <select name="status" id="status" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="assigned" {% if request.GET.status == 'assigned' %}selected{% endif %}>Assigned</option>
+                    <option value="picked_up" {% if request.GET.status == 'picked_up' %}selected{% endif %}>Picked Up</option>
+                    <option value="in_transit" {% if request.GET.status == 'in_transit' %}selected{% endif %}>In Transit</option>
+                    <option value="out_for_delivery" {% if request.GET.status == 'out_for_delivery' %}selected{% endif %}>Out for Delivery</option>
+                    <option value="delivered" {% if request.GET.status == 'delivered' %}selected{% endif %}>Delivered</option>
+                    <option value="failed" {% if request.GET.status == 'failed' %}selected{% endif %}>Failed</option>
+                    <option value="returned" {% if request.GET.status == 'returned' %}selected{% endif %}>Returned</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="partner" class="form-label">Delivery Partner</label>
+                <select name="partner" id="partner" class="form-select">
+                    <option value="">All Partners</option>
+                    {% for partner in delivery_partners %}
+                    <option value="{{ partner.id }}" {% if request.GET.partner == partner.id|stringformat:"s" %}selected{% endif %}>
+                        {{ partner.name }}
+                    </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label for="search" class="form-label">Search</label>
+                <input type="text" name="search" id="search" class="form-control" 
+                       placeholder="Order ID or Tracking ID..." value="{{ request.GET.search }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">&nbsp;</label>
+                <div class="d-grid">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Deliveries Table -->
+<div class="card">
+    <div class="card-header">
+        <h5 class="mb-0">
+            <i class="fas fa-list"></i> Deliveries 
+            {% if deliveries %}
+                <span class="badge bg-secondary">{{ deliveries|length }} results</span>
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body p-0">
+        {% if deliveries %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>
+                            <a href="?{% if request.GET.ordering == 'order__order_id' %}-{% endif %}order__order_id" 
+                               class="text-decoration-none">
+                                Order ID <i class="fas fa-sort"></i>
+                            </a>
+                        </th>
+                        <th>Tracking ID</th>
+                        <th>Customer</th>
+                        <th>Delivery Partner</th>
+                        <th>Status</th>
+                        <th>
+                            <a href="?{% if request.GET.ordering == 'created_at' %}-{% endif %}created_at" 
+                               class="text-decoration-none">
+                                Created <i class="fas fa-sort"></i>
+                            </a>
+                        </th>
+                        <th>Estimated Delivery</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for delivery in deliveries %}
+                    <tr>
+                        <td>
+                            <strong>#{{ delivery.order.order_id }}</strong>
+                        </td>
+                        <td>
+                            <span class="font-monospace">{{ delivery.tracking_id }}</span>
+                            <button class="btn btn-sm btn-outline-secondary ms-1" 
+                                    onclick="copyToClipboard('{{ delivery.tracking_id }}')" 
+                                    title="Copy Tracking ID">
+                                <i class="fas fa-copy"></i>
+                            </button>
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="avatar-sm bg-primary rounded-circle d-flex align-items-center justify-content-center me-2">
+                                    <span class="text-white small">{{ delivery.order.user.first_name|first }}{{ delivery.order.user.last_name|first }}</span>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ delivery.order.user.get_full_name|default:delivery.order.user.username }}</div>
+                                    <small class="text-muted">{{ delivery.order.user.email }}</small>
+                                </div>
+                            </div>
+                        </td>
+                        <td>
+                            {% if delivery.delivery_partner %}
+                                <div>
+                                    <strong>{{ delivery.delivery_partner.name }}</strong>
+                                    <br><small class="text-muted">{{ delivery.delivery_partner.phone }}</small>
+                                    {% if delivery.delivery_partner.rating %}
+                                        <div>
+                                            {% for i in "12345" %}
+                                                {% if forloop.counter <= delivery.delivery_partner.rating %}
+                                                    <i class="fas fa-star text-warning" style="font-size: 0.7rem;"></i>
+                                                {% else %}
+                                                    <i class="far fa-star text-warning" style="font-size: 0.7rem;"></i>
+                                                {% endif %}
+                                            {% endfor %}
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <span class="text-muted">Not assigned</span>
+                                <br><a href="#" class="btn btn-sm btn-outline-primary">Assign Partner</a>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <span class="status-badge status-{{ delivery.status }}">
+                                {{ delivery.get_status_display }}
+                            </span>
+                            {% if delivery.status in 'picked_up,in_transit,out_for_delivery' %}
+                                <br><small class="text-muted">
+                                    <i class="fas fa-clock"></i> 
+                                    {{ delivery.updated_at|timesince }} ago
+                                </small>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div>{{ delivery.created_at|date:"M d, Y" }}</div>
+                            <small class="text-muted">{{ delivery.created_at|time:"g:i A" }}</small>
+                        </td>
+                        <td>
+                            {% if delivery.estimated_delivery_time %}
+                                <div>{{ delivery.estimated_delivery_time|date:"M d, Y" }}</div>
+                                <small class="text-muted">{{ delivery.estimated_delivery_time|time:"g:i A" }}</small>
+                                {% if delivery.estimated_delivery_time < now and delivery.status != 'delivered' %}
+                                    <br><span class="badge bg-danger">Overdue</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="text-muted">Not set</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="btn-group btn-group-sm" role="group">
+                                <a href="{% url 'delivery:track_delivery' delivery.order.order_id %}" 
+                                   class="btn btn-outline-primary" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </a>
+                                <button class="btn btn-outline-success" 
+                                        onclick="updateStatus('{{ delivery.id }}')" 
+                                        title="Update Status">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <a href="tel:{{ delivery.order.user.phone }}" 
+                                   class="btn btn-outline-info" title="Call Customer">
+                                    <i class="fas fa-phone"></i>
+                                </a>
+                                <button class="btn btn-outline-warning" 
+                                        onclick="showDeliveryNotes('{{ delivery.id }}')" 
+                                        title="Notes">
+                                    <i class="fas fa-sticky-note"></i>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if is_paginated %}
+        <div class="card-footer">
+            <nav aria-label="Deliveries pagination">
+                <ul class="pagination justify-content-center mb-0">
+                    {% if page_obj.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.partner %}&partner={{ request.GET.partner }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Previous</a>
+                        </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% else %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.partner %}&partner={{ request.GET.partner }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.partner %}&partner={{ request.GET.partner }}{% endif %}{% if request.GET.search %}&search={{ request.GET.search }}{% endif %}">Next</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        </div>
+        {% endif %}
+        
+        {% else %}
+        <div class="text-center py-5">
+            <i class="fas fa-search fa-3x text-muted mb-3"></i>
+            <h5 class="text-muted">No deliveries found</h5>
+            <p class="text-muted">Try adjusting your filters or search criteria.</p>
+            <a href="?" class="btn btn-outline-primary">Clear Filters</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Modals -->
+<!-- Update Status Modal -->
+<div class="modal fade" id="statusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Update Delivery Status</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="statusForm" method="post">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="statusSelect" class="form-label">New Status</label>
+                        <select id="statusSelect" name="status" class="form-select" required>
+                            <option value="assigned">Assigned</option>
+                            <option value="picked_up">Picked Up</option>
+                            <option value="in_transit">In Transit</option>
+                            <option value="out_for_delivery">Out for Delivery</option>
+                            <option value="delivered">Delivered</option>
+                            <option value="failed">Delivery Failed</option>
+                            <option value="returned">Returned to Sender</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Current Location (Optional)</label>
+                        <input type="text" id="location" name="location" class="form-control" 
+                               placeholder="e.g., Mumbai Central Hub">
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Description</label>
+                        <textarea id="description" name="description" class="form-control" rows="3" 
+                                  placeholder="Add update description..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Update Status</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.avatar-sm {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+}
+
+.table th a {
+    color: inherit;
+}
+
+.table th a:hover {
+    color: #0d6efd;
+}
+
+@media (max-width: 768px) {
+    .table-responsive {
+        font-size: 0.875rem;
+    }
+    
+    .btn-group {
+        flex-direction: column;
+    }
+    
+    .btn-group .btn {
+        border-radius: 0.25rem !important;
+        margin-bottom: 2px;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        // Show success message
+        const toast = document.createElement('div');
+        toast.className = 'toast align-items-center text-white bg-success border-0';
+        toast.innerHTML = `
+            <div class="d-flex">
+                <div class="toast-body">Tracking ID copied to clipboard!</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+            </div>
+        `;
+        document.body.appendChild(toast);
+        const bsToast = new bootstrap.Toast(toast);
+        bsToast.show();
+        
+        setTimeout(() => {
+            document.body.removeChild(toast);
+        }, 3000);
+    });
+}
+
+function updateStatus(deliveryId) {
+    const modal = new bootstrap.Modal(document.getElementById('statusModal'));
+    const form = document.getElementById('statusForm');
+    form.action = `/delivery/update-status/${deliveryId}/`;
+    modal.show();
+}
+
+function showDeliveryNotes(deliveryId) {
+    // This would show delivery notes in a modal
+    alert('Show delivery notes for delivery ID: ' + deliveryId);
+}
+
+// Auto-refresh every 3 minutes
+setInterval(function() {
+    location.reload();
+}, 180000);
+</script>
+{% endblock %}

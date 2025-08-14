@@ -1,0 +1,307 @@
+<!-- vendors/templates/vendors/create_ticket.html -->
+{% extends 'vendors/base.html' %}
+
+{% block title %}Create Support Ticket - BookStore{% endblock %}
+
+{% block extra_css %}
+<style>
+    .ticket-form {
+        max-width: 700px;
+        margin: 0 auto;
+    }
+    .form-section {
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 25px;
+        border-left: 4px solid #667eea;
+    }
+    .section-title {
+        color: #667eea;
+        font-weight: 700;
+        font-size: 1.3rem;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+    }
+    .section-title i {
+        margin-right: 10px;
+    }
+    .form-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+    }
+    .form-control, .form-select {
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    .required {
+        color: #dc3545;
+    }
+    .help-text {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 5px;
+    }
+    .category-options {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 10px;
+    }
+    .category-option {
+        background: rgba(255, 255, 255, 0.7);
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        padding: 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        position: relative;
+    }
+    .category-option:hover {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.1);
+    }
+    .category-option.selected {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.1);
+    }
+    .category-icon {
+        font-size: 2rem;
+        margin-bottom: 10px;
+    }
+    .category-logistics .category-icon {
+        color: #ff6b35;
+    }
+    .category-payment .category-icon {
+        color: #f7931e;
+    }
+    .category-quality .category-icon {
+        color: #00a8cc;
+    }
+    .category-delivery .category-icon {
+        color: #7209b7;
+    }
+    .category-general .category-icon {
+        color: #2d3748;
+    }
+    .category-technical .category-icon {
+        color: #0078d4;
+    }
+    .category-title {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    .category-desc {
+        font-size: 0.85rem;
+        color: #666;
+        line-height: 1.4;
+    }
+    .priority-selector {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        margin-top: 10px;
+    }
+    .priority-option {
+        flex: 1;
+        min-width: 120px;
+        background: rgba(255, 255, 255, 0.7);
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 12px 15px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        text-align: center;
+        position: relative;
+    }
+    .priority-option:hover {
+        border-color: #667eea;
+    }
+    .priority-option.selected {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.1);
+    }
+    .priority-low {
+        border-left: 4px solid #28a745;
+    }
+    .priority-medium {
+        border-left: 4px solid #ffc107;
+    }
+    .priority-high {
+        border-left: 4px solid #fd7e14;
+    }
+    .priority-urgent {
+        border-left: 4px solid #dc3545;
+    }
+    .priority-title {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 3px;
+    }
+    .priority-desc {
+        font-size: 0.8rem;
+        color: #666;
+    }
+    .description-counter {
+        text-align: right;
+        margin-top: 5px;
+        font-size: 0.85rem;
+        color: #666;
+    }
+    .form-preview {
+        background: rgba(102, 126, 234, 0.05);
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 20px;
+    }
+    .preview-title {
+        color: #667eea;
+        font-weight: 700;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+    .preview-item {
+        display: flex;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        padding: 5px 0;
+        border-bottom: 1px solid rgba(102, 126, 234, 0.1);
+    }
+    .preview-item:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+    }
+    .preview-label {
+        font-weight: 500;
+        color: #666;
+    }
+    .preview-value {
+        color: #333;
+        font-weight: 600;
+    }
+    .submit-section {
+        text-align: center;
+        padding: 30px;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 15px;
+    }
+    .submit-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 12px;
+        padding: 15px 40px;
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+    .submit-btn:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+    .guidelines {
+        background: rgba(40, 167, 69, 0.1);
+        border: 1px solid #28a745;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+    .guidelines-title {
+        color: #155724;
+        font-weight: 700;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+    }
+    .guidelines-title i {
+        margin-right: 8px;
+    }
+    .guidelines ul {
+        margin: 0;
+        padding-left: 20px;
+    }
+    .guidelines li {
+        color: #155724;
+        margin-bottom: 8px;
+    }
+    @media (max-width: 768px) {
+        .category-options {
+            grid-template-columns: 1fr;
+        }
+        .priority-selector {
+            flex-direction: column;
+        }
+        .priority-option {
+            min-width: auto;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="text-center mb-4">
+        <h1 class="page-title">
+            <i class="fas fa-plus-circle me-3"></i>Create Support Ticket
+        </h1>
+        <p class="page-subtitle">Get help with your vendor account and operations</p>
+    </div>
+
+    <!-- Guidelines -->
+    <div class="guidelines">
+        <h6 class="guidelines-title">
+            <i class="fas fa-lightbulb"></i>Before Creating a Ticket
+        </h6>
+        <ul>
+            <li>Check our <a href="#" class="text-decoration-none">FAQ section</a> for quick answers</li>
+            <li>Provide detailed information to help us resolve your issue faster</li>
+            <li>Include relevant order numbers, book IDs, or error messages</li>
+            <li>Choose the appropriate category and priority level</li>
+        </ul>
+    </div>
+
+    <div class="ticket-form">
+        <form method="post" id="createTicketForm">
+            {% csrf_token %}
+            
+            <!-- Basic Information -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-info-circle"></i>Basic Information
+                </h3>
+                
+                <div class="mb-3">
+                    <label class="form-label">Subject <span class="required">*</span></label>
+                    {{ form.subject }}
+                    <div class="help-text">Provide a clear, concise summary of your issue</div>
+                    {% for error in form.subject.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                    {% endfor %}
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Description <span class="required">*</span></label>
+                    {{ form.description }}
+                    <div class="description-counter">
+                        <span id="charCount">0</span> / 1000 characters
+                    </div>
+                    <div class="help-text">Describe your issue in detail. Include steps to reproduce the problem, error messages, and any relevant information.</div>
+                    {% for error in form.description.errors %}
+                        <div class="text-danger small">{{ error }}</div>

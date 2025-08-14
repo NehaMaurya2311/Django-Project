@@ -7,8 +7,10 @@ app_name = 'orders'
 urlpatterns = [
     path('checkout/', views.checkout, name='checkout'),
     path('', views.order_list, name='order_list'),
+    path('create-from-cart/', views.create_from_cart, name='create_from_cart'),
     # path('track/', views.track_order, name='track_order'),
     path('<str:order_id>/', views.order_detail, name='order_detail'),
     path('<str:order_id>/cancel/', views.cancel_order, name='cancel_order'),
     path('<str:order_id>/return/', views.request_return, name='request_return'),
+
 ]

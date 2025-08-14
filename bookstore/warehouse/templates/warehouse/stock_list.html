@@ -1,0 +1,175 @@
+{% extends 'warehouse/base.html' %}
+
+{% block title %}Stock List - Warehouse{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="fas fa-boxes"></i> Stock Inventory</h1>
+        <p class="text-muted">Complete stock level overview</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'warehouse:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="get" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Category</label>
+                <select name="category" class="form-select">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                        <option value="{{ category.slug }}" 
+                                {% if current_category == category.slug %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Stock Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="in_stock" {% if current_status == 'in_stock' %}selected{% endif %}>In Stock</option>
+                    <option value="low_stock" {% if current_status == 'low_stock' %}selected{% endif %}>Low Stock</option>
+                    <option value="out_of_stock" {% if current_status == 'out_of_stock' %}selected{% endif %}>Out of Stock</option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <label class="form-label">Search</label>
+                <input type="text" name="search" class="form-control" 
+                       placeholder="Search by title, ISBN, or author" 
+                       value="{{ search_query }}">
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div>
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-search"></i> Filter
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Stock Table -->
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <h5 class="mb-0">Stock Items</h5>
+        <span class="badge bg-secondary">{{ stocks|length }} items</span>
+    </div>
+    <div class="card-body p-0">
+        {% if stocks %}
+            <div class="table-responsive">
+                <table class="table table-hover mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Book</th>
+                            <th>Category</th>
+                            <th>Stock Level</th>
+                            <th>Reserved</th>
+                            <th>Available</th>
+                            <th>Reorder Level</th>
+                            <th>Location</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stock in stocks %}
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center">
+                                    {% if stock.book.get_cover_image_url %}
+                                        <img src="{{ stock.book.get_cover_image_url }}" 
+                                             class="me-3" style="width: 40px; height: 60px; object-fit: cover;">
+                                    {% endif %}
+                                    <div>
+                                        <strong>{{ stock.book.title|truncatechars:40 }}</strong>
+                                        <br><small class="text-muted">{{ stock.book.authors.all|join:", " }}</small>
+                                        {% if stock.book.isbn %}
+                                            <br><small class="text-muted">ISBN: {{ stock.book.isbn }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark">{{ stock.book.category.name }}</span>
+                                {% if stock.book.subcategory %}
+                                    <br><small class="text-muted">{{ stock.book.subcategory.name }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="fw-bold {% if stock.is_out_of_stock %}stock-out{% elif stock.needs_reorder %}stock-low{% else %}stock-good{% endif %}">
+                                    {{ stock.quantity }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-warning">{{ stock.reserved_quantity }}</span>
+                            </td>
+                            <td>
+                                <span class="fw-bold {% if stock.available_quantity <= 0 %}text-danger{% elif stock.available_quantity <= stock.reorder_level %}text-warning{% else %}text-success{% endif %}">
+                                    {{ stock.available_quantity }}
+                                </span>
+                            </td>
+                            <td>{{ stock.reorder_level }}</td>
+                            <td>
+                                <small>{{ stock.get_location }}</small>
+                            </td>
+                            <td>
+                                <a href="{% url 'warehouse:stock_detail' stock.id %}" 
+                                   class="btn btn-sm btn-outline-primary">
+                                    <i class="fas fa-eye"></i> View
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if stocks.has_other_pages %}
+                <div class="d-flex justify-content-center mt-4">
+                    <nav>
+                        <ul class="pagination">
+                            {% if stocks.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page=1">First</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ stocks.previous_page_number }}">Previous</a>
+                                </li>
+                            {% endif %}
+                            
+                            <li class="page-item active">
+                                <span class="page-link">{{ stocks.number }} of {{ stocks.paginator.num_pages }}</span>
+                            </li>
+                            
+                            {% if stocks.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ stocks.next_page_number }}">Next</a>
+                                </li>
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ stocks.paginator.num_pages }}">Last</a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                </div>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-boxes fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">No Stock Items Found</h4>
+                <p class="text-muted">Try adjusting your search filters</p>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

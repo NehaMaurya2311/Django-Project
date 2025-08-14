@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Order is on the way!</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 0 0 8px 8px;
+        }
+        .tracking-box {
+            background: white;
+            border: 2px dashed #007bff;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .tracking-id {
+            font-size: 24px;
+            font-weight: bold;
+            color: #007bff;
+            font-family: monospace;
+        }
+        .info-table {
+            width: 100%;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        .info-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #eee;
+        }
+        .info-table td:first-child {
+            background: #f8f9fa;
+            font-weight: bold;
+            width: 150px;
+        }
+        .btn {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📦 Your Order is on the way!</h1>
+        <p>Order #{{ delivery.order.order_id }} has been dispatched</p>
+    </div>
+    
+    <div class="content">
+        <p>Dear {{ delivery.order.user.get_full_name|default:delivery.order.user.username }},</p>
+        
+        <p>Great news! Your order has been assigned to our delivery partner and is now on its way to you.</p>
+        
+        <div class="tracking-box">
+            <p>Your Tracking ID:</p>
+            <div class="tracking-id">{{ delivery.tracking_id }}</div>
+            <p><small>Use this ID to track your delivery</small></p>
+        </div>
+        
+        <table class="info-table">
+            <tr>
+                <td>Order ID</td>
+                <td>#{{ delivery.order.order_id }}</td>
+            </tr>
+            <tr>
+                <td>Delivery Partner</td>
+                <td>{{ delivery.delivery_partner.name }}<br>
+                    <small>{{ delivery.delivery_partner.phone }}</small></td>
+            </tr>
+            <tr>
+                <td>Estimated Delivery</td>
+                <td>{{ delivery.estimated_delivery_time|date:"F d, Y" }} by {{ delivery.estimated_delivery_time|time:"g:i A" }}</td>
+            </tr>
+            <tr>
+                <td>Delivery Address</td>
+                <td>{{ delivery.delivery_address|linebreaks }}</td>
+            </tr>
+        </table>
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ tracking_url }}" class="btn">Track Your Delivery</a>
+        </div>
+        
+        <p>You can track your delivery status in real-time using the tracking ID above. We'll keep you updated via email and SMS as your package moves through our network.</p>
+        
+        <p>If you have any questions or concerns, please don't hesitate to contact our customer support team.</p>
+        
+        <p>Thank you for your order!</p>
+        
+        <p>Best regards,<br>
+        The DeliveryTracker Team</p>
+    </div>
+    
+    <div class="footer">
+        <p>© 2025 DeliveryTracker. All rights reserved.</p>
+        <p>This is an automated message, please do not reply to this email.</p>
+    </div>
+</body>
+</html>

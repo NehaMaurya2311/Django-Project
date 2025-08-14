@@ -65,7 +65,24 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'bookstore.urls'
+# Cache timeout settings (in seconds)
+CACHE_MIDDLEWARE_SECONDS = 300  # 5 minutes
+CACHE_MIDDLEWARE_KEY_PREFIX = 'bookstore'
 
+# Cache configuration - Using Local Memory Cache (no Redis needed)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'bookstore-cache',
+        'TIMEOUT': 1800,  # 30 minutes default
+        'OPTIONS': {
+            'MAX_ENTRIES': 1000,
+            'CULL_FREQUENCY': 3,
+        }
+    }
+}
+
+# Update your TEMPLATES configuration
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
@@ -78,12 +95,22 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.i18n',
+                # Your custom context processors
                 'books.context_processors.cart_processor',
                 'books.context_processors.categories_processor',
+                'books.context_processors.breadcrumb_processor',
+                'books.context_processors.site_stats_processor',
             ],
         },
     },
 ]
+
+# Also update your CHANNEL_LAYERS to not use Redis for now
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels.layers.InMemoryChannelLayer',
+    },
+}
 
 WSGI_APPLICATION = 'bookstore.wsgi.application'
 ASGI_APPLICATION = 'bookstore.asgi.application'
@@ -158,14 +185,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
-
-# Cache settings
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': 'redis://127.0.0.1:6379/1',
-    }
-}
+LOGOUT_REDIRECT_URL = '/'
 
 # Cache timeout settings (in seconds)
 CACHE_MIDDLEWARE_SECONDS = 300  # 5 minutes
@@ -191,6 +211,33 @@ AUTH_USER_MODEL = 'accounts.CustomUser'
 # Crispy Forms
 CRISPY_TEMPLATE_PACK = 'bootstrap5'
 
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+    # Add your production domain here when deploying
+    # 'https://yourdomain.com',
+]
+CSRF_COOKIE_SECURE = False
+SESSION_COOKIE_SECURE = False
+
+# CSRF token settings
+CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read CSRF token
+SESSION_COOKIE_HTTPONLY = True
+CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SAMESITE = 'Lax'
+
+# CSRF cookie settings for better compatibility
+CSRF_COOKIE_AGE = 31449600  # 1 year (default)
+CSRF_USE_SESSIONS = False  # Keep as False for better performance
+CSRF_COOKIE_NAME = 'csrftoken'  # Default name
+CSRF_HEADER_NAME = 'HTTP_X_CSRFTOKEN'  # Header name Django expects
+
+# Additional security headers (optional but recommended)
+SECURE_BROWSER_XSS_FILTER = True
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = 'DENY'
+
+
 # Email Settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = config('EMAIL_HOST', default='smtp.gmail.com')
@@ -200,8 +247,9 @@ EMAIL_HOST_USER = config('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD', default='')
 
 # Session settings
-SESSION_COOKIE_AGE = 86400  # 1 day
-SESSION_SAVE_EVERY_REQUEST = True
+SESSION_COOKIE_AGE = 1209600  # 2 weeks
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_SAVE_EVERY_REQUEST = False
 
 # PayPal Settings
 PAYPAL_CLIENT_ID = config('PAYPAL_CLIENT_ID', default='ASKWPsOZIjfn91X2biPyfLcjnP-9NRKkmwT4PdK8bLXWaWIhKs183jsrSN8ZOscZWaOJf9Cb14XaN9qA')
@@ -210,4 +258,20 @@ PAYPAL_MODE = config('PAYPAL_MODE', default='sandbox')
 
 # Google Books API
 GOOGLE_BOOKS_API_KEY = config('GOOGLE_BOOKS_API_KEY', default='AIzaSyAns_93vRLcLhEfgztk9MJGHc46liM8g3k')
-
+# For debugging CSRF issues (remove in production)
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'django.security': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+    },
+}

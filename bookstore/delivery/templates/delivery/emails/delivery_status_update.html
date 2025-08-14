@@ -1,0 +1,133 @@
+<!-- delivery/templates/delivery/emails/delivery_status_update.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Delivery Status Update - {{ delivery.get_status_display }}</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+        .content {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 0 0 8px 8px;
+        }
+        .status-update {
+            background: white;
+            border-left: 4px solid #28a745;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 8px 8px 0;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 8px 15px;
+            border-radius: 20px;
+            color: white;
+            font-weight: bold;
+            text-transform: uppercase;
+            font-size: 12px;
+        }
+        .status-delivered { background-color: #28a745; }
+        .status-out_for_delivery { background-color: #fd79a8; }
+        .status-in_transit { background-color: #a29bfe; }
+        .status-picked_up { background-color: #74b9ff; }
+        .status-failed { background-color: #e17055; }
+        .tracking-id {
+            font-family: monospace;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            display: inline-block;
+        }
+        .btn {
+            display: inline-block;
+            background: #007bff;
+            color: white;
+            padding: 12px 25px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #666;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>📦 Delivery Update</h1>
+        <p>Order #{{ delivery.order.order_id }}</p>
+    </div>
+    
+    <div class="content">
+        <p>Dear {{ delivery.order.user.get_full_name|default:delivery.order.user.username }},</p>
+        
+        <p>We have an update on your delivery:</p>
+        
+        <div class="status-update">
+            <h3>Status Update</h3>
+            <span class="status-badge status-{{ delivery.status }}">{{ delivery.get_status_display }}</span>
+            
+            {% if update.location %}
+            <p><strong>Location:</strong> {{ update.location }}</p>
+            {% endif %}
+            
+            <p><strong>Update:</strong> {{ update.description }}</p>
+            <p><small><strong>Time:</strong> {{ update.timestamp|date:"F d, Y g:i A" }}</small></p>
+        </div>
+        
+        <p><strong>Tracking ID:</strong> <span class="tracking-id">{{ delivery.tracking_id }}</span></p>
+        
+        {% if delivery.status == 'delivered' %}
+        <div style="background: #d4edda; border: 1px solid #c3e6cb; color: #155724; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h4>🎉 Package Delivered Successfully!</h4>
+            <p>Your package has been delivered at {{ delivery.actual_delivery_time|date:"F d, Y g:i A" }}.</p>
+            <p>We hope you're satisfied with your order. Please consider rating your delivery experience.</p>
+        </div>
+        {% elif delivery.status == 'out_for_delivery' %}
+        <div style="background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h4>🚚 Out for Delivery</h4>
+            <p>Your package is out for delivery and should arrive today. Please ensure someone is available to receive it.</p>
+        </div>
+        {% elif delivery.status == 'failed' %}
+        <div style="background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; padding: 20px; border-radius: 8px; margin: 20px 0;">
+            <h4>⚠️ Delivery Attempt Failed</h4>
+            <p>We were unable to deliver your package. Our delivery partner will attempt redelivery soon.</p>
+            <p>Please ensure someone is available at the delivery address, or contact us to reschedule.</p>
+        </div>
+        {% endif %}
+        
+        <div style="text-align: center; margin: 30px 0;">
+            <a href="{{ tracking_url }}" class="btn">View Full Tracking Details</a>
+        </div>
+        
+        <p>Thank you for choosing us!</p>
+        
+        <p>Best regards,<br>
+        The DeliveryTracker Team</p>
+    </div>
+    
+    <div class="footer">
+        <p>© 2025 DeliveryTracker. All rights reserved.</p>
+        <p>This is an automated message, please do not reply to this email.</p>
+    </div>
+</body>
+</html>

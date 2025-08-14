@@ -11,6 +11,21 @@ from .models import PayPalPayment
 from .services import PayPalService
 
 @login_required
+def payment_options(request, order_id):
+    """Display payment options for an order"""
+    order = get_object_or_404(Order, order_id=order_id, user=request.user)
+    
+    if order.payment_status == 'paid':
+        messages.info(request, 'This order has already been paid.')
+        return redirect('orders:order_detail', order_id=order_id)
+    
+    context = {
+        'order': order,
+    }
+    
+    return render(request, 'paypal_integration/payment_options.html', context)
+
+@login_required
 def create_payment(request, order_id):
     order = get_object_or_404(Order, order_id=order_id, user=request.user)
     
@@ -49,11 +64,11 @@ def create_payment(request, order_id):
                 return redirect(link.href)
         
         messages.error(request, 'Error creating PayPal payment.')
-        return redirect('orders:order_detail', order_id=order_id)
+        return redirect('paypal_integration:payment_options', order_id=order_id)
         
     except Exception as e:
         messages.error(request, f'Payment creation failed: {str(e)}')
-        return redirect('orders:order_detail', order_id=order_id)
+        return redirect('paypal_integration:payment_options', order_id=order_id)
 
 @login_required
 def execute_payment(request, order_id):
@@ -64,7 +79,7 @@ def execute_payment(request, order_id):
     
     if not payment_id or not payer_id:
         messages.error(request, 'Invalid payment parameters.')
-        return redirect('orders:order_detail', order_id=order_id)
+        return redirect('paypal_integration:payment_options', order_id=order_id)
     
     try:
         paypal_payment = get_object_or_404(PayPalPayment, order=order, paypal_payment_id=payment_id)
@@ -116,15 +131,15 @@ def execute_payment(request, order_id):
             )
             
             messages.success(request, f'Payment successful! Your order #{order.order_id} has been confirmed.')
-            return redirect('orders:order_detail', order_id=order_id)
+            return redirect('paypal_integration:payment_success', order_id=order_id)
         
         else:
             messages.error(request, 'Payment was not approved.')
-            return redirect('orders:order_detail', order_id=order_id)
+            return redirect('paypal_integration:payment_options', order_id=order_id)
             
     except Exception as e:
         messages.error(request, f'Payment execution failed: {str(e)}')
-        return redirect('orders:order_detail', order_id=order_id)
+        return redirect('paypal_integration:payment_options', order_id=order_id)
 
 @login_required
 def payment_cancelled(request, order_id):
@@ -138,7 +153,7 @@ def payment_cancelled(request, order_id):
         pass
     
     messages.info(request, 'Payment was cancelled. You can try again when ready.')
-    return redirect('orders:order_detail', order_id=order_id)
+    return redirect('paypal_integration:payment_options', order_id=order_id)
 
 @login_required
 def payment_success(request, order_id):

@@ -1,5 +1,4 @@
-
-# books/models.py
+# books/models.py - Updated with Sub-subcategory support
 from django.db import models
 from django.contrib.auth import get_user_model
 from django.urls import reverse
@@ -39,6 +38,39 @@ class SubCategory(models.Model):
     
     def __str__(self):
         return f"{self.category.name} - {self.name}"
+    
+    def get_absolute_url(self):
+        return reverse('books:subcategory_books', kwargs={
+            'category_slug': self.category.slug,
+            'subcategory_slug': self.slug
+        })
+
+class SubSubCategory(models.Model):
+    """Third level category hierarchy"""
+    subcategory = models.ForeignKey(SubCategory, on_delete=models.CASCADE, related_name='subsubcategories')
+    name = models.CharField(max_length=100)
+    slug = models.SlugField(max_length=100)
+    description = models.TextField(blank=True)
+    is_active = models.BooleanField(default=True)
+    
+    class Meta:
+        verbose_name_plural = "Sub-Sub Categories"
+        unique_together = ('subcategory', 'slug')
+        ordering = ['name']
+    
+    def __str__(self):
+        return f"{self.subcategory.category.name} - {self.subcategory.name} - {self.name}"
+    
+    @property
+    def category(self):
+        return self.subcategory.category
+    
+    def get_absolute_url(self):
+        return reverse('books:subsubcategory_books', kwargs={
+            'category_slug': self.subcategory.category.slug,
+            'subcategory_slug': self.subcategory.slug,
+            'subsubcategory_slug': self.slug
+        })
 
 class Author(models.Model):
     name = models.CharField(max_length=200)
@@ -81,8 +113,10 @@ class Book(models.Model):
     isbn = models.CharField(max_length=20, unique=True, blank=True)
     isbn13 = models.CharField(max_length=20, unique=True, blank=True)
     
+    # Updated category hierarchy
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='books')
-    subcategory = models.ForeignKey(SubCategory, on_delete=models.SET_NULL, null=True, blank=True)
+    subcategory = models.ForeignKey(SubCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='books')
+    subsubcategory = models.ForeignKey(SubSubCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='books')
     
     description = models.TextField()
     short_description = models.CharField(max_length=500, blank=True)
@@ -94,7 +128,9 @@ class Book(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2)
     original_price = models.DecimalField(max_digits=10, decimal_places=2, blank=True, null=True)
     
-    cover_image = models.ImageField(upload_to='books/covers/')
+    # Updated to handle both file uploads and URLs
+    cover_image = models.ImageField(upload_to='books/covers/', blank=True, null=True)
+    cover_image_url = models.URLField(max_length=1000, blank=True, null=True, help_text="External cover image URL (e.g., from Google Books)")
     additional_images = models.JSONField(default=list, blank=True)
     
     publication_date = models.DateField(blank=True, null=True)
@@ -108,7 +144,7 @@ class Book(models.Model):
     is_bestseller = models.BooleanField(default=False)
     is_on_sale = models.BooleanField(default=False)
     
-    google_books_id = models.CharField(max_length=50, blank=True, help_text="Google Books API ID")
+    google_books_id = models.CharField(max_length=50, blank=True, unique=True, null=True, help_text="Google Books API ID")
     
     views_count = models.PositiveIntegerField(default=0)
     
@@ -120,8 +156,11 @@ class Book(models.Model):
         indexes = [
             models.Index(fields=['status', 'is_featured']),
             models.Index(fields=['category', 'status']),
+            models.Index(fields=['subcategory', 'status']),
+            models.Index(fields=['subsubcategory', 'status']),
             models.Index(fields=['is_bestseller', 'status']),
             models.Index(fields=['is_on_sale', 'status']),
+            models.Index(fields=['google_books_id']),
         ]
     
     def __str__(self):
@@ -129,6 +168,50 @@ class Book(models.Model):
     
     def get_absolute_url(self):
         return reverse('books:book_detail', kwargs={'slug': self.slug})
+    
+    def clean(self):
+        """Validate category hierarchy"""
+        from django.core.exceptions import ValidationError
+        
+        # If subcategory is selected, it must belong to the selected category
+        if self.subcategory and self.subcategory.category != self.category:
+            raise ValidationError({
+                'subcategory': f'Selected subcategory does not belong to category "{self.category.name}"'
+            })
+        
+        # If subsubcategory is selected, it must belong to the selected subcategory
+        if self.subsubcategory:
+            if not self.subcategory:
+                raise ValidationError({
+                    'subsubcategory': 'You must select a subcategory before selecting a sub-subcategory'
+                })
+            if self.subsubcategory.subcategory != self.subcategory:
+                raise ValidationError({
+                    'subsubcategory': f'Selected sub-subcategory does not belong to subcategory "{self.subcategory.name}"'
+                })
+    
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+    
+    @property
+    def get_cover_image_url(self):
+        """Get the cover image URL, prioritizing uploaded files over external URLs"""
+        if self.cover_image:
+            return self.cover_image.url
+        elif self.cover_image_url:
+            return self.cover_image_url
+        return None
+    
+    @property
+    def category_hierarchy(self):
+        """Get the full category hierarchy as a string"""
+        hierarchy = [self.category.name]
+        if self.subcategory:
+            hierarchy.append(self.subcategory.name)
+        if self.subsubcategory:
+            hierarchy.append(self.subsubcategory.name)
+        return " > ".join(hierarchy)
     
     @property
     def discount_percentage(self):
@@ -139,7 +222,7 @@ class Book(models.Model):
     @property
     def average_rating(self):
         from reviews.models import Review
-        reviews = Review.objects.filter(book=self, is_approved=True)
+        reviews = Review.objects.filter(book=self, status='approved')
         if reviews.exists():
             return reviews.aggregate(models.Avg('rating'))['rating__avg']
         return 0
@@ -147,11 +230,43 @@ class Book(models.Model):
     @property
     def total_reviews(self):
         from reviews.models import Review
-        return Review.objects.filter(book=self, is_approved=True).count()
+        return Review.objects.filter(book=self, status='approved').count()
     
     def increment_view_count(self):
         self.views_count += 1
         self.save(update_fields=['views_count'])
+
+    @property
+    def current_stock_level(self):
+        """Get current stock level from warehouse"""
+        try:
+            return self.stock.available_quantity
+        except:
+            return 0
+    
+    @property
+    def is_in_stock(self):
+        """Check if book is actually in stock in warehouse"""
+        try:
+            return self.stock.available_quantity > 0
+        except:
+            return False
+    
+    @property
+    def stock_status_display(self):
+        """Get readable stock status"""
+        try:
+            stock = self.stock
+            if stock.is_out_of_stock:
+                return "Out of Stock"
+            elif stock.needs_reorder:
+                return f"Low Stock ({stock.available_quantity} left)"
+            else:
+                return f"In Stock ({stock.available_quantity} available)"
+        except:
+            return "No Stock Record"
+
+
 
 class Cart(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)

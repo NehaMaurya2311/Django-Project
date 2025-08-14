@@ -5,6 +5,7 @@ from . import views
 app_name = 'paypal_integration'
 
 urlpatterns = [
+    path('payment-options/<str:order_id>/', views.payment_options, name='payment_options'),
     path('create/<str:order_id>/', views.create_payment, name='create_payment'),
     path('execute/<str:order_id>/', views.execute_payment, name='execute_payment'),
     path('cancelled/<str:order_id>/', views.payment_cancelled, name='payment_cancelled'),

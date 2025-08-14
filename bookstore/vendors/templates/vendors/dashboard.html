@@ -1,0 +1,450 @@
+<!-- vendors/templates/vendors/dashboard.html -->
+{% extends 'vendors/base.html' %}
+
+{% block title %}Vendor Dashboard - BookStore{% endblock %}
+
+{% block extra_css %}
+<style>
+    .dashboard-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    .stat-card {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 25px;
+        text-align: center;
+        transition: transform 0.3s ease;
+    }
+    .stat-card:hover {
+        transform: translateY(-5px);
+    }
+    .stat-icon {
+        font-size: 2.5rem;
+        margin-bottom: 15px;
+        opacity: 0.8;
+    }
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 5px;
+    }
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+    .status-badge {
+        padding: 6px 12px;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+    .status-pending {
+        background: #ffc107;
+        color: #000;
+    }
+    .status-approved {
+        background: #28a745;
+        color: white;
+    }
+    .status-rejected {
+        background: #dc3545;
+        color: white;
+    }
+    .status-suspended {
+        background: #6c757d;
+        color: white;
+    }
+    .welcome-section {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    .welcome-title {
+        color: #667eea;
+        font-size: 2rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+    .welcome-text {
+        color: #666;
+        font-size: 1.1rem;
+    }
+    .quick-actions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin: 30px 0;
+    }
+    .action-btn {
+        background: rgba(255, 255, 255, 0.8);
+        border: 2px solid #667eea;
+        border-radius: 12px;
+        padding: 15px 20px;
+        text-decoration: none;
+        color: #667eea;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .action-btn:hover {
+        background: #667eea;
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+    }
+    .action-btn i {
+        margin-right: 8px;
+        font-size: 1.2rem;
+    }
+    .recent-section {
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+    }
+    .section-header {
+        display: flex;
+        justify-content: between;
+        align-items: center;
+        margin-bottom: 20px;
+        padding-bottom: 10px;
+        border-bottom: 2px solid rgba(102, 126, 234, 0.1);
+    }
+    .section-title {
+        color: #667eea;
+        font-size: 1.4rem;
+        font-weight: 700;
+        margin: 0;
+    }
+    .view-all-link {
+        color: #667eea;
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 0.9rem;
+    }
+    .view-all-link:hover {
+        color: #764ba2;
+    }
+    .offer-item, .ticket-item {
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 10px;
+        border-left: 4px solid #667eea;
+        transition: all 0.3s ease;
+    }
+    .offer-item:hover, .ticket-item:hover {
+        background: rgba(255, 255, 255, 0.9);
+        transform: translateX(5px);
+    }
+    .item-title {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+    }
+    .item-meta {
+        color: #666;
+        font-size: 0.9rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .empty-state {
+        text-align: center;
+        padding: 40px 20px;
+        color: #999;
+    }
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 15px;
+        color: #667eea;
+        opacity: 0.5;
+    }
+    .empty-state h5 {
+        color: #666;
+        margin-bottom: 10px;
+    }
+    .profile-status-alert {
+        background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%);
+        color: white;
+        border: none;
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+    .profile-status-alert h6 {
+        margin-bottom: 10px;
+        font-weight: 700;
+    }
+    @media (max-width: 768px) {
+        .dashboard-stats {
+            grid-template-columns: repeat(2, 1fr);
+        }
+        .quick-actions {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<!-- Profile Status Alert -->
+{% if vendor_profile.status != 'approved' %}
+    <div class="alert profile-status-alert">
+        <h6><i class="fas fa-exclamation-triangle me-2"></i>Profile Status: {{ vendor_profile.get_status_display }}</h6>
+        {% if vendor_profile.status == 'pending' %}
+            <p class="mb-0">Your vendor profile is under review. We'll notify you once it's approved. This usually takes 2-3 business days.</p>
+        {% elif vendor_profile.status == 'rejected' %}
+            <p class="mb-0">Your vendor profile was rejected. Please contact support for more information.</p>
+        {% elif vendor_profile.status == 'suspended' %}
+            <p class="mb-0">Your vendor account is suspended. Please contact support to resolve this issue.</p>
+        {% endif %}
+    </div>
+{% endif %}
+
+<!-- Welcome Section -->
+<div class="welcome-section">
+    <h1 class="welcome-title">
+        <i class="fas fa-store me-2"></i>Welcome, {{ vendor_profile.business_name }}!
+    </h1>
+    <p class="welcome-text">Manage your stock offers, track performance, and grow your business.</p>
+    
+    <!-- Quick Actions -->
+    <div class="quick-actions">
+        {% if vendor_profile.status == 'approved' %}
+            <a href="{% url 'vendors:submit_offer' %}" class="action-btn">
+                <i class="fas fa-plus"></i>Submit New Offer
+            </a>
+        {% endif %}
+        <a href="{% url 'vendors:stock_offers' %}" class="action-btn">
+            <i class="fas fa-tags"></i>View All Offers
+        </a>
+        <a href="{% url 'vendors:tickets' %}" class="action-btn">
+            <i class="fas fa-headset"></i>Support Center
+        </a>
+        <a href="{% url 'accounts:profile' %}" class="action-btn">
+            <i class="fas fa-user-edit"></i>Edit Profile
+        </a>
+    </div>
+</div>
+
+<!-- Dashboard Stats -->
+<div class="dashboard-stats">
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-tags"></i>
+        </div>
+        <div class="stat-number">{{ total_offers }}</div>
+        <div class="stat-label">Total Offers</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-clock"></i>
+        </div>
+        <div class="stat-number">{{ pending_offers }}</div>
+        <div class="stat-label">Pending Review</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="stat-number">{{ approved_offers }}</div>
+        <div class="stat-label">Approved Offers</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-icon">
+            <i class="fas fa-headset"></i>
+        </div>
+        <div class="stat-number">{{ open_tickets }}</div>
+        <div class="stat-label">Open Tickets</div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-8">
+        <!-- Recent Offers -->
+        <div class="recent-section">
+            <div class="section-header">
+                <h3 class="section-title">
+                    <i class="fas fa-tags me-2"></i>Recent Stock Offers
+                </h3>
+                <a href="{% url 'vendors:stock_offers' %}" class="view-all-link">
+                    View All <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+            
+            {% if recent_offers %}
+                {% for offer in recent_offers %}
+                    <div class="offer-item">
+                        <div class="item-title">{{ offer.book.title }}</div>
+                        <div class="item-meta">
+                            <span>
+                                <i class="fas fa-cubes me-1"></i>{{ offer.quantity }} units
+                                <span class="mx-2">•</span>
+                                <i class="fas fa-rupee-sign me-1"></i>{{ offer.unit_price }} each
+                            </span>
+                            <span class="status-badge status-{{ offer.status }}">
+                                {{ offer.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-tags"></i>
+                    <h5>No Stock Offers Yet</h5>
+                    <p>Start by submitting your first stock offer!</p>
+                    {% if vendor_profile.status == 'approved' %}
+                        <a href="{% url 'vendors:submit_offer' %}" class="btn btn-primary">
+                            <i class="fas fa-plus me-2"></i>Submit Offer
+                        </a>
+                    {% endif %}
+                </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Profile Summary -->
+        <div class="recent-section">
+            <div class="section-header">
+                <h3 class="section-title">
+                    <i class="fas fa-user-circle me-2"></i>Profile Summary
+                </h3>
+            </div>
+            
+            <div class="mb-3">
+                <strong>Business Name:</strong><br>
+                <span class="text-muted">{{ vendor_profile.business_name }}</span>
+            </div>
+            
+            <div class="mb-3">
+                <strong>Contact Person:</strong><br>
+                <span class="text-muted">{{ vendor_profile.contact_person }}</span>
+            </div>
+            
+            <div class="mb-3">
+                <strong>Status:</strong><br>
+                <span class="status-badge status-{{ vendor_profile.status }}">
+                    {{ vendor_profile.get_status_display }}
+                </span>
+            </div>
+            
+            <div class="mb-3">
+                <strong>Member Since:</strong><br>
+                <span class="text-muted">{{ vendor_profile.created_at|date:"F Y" }}</span>
+            </div>
+            
+            {% if vendor_profile.rating > 0 %}
+                <div class="mb-3">
+                    <strong>Rating:</strong><br>
+                    <span class="text-warning">
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= vendor_profile.rating %}
+                                <i class="fas fa-star"></i>
+                            {% else %}
+                                <i class="far fa-star"></i>
+                            {% endif %}
+                        {% endfor %}
+                        ({{ vendor_profile.rating }}/5)
+                    </span>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Support Tickets -->
+        <div class="recent-section">
+            <div class="section-header">
+                <h3 class="section-title">
+                    <i class="fas fa-headset me-2"></i>Recent Tickets
+                </h3>
+                <a href="{% url 'vendors:tickets' %}" class="view-all-link">
+                    View All <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+            
+            {% if vendor_profile.tickets.all %}
+                {% for ticket in vendor_profile.tickets.all|slice:":3" %}
+                    <div class="ticket-item">
+                        <div class="item-title">
+                            <a href="{% url 'vendors:ticket_detail' ticket.ticket_id %}" class="text-decoration-none">
+                                #{{ ticket.ticket_id }}
+                            </a>
+                        </div>
+                        <div class="item-meta">
+                            <span>{{ ticket.subject|truncatechars:30 }}</span>
+                            <span class="status-badge status-{{ ticket.status }}">
+                                {{ ticket.get_status_display }}
+                            </span>
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-headset"></i>
+                    <h6>No Support Tickets</h6>
+                    <p>Need help? Create a support ticket.</p>
+                    <a href="{% url 'vendors:create_ticket' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-plus me-1"></i>New Ticket
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animate stats cards
+    const statCards = document.querySelectorAll('.stat-card');
+    statCards.forEach((card, index) => {
+        card.style.opacity = '0';
+        card.style.transform = 'translateY(30px)';
+        
+        setTimeout(() => {
+            card.style.transition = 'all 0.6s ease';
+            card.style.opacity = '1';
+            card.style.transform = 'translateY(0)';
+        }, index * 100);
+    });
+
+    // Animate recent sections
+    const sections = document.querySelectorAll('.recent-section');
+    sections.forEach((section, index) => {
+        section.style.opacity = '0';
+        section.style.transform = 'translateX(20px)';
+        
+        setTimeout(() => {
+            section.style.transition = 'all 0.5s ease';
+            section.style.opacity = '1';
+            section.style.transform = 'translateX(0)';
+        }, (index + 1) * 200);
+    });
+
+    // Welcome section animation
+    const welcomeSection = document.querySelector('.welcome-section');
+    welcomeSection.style.opacity = '0';
+    welcomeSection.style.transform = 'translateY(-20px)';
+    
+    setTimeout(() => {
+        welcomeSection.style.transition = 'all 0.8s ease';
+        welcomeSection.style.opacity = '1';
+        welcomeSection.style.transform = 'translateY(0)';
+    }, 100);
+});
+</script>
+{% endblock %}

@@ -90,7 +90,7 @@
                         </div>
                         
                         <div class="d-grid gap-2">
-                            <button class="btn btn-primary btn-lg">
+                            <button type="button" class="btn btn-primary btn-lg" onclick="proceedToCheckout(event)">
                                 <i class="fas fa-credit-card me-2"></i>Proceed to Checkout
                             </button>
                             <a href="{% url 'books:all_books' %}" class="btn btn-outline-secondary">
@@ -112,10 +112,44 @@
         </div>
     {% endif %}
 </div>
+
+<!-- Hidden CSRF Token -->
+{% csrf_token %}
+<div id="csrf-data" data-csrf="{{ csrf_token }}" style="display: none;"></div>
+
 {% endblock %}
 
 {% block extra_js %}
 <script>
+// Global CSRF token function
+function getCSRFToken() {
+    // First try to get from hidden input
+    let token = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (token) {
+        return token.value;
+    }
+    
+    // Try from data attribute
+    let csrfData = document.getElementById('csrf-data');
+    if (csrfData) {
+        return csrfData.dataset.csrf;
+    }
+    
+    // Try from cookies
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 function updateQuantity(itemId, newQuantity) {
     if (newQuantity < 1) {
         if (confirm('Remove this item from cart?')) {
@@ -125,45 +159,172 @@ function updateQuantity(itemId, newQuantity) {
         }
     }
     
-    $.ajax({
-        url: "{% url 'books:update_cart_item' 0 %}".replace('0', itemId),
+    const csrfToken = getCSRFToken();
+    if (!csrfToken) {
+        alert('Security token missing. Please refresh the page.');
+        return;
+    }
+    
+    fetch("{% url 'books:update_cart_item' 0 %}".replace('0', itemId), {
         method: 'POST',
-        data: JSON.stringify({quantity: parseInt(newQuantity)}),
-        contentType: 'application/json',
         headers: {
-            'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrfToken,
+            'X-Requested-With': 'XMLHttpRequest'
         },
-        success: function(response) {
-            if (response.success) {
-                if (response.item_deleted) {
-                    $('#cart-item-' + itemId).fadeOut();
-                    // Check if cart is now empty
-                    if ($('.card[id^="cart-item-"]').length === 1) {
-                        setTimeout(() => {
-                            location.reload();
-                        }, 500);
-                    }
-                } else {
-                    $('#item-total-' + itemId).text('₹' + response.item_total.toFixed(2));
-                    $('#qty-' + itemId).val(newQuantity);
-                }
-                
-                $('#cart-subtotal, #cart-total').text('₹' + response.cart_total.toFixed(2));
-                $('.cart-total').text(response.cart_total);
-            }
-        },
-        error: function() {
-            alert('Error updating cart item');
+        credentials: 'same-origin',
+        body: JSON.stringify({quantity: parseInt(newQuantity)})
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
         }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            if (data.item_deleted) {
+                const itemElement = document.getElementById('cart-item-' + itemId);
+                if (itemElement) {
+                    itemElement.style.opacity = '0';
+                    setTimeout(() => {
+                        itemElement.remove();
+                        // Check if cart is now empty
+                        const remainingItems = document.querySelectorAll('[id^="cart-item-"]');
+                        if (remainingItems.length === 0) {
+                            setTimeout(() => {
+                                location.reload();
+                            }, 500);
+                        }
+                    }, 300);
+                }
+            } else {
+                const itemTotal = document.getElementById('item-total-' + itemId);
+                const qtyInput = document.getElementById('qty-' + itemId);
+                if (itemTotal) {
+                    itemTotal.textContent = '₹' + data.item_total.toFixed(2);
+                }
+                if (qtyInput) {
+                    qtyInput.value = newQuantity;
+                }
+            }
+            
+            // Update cart totals
+            const cartSubtotal = document.getElementById('cart-subtotal');
+            const cartTotal = document.getElementById('cart-total');
+            if (cartSubtotal) {
+                cartSubtotal.textContent = '₹' + data.cart_total.toFixed(2);
+            }
+            if (cartTotal) {
+                cartTotal.textContent = '₹' + data.cart_total.toFixed(2);
+            }
+            
+            // Update navbar cart total if exists
+            const navCartTotal = document.querySelector('.cart-total');
+            if (navCartTotal) {
+                navCartTotal.textContent = data.cart_total;
+            }
+        } else {
+            throw new Error(data.error || 'Failed to update cart');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating cart item: ' + error.message);
     });
 }
 
-// Add CSRF token to all AJAX requests
-$.ajaxSetup({
-    beforeSend: function(xhr, settings) {
-        if (!this.crossDomain) {
-            xhr.setRequestHeader("X-CSRFToken", $('[name=csrfmiddlewaretoken]').val());
+function proceedToCheckout(event) {
+    // Prevent any default action
+    if (event) {
+        event.preventDefault();
+    }
+    
+    // Check if user is authenticated
+    {% if user.is_authenticated %}
+        // Create order first, then redirect to payment options
+        const csrfToken = getCSRFToken();
+        if (!csrfToken) {
+            alert('Security token missing. Please refresh the page.');
+            return;
         }
+        
+        // Show loading
+        const originalButton = event.target;
+        originalButton.disabled = true;
+        originalButton.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Processing...';
+        
+        // Create order from cart - FIXED URL
+        fetch('/orders/create-from-cart/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            console.log('Response status:', response.status);
+            if (!response.ok) {
+                return response.text().then(text => {
+                    console.log('Response text:', text);
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Response data:', data);
+            if (data.success) {
+                // Check if paypal_integration app exists, otherwise redirect to order detail
+                {% url 'paypal_integration:payment_options' '00000000-0000-0000-0000-000000000000' as payment_url %}
+                {% if payment_url %}
+                    window.location.href = "{{ payment_url }}".replace('00000000-0000-0000-0000-000000000000', data.order_id);
+                {% else %}
+                    // Fallback to order detail page if paypal integration doesn't exist
+                    window.location.href = '/orders/' + data.order_id + '/';
+                {% endif %}
+            } else {
+                throw new Error(data.error || 'Failed to create order');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            
+            // Check for specific error types and provide user-friendly messages
+            if (error.message.includes('complete your profile')) {
+                alert('Please complete your profile information before checkout.');
+                window.location.href = '/accounts/profile/';
+            } else if (error.message.includes('stock')) {
+                alert('Some items in your cart are out of stock. Please review your cart.');
+                location.reload();
+            } else {
+                alert('Error creating order: ' + error.message);
+            }
+            
+            // Reset button
+            originalButton.disabled = false;
+            originalButton.innerHTML = '<i class="fas fa-credit-card me-2"></i>Proceed to Checkout';
+        });
+    {% else %}
+        // Redirect to login
+        alert('Please login to continue with checkout.');
+        window.location.href = "{% url 'accounts:login' %}?next=" + encodeURIComponent(window.location.pathname);
+    {% endif %}
+}
+
+// Set up page initialization
+document.addEventListener('DOMContentLoaded', function() {
+    // For jQuery compatibility if needed elsewhere
+    if (typeof $ !== 'undefined') {
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
+                }
+            }
+        });
     }
 });
 </script>

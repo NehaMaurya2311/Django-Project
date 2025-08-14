@@ -1,0 +1,187 @@
+{% extends 'warehouse/base.html' %}
+
+{% block title %}Warehouse Dashboard{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1><i class="fas fa-warehouse"></i> Warehouse Dashboard</h1>
+        <p class="text-muted">Real-time inventory management overview</p>
+    </div>
+</div>
+
+<!-- Key Metrics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3 mb-3">
+        <div class="card card-stat h-100 bg-primary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-book fa-2x mb-2"></i>
+                <h2 class="mb-1">{{ total_books }}</h2>
+                <p class="mb-0">Total Books</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card card-stat h-100 bg-success text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-boxes fa-2x mb-2"></i>
+                <h2 class="mb-1">{{ total_quantity }}</h2>
+                <p class="mb-0">Total Stock</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card card-stat h-100 bg-warning text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
+                <h2 class="mb-1">{{ low_stock }}</h2>
+                <p class="mb-0">Low Stock Items</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3 mb-3">
+        <div class="card card-stat h-100 bg-danger text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-times-circle fa-2x mb-2"></i>
+                <h2 class="mb-1">{{ out_of_stock }}</h2>
+                <p class="mb-0">Out of Stock</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{% url 'warehouse:stock_list' %}" class="btn btn-outline-primary me-2 mb-2">
+                    <i class="fas fa-list"></i> View All Stock
+                </a>
+                <a href="{% url 'warehouse:low_stock_report' %}" class="btn btn-outline-warning me-2 mb-2">
+                    <i class="fas fa-exclamation-triangle"></i> Low Stock Report
+                </a>
+                <a href="/admin/warehouse/stock/" class="btn btn-outline-info me-2 mb-2">
+                    <i class="fas fa-cog"></i> Manage Stock (Admin)
+                </a>
+                <a href="/admin/warehouse/stockmovement/" class="btn btn-outline-secondary mb-2">
+                    <i class="fas fa-exchange-alt"></i> Stock Movements
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Recent Stock Movements -->
+    <div class="col-md-8 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5><i class="fas fa-history"></i> Recent Stock Movements</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_movements %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead class="table-light">
+                                <tr>
+                                    <th>Book</th>
+                                    <th>Type</th>
+                                    <th>Quantity</th>
+                                    <th>Reference</th>
+                                    <th>Date</th>
+                                    <th>User</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for movement in recent_movements %}
+                                <tr class="{% if movement.movement_type == 'in' %}movement-in{% elif movement.movement_type == 'out' %}movement-out{% elif movement.movement_type == 'adjustment' %}movement-adjustment{% endif %}">
+                                    <td>
+                                        <strong>{{ movement.stock.book.title|truncatechars:30 }}</strong>
+                                        <br><small class="text-muted">{{ movement.stock.book.authors.all|join:", " }}</small>
+                                    </td>
+                                    <td>
+                                        <span class="badge 
+                                            {% if movement.movement_type == 'in' %}bg-success
+                                            {% elif movement.movement_type == 'out' %}bg-primary
+                                            {% elif movement.movement_type == 'damaged' %}bg-danger
+                                            {% elif movement.movement_type == 'returned' %}bg-info
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ movement.get_movement_type_display }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <strong class="{% if movement.quantity > 0 %}text-success{% else %}text-danger{% endif %}">
+                                            {% if movement.quantity > 0 %}+{% endif %}{{ movement.quantity }}
+                                        </strong>
+                                    </td>
+                                    <td>{{ movement.reference|default:"-" }}</td>
+                                    <td>{{ movement.created_at|date:"M d, H:i" }}</td>
+                                    <td>{{ movement.performed_by.username|default:"System" }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-inbox fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No recent stock movements</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Category Stats -->
+    <div class="col-md-4 mb-4">
+        <div class="card h-100">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie"></i> Category Stock Overview</h5>
+            </div>
+            <div class="card-body">
+                {% if category_stats %}
+                    {% for category_stat in category_stats %}
+                    <div class="d-flex justify-content-between align-items-center mb-3 p-2 border rounded">
+                        <div>
+                            <strong>{{ category_stat.category.name }}</strong>
+                            <br>
+                            <small class="text-muted">
+                                {{ category_stat.total_books }} books • 
+                                {{ category_stat.total_quantity }} units
+                            </small>
+                            {% if category_stat.low_stock_books > 0 %}
+                                <br><small class="text-warning">
+                                    <i class="fas fa-exclamation-triangle"></i> 
+                                    {{ category_stat.low_stock_books }} low stock
+                                </small>
+                            {% endif %}
+                            {% if category_stat.out_of_stock_books > 0 %}
+                                <br><small class="text-danger">
+                                    <i class="fas fa-times-circle"></i> 
+                                    {{ category_stat.out_of_stock_books }} out of stock
+                                </small>
+                            {% endif %}
+                        </div>
+                        <div class="text-end">
+                            <div class="progress" style="width: 100px; height: 8px;">
+                                <div class="progress-bar bg-success" 
+                                     style="width: {% widthratio category_stat.total_quantity 1000 100 %}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No category data available</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,612 @@
+<!-- vendors/templates/vendors/submit_offer.html -->
+{% extends 'vendors/base.html' %}
+
+{% block title %}Submit Stock Offer - BookStore{% endblock %}
+
+{% block extra_css %}
+<style>
+    .offer-form {
+        max-width: 800px;
+        margin: 0 auto;
+    }
+    .form-section {
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 25px;
+        border-left: 4px solid #667eea;
+    }
+    .section-title {
+        color: #667eea;
+        font-weight: 700;
+        font-size: 1.3rem;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+    }
+    .section-title i {
+        margin-right: 10px;
+    }
+    .form-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+    }
+    .form-control, .form-select {
+        border: 2px solid #e0e0e0;
+        border-radius: 10px;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+    }
+    .form-control:focus, .form-select:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    .required {
+        color: #dc3545;
+    }
+    .help-text {
+        font-size: 0.9rem;
+        color: #666;
+        margin-top: 5px;
+    }
+    .book-search {
+        position: relative;
+    }
+    .search-results {
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-top: none;
+        border-radius: 0 0 10px 10px;
+        max-height: 300px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+    }
+    .search-result-item {
+        padding: 12px 15px;
+        border-bottom: 1px solid #f0f0f0;
+        cursor: pointer;
+        transition: background 0.3s ease;
+    }
+    .search-result-item:hover {
+        background: rgba(102, 126, 234, 0.1);
+    }
+    .search-result-item:last-child {
+        border-bottom: none;
+    }
+    .result-title {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    .result-authors {
+        color: #666;
+        font-size: 0.9rem;
+    }
+    .selected-book {
+        background: rgba(102, 126, 234, 0.1);
+        border: 2px solid #667eea;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    .selected-book-title {
+        font-weight: 700;
+        color: #667eea;
+        font-size: 1.1rem;
+        margin-bottom: 5px;
+    }
+    .selected-book-authors {
+        color: #666;
+    }
+    .calculation-display {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        margin-bottom: 20px;
+    }
+    .calc-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    .calc-row:last-child {
+        margin-bottom: 0;
+        padding-top: 10px;
+        border-top: 2px solid #667eea;
+        font-weight: 700;
+        font-size: 1.2rem;
+    }
+    .calc-label {
+        color: #666;
+    }
+    .calc-value {
+        color: #333;
+        font-weight: 600;
+    }
+    .calc-total {
+        color: #28a745 !important;
+        font-size: 1.5rem !important;
+    }
+    .date-inputs {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+    }
+    .offer-preview {
+        background: rgba(255, 255, 255, 0.9);
+        border: 2px solid #667eea;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+    }
+    .preview-title {
+        color: #667eea;
+        font-weight: 700;
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+        text-align: center;
+    }
+    .preview-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+    }
+    .preview-item {
+        text-align: center;
+        padding: 10px;
+        background: rgba(102, 126, 234, 0.05);
+        border-radius: 8px;
+    }
+    .preview-label {
+        font-size: 0.8rem;
+        color: #666;
+        text-transform: uppercase;
+        font-weight: 600;
+        margin-bottom: 5px;
+    }
+    .preview-value {
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: #333;
+    }
+    .submit-section {
+        text-align: center;
+        padding: 30px;
+        background: rgba(255, 255, 255, 0.8);
+        border-radius: 15px;
+    }
+    .terms-checkbox {
+        margin: 20px 0;
+    }
+    .submit-btn {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        border-radius: 12px;
+        padding: 15px 40px;
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: white;
+        transition: all 0.3s ease;
+    }
+    .submit-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
+    }
+    .submit-btn:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+    @media (max-width: 768px) {
+        .date-inputs {
+            grid-template-columns: 1fr;
+        }
+        .preview-grid {
+            grid-template-columns: 1fr;
+        }
+        .calc-row {
+            flex-direction: column;
+            text-align: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="content-card">
+    <div class="text-center mb-4">
+        <h1 class="page-title">
+            <i class="fas fa-plus me-3"></i>Submit Stock Offer
+        </h1>
+        <p class="page-subtitle">Add books to your inventory and make them available for sale</p>
+    </div>
+
+    <div class="offer-form">
+        <form method="post" id="stockOfferForm">
+            {% csrf_token %}
+            
+            <!-- Book Selection Section -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-book"></i>Select Book
+                </h3>
+                
+                <div class="book-search">
+                    <label class="form-label">Search for Book <span class="required">*</span></label>
+                    <input type="text" 
+                           class="form-control" 
+                           id="bookSearch" 
+                           placeholder="Start typing book title or ISBN..."
+                           autocomplete="off">
+                    <div class="search-results" id="searchResults"></div>
+                    <div class="help-text">Type at least 3 characters to search for books in our catalog</div>
+                </div>
+                
+                <!-- Selected Book Display -->
+                <div id="selectedBookDisplay" style="display: none;">
+                    <div class="selected-book">
+                        <div class="selected-book-title" id="selectedTitle"></div>
+                        <div class="selected-book-authors" id="selectedAuthors"></div>
+                        <button type="button" class="btn btn-outline-danger btn-sm mt-2" id="clearSelection">
+                            <i class="fas fa-times me-1"></i>Change Book
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Hidden book field -->
+                {{ form.book }}
+                {% for error in form.book.errors %}
+                    <div class="text-danger small">{{ error }}</div>
+                {% endfor %}
+            </div>
+
+            <!-- Offer Details Section -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-info-circle"></i>Offer Details
+                </h3>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Quantity <span class="required">*</span></label>
+                        {{ form.quantity }}
+                        <div class="help-text">Number of books you want to offer</div>
+                        {% for error in form.quantity.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <label class="form-label">Unit Price (₹) <span class="required">*</span></label>
+                        {{ form.unit_price }}
+                        <div class="help-text">Price per book in Indian Rupees</div>
+                        {% for error in form.unit_price.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+                
+                <!-- Real-time Calculation Display -->
+                <div class="calculation-display" id="calculationDisplay">
+                    <div class="calc-row">
+                        <span class="calc-label">Quantity:</span>
+                        <span class="calc-value" id="displayQuantity">0</span>
+                    </div>
+                    <div class="calc-row">
+                        <span class="calc-label">Unit Price:</span>
+                        <span class="calc-value">₹<span id="displayUnitPrice">0.00</span></span>
+                    </div>
+                    <div class="calc-row">
+                        <span class="calc-label calc-total">Total Amount:</span>
+                        <span class="calc-value calc-total">₹<span id="displayTotal">0.00</span></span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Date Information Section -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-calendar-alt"></i>Availability & Expiry
+                </h3>
+                
+                <div class="date-inputs">
+                    <div>
+                        <label class="form-label">Availability Date <span class="required">*</span></label>
+                        {{ form.availability_date }}
+                        <div class="help-text">When will these books be available for shipping?</div>
+                        {% for error in form.availability_date.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    
+                    <div>
+                        <label class="form-label">Offer Expiry Date <span class="required">*</span></label>
+                        {{ form.expiry_date }}
+                        <div class="help-text">Until when is this offer valid?</div>
+                        {% for error in form.expiry_date.errors %}
+                            <div class="text-danger small">{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Additional Notes Section -->
+            <div class="form-section">
+                <h3 class="section-title">
+                    <i class="fas fa-sticky-note"></i>Additional Information
+                </h3>
+                
+                <div class="mb-3">
+                    <label class="form-label">Notes</label>
+                    {{ form.notes }}
+                    <div class="help-text">Any additional information about this offer (optional)</div>
+                    {% for error in form.notes.errors %}
+                        <div class="text-danger small">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Offer Preview -->
+            <div class="offer-preview" id="offerPreview" style="display: none;">
+                <div class="preview-title">
+                    <i class="fas fa-eye me-2"></i>Offer Preview
+                </div>
+                <div class="preview-grid">
+                    <div class="preview-item">
+                        <div class="preview-label">Book</div>
+                        <div class="preview-value" id="previewBook">-</div>
+                    </div>
+                    <div class="preview-item">
+                        <div class="preview-label">Quantity</div>
+                        <div class="preview-value" id="previewQuantity">-</div>
+                    </div>
+                    <div class="preview-item">
+                        <div class="preview-label">Unit Price</div>
+                        <div class="preview-value" id="previewUnitPrice">-</div>
+                    </div>
+                    <div class="preview-item">
+                        <div class="preview-label">Total Amount</div>
+                        <div class="preview-value" id="previewTotal" style="color: #28a745;">-</div>
+                    </div>
+                    <div class="preview-item">
+                        <div class="preview-label">Available From</div>
+                        <div class="preview-value" id="previewAvailableDate">-</div>
+                    </div>
+                    <div class="preview-item">
+                        <div class="preview-label">Expires On</div>
+                        <div class="preview-value" id="previewExpiryDate">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Terms and Submit -->
+            <div class="submit-section">
+                <div class="terms-checkbox">
+                    <div class="form-check">
+                        <input class="form-check-input" type="checkbox" id="termsCheck" required>
+                        <label class="form-check-label" for="termsCheck">
+                            I agree to the vendor terms and conditions and confirm that all information provided is accurate.
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="d-flex justify-content-center gap-3">
+                    <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
+                        <i class="fas fa-arrow-left me-2"></i>Cancel
+                    </button>
+                    <button type="submit" class="submit-btn" id="submitBtn" disabled>
+                        <i class="fas fa-paper-plane me-2"></i>Submit Offer
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const bookSearch = document.getElementById('bookSearch');
+    const searchResults = document.getElementById('searchResults');
+    const selectedBookDisplay = document.getElementById('selectedBookDisplay');
+    const bookField = document.getElementById('{{ form.book.id_for_label }}');
+    const quantityField = document.getElementById('{{ form.quantity.id_for_label }}');
+    const priceField = document.getElementById('{{ form.unit_price.id_for_label }}');
+    const availabilityField = document.getElementById('{{ form.availability_date.id_for_label }}');
+    const expiryField = document.getElementById('{{ form.expiry_date.id_for_label }}');
+    const notesField = document.getElementById('{{ form.notes.id_for_label }}');
+    const termsCheck = document.getElementById('termsCheck');
+    const submitBtn = document.getElementById('submitBtn');
+    const offerPreview = document.getElementById('offerPreview');
+    
+    let selectedBook = null;
+    let searchTimeout = null;
+
+    // Book search functionality
+    bookSearch.addEventListener('input', function() {
+        const query = this.value.trim();
+        
+        clearTimeout(searchTimeout);
+        
+        if (query.length < 3) {
+            searchResults.style.display = 'none';
+            return;
+        }
+        
+        searchTimeout = setTimeout(() => {
+            // Simulate API call - replace with actual endpoint
+            fetch(`/books/search/?q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    displaySearchResults(data.books || []);
+                })
+                .catch(error => {
+                    console.error('Search error:', error);
+                    searchResults.innerHTML = '<div class="search-result-item">Error searching books</div>';
+                    searchResults.style.display = 'block';
+                });
+        }, 300);
+    });
+
+    function displaySearchResults(books) {
+        if (books.length === 0) {
+            searchResults.innerHTML = '<div class="search-result-item">No books found</div>';
+        } else {
+            searchResults.innerHTML = books.map(book => `
+                <div class="search-result-item" data-book-id="${book.id}" data-book-title="${book.title}" data-book-authors="${book.authors}">
+                    <div class="result-title">${book.title}</div>
+                    <div class="result-authors">${book.authors}</div>
+                </div>
+            `).join('');
+        }
+        searchResults.style.display = 'block';
+    }
+
+    // Book selection
+    searchResults.addEventListener('click', function(e) {
+        const item = e.target.closest('.search-result-item');
+        if (item) {
+            selectedBook = {
+                id: item.dataset.bookId,
+                title: item.dataset.bookTitle,
+                authors: item.dataset.bookAuthors
+            };
+            
+            // Update form
+            bookField.value = selectedBook.id;
+            
+            // Show selected book
+            document.getElementById('selectedTitle').textContent = selectedBook.title;
+            document.getElementById('selectedAuthors').textContent = `By: ${selectedBook.authors}`;
+            selectedBookDisplay.style.display = 'block';
+            
+            // Hide search results
+            searchResults.style.display = 'none';
+            bookSearch.value = '';
+            
+            updatePreview();
+        }
+    });
+
+    // Clear selection
+    document.getElementById('clearSelection').addEventListener('click', function() {
+        selectedBook = null;
+        bookField.value = '';
+        selectedBookDisplay.style.display = 'none';
+        bookSearch.focus();
+        updatePreview();
+    });
+
+    // Real-time calculation
+    function updateCalculation() {
+        const quantity = parseInt(quantityField.value) || 0;
+        const unitPrice = parseFloat(priceField.value) || 0;
+        const total = quantity * unitPrice;
+        
+        document.getElementById('displayQuantity').textContent = quantity;
+        document.getElementById('displayUnitPrice').textContent = unitPrice.toFixed(2);
+        document.getElementById('displayTotal').textContent = total.toFixed(2);
+    }
+
+    // Update preview
+    function updatePreview() {
+        const quantity = quantityField.value;
+        const unitPrice = priceField.value;
+        const availableDate = availabilityField.value;
+        const expiryDate = expiryField.value;
+        
+        const hasRequiredFields = selectedBook && quantity && unitPrice && availableDate && expiryDate;
+        
+        if (hasRequiredFields) {
+            const total = (parseInt(quantity) || 0) * (parseFloat(unitPrice) || 0);
+            
+            document.getElementById('previewBook').textContent = selectedBook.title;
+            document.getElementById('previewQuantity').textContent = `${quantity} units`;
+            document.getElementById('previewUnitPrice').textContent = `₹${parseFloat(unitPrice).toFixed(2)}`;
+            document.getElementById('previewTotal').textContent = `₹${total.toFixed(2)}`;
+            document.getElementById('previewAvailableDate').textContent = new Date(availableDate).toLocaleDateString();
+            document.getElementById('previewExpiryDate').textContent = new Date(expiryDate).toLocaleDateString();
+            
+            offerPreview.style.display = 'block';
+        } else {
+            offerPreview.style.display = 'none';
+        }
+        
+        updateSubmitButton();
+    }
+
+    // Update submit button state
+    function updateSubmitButton() {
+        const hasRequiredFields = selectedBook && 
+                                 quantityField.value && 
+                                 priceField.value && 
+                                 availabilityField.value && 
+                                 expiryField.value &&
+                                 termsCheck.checked;
+        
+        submitBtn.disabled = !hasRequiredFields;
+    }
+
+    // Event listeners
+    quantityField.addEventListener('input', () => {
+        updateCalculation();
+        updatePreview();
+    });
+
+    priceField.addEventListener('input', () => {
+        updateCalculation();
+        updatePreview();
+    });
+
+    [availabilityField, expiryField].forEach(field => {
+        field.addEventListener('change', updatePreview);
+    });
+
+    termsCheck.addEventListener('change', updateSubmitButton);
+
+    // Set minimum dates
+    const today = new Date().toISOString().split('T')[0];
+    availabilityField.setAttribute('min', today);
+    expiryField.setAttribute('min', today);
+
+    // Form animations
+    const sections = document.querySelectorAll('.form-section');
+    sections.forEach((section, index) => {
+        section.style.opacity = '0';
+        section.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            section.style.transition = 'all 0.5s ease';
+            section.style.opacity = '1';
+            section.style.transform = 'translateY(0)';
+        }, index * 150);
+    });
+
+    // Hide search results when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.book-search')) {
+            searchResults.style.display = 'none';
+        }
+    });
+
+    // Form submission
+    document.getElementById('stockOfferForm').addEventListener('submit', function(e) {
+        if (!selectedBook) {
+            e.preventDefault();
+            alert('Please select a book for your offer.');
+            bookSearch.focus();
+        }
+    });
+});
+</script>
+{% endblock %}

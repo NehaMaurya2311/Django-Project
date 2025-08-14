@@ -97,8 +97,8 @@
                     <div class="col-md-4 col-lg-3 mb-4">
                         <div class="card h-100 book-card">
                             <a href="{% url 'books:book_detail' book.slug %}">
-                                {% if book.cover_image %}
-                                    <img src="{{ book.cover_image.url }}" class="card-img-top" style="height: 250px; object-fit: cover;" alt="{{ book.title }}">
+                                {% if book.get_cover_image_url %}
+                                    <img src="{{ book.get_cover_image_url }}" class="card-img-top" style="height: 250px; object-fit: cover;" alt="{{ book.title }}">
                                 {% else %}
                                     <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 250px;">
                                         <i class="fas fa-book fa-3x text-muted"></i>
@@ -144,6 +144,7 @@
                                     </div>
                                     
                                     <button class="btn btn-primary btn-sm w-100" onclick="addToCart({{ book.id }})">
+                                        
                                         <i class="fas fa-shopping-cart me-1"></i>Add to Cart
                                     </button>
                                 </div>
@@ -202,6 +203,11 @@
         </div>
     </div>
 </div>
+
+<!-- Hidden CSRF Token -->
+{% csrf_token %}
+<div id="csrf-data" data-csrf="{{ csrf_token }}" style="display: none;"></div>
+
 {% endblock %}
 
 {% block extra_css %}
@@ -217,30 +223,106 @@
         position: sticky;
         top: 20px;
     }
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+// Global CSRF token function
+function getCSRFToken() {
+    // First try to get from hidden input
+    let token = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (token) {
+        return token.value;
+    }
+    
+    // Try from data attribute
+    let csrfData = document.getElementById('csrf-data');
+    if (csrfData) {
+        return csrfData.dataset.csrf;
+    }
+    
+    // Try from cookies
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 function addToCart(bookId) {
     {% if user.is_authenticated %}
-        $.ajax({
-            url: "{% url 'books:add_to_cart' 0 %}".replace('0', bookId),
+        const button = event.target;
+        const originalText = button.innerHTML;
+        const csrfToken = getCSRFToken();
+        
+        if (!csrfToken) {
+            showAlert('Security token missing. Please refresh the page.', 'danger');
+            return;
+        }
+        
+        // Disable button and show loading
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Adding...';
+        
+        fetch("{% url 'books:add_to_cart' 0 %}".replace('0', bookId), {
             method: 'POST',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
             },
-            success: function(response) {
-                if (response.success) {
-                    showAlert(response.message, 'success');
-                    // Update cart total in navbar if it exists
-                    $('.cart-total').text(response.cart_total);
-                }
-            },
-            error: function() {
-                showAlert('Error adding book to cart', 'danger');
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                // Update cart total in navbar if it exists
+                const cartTotal = document.querySelector('.cart-total');
+                if (cartTotal) {
+                    cartTotal.textContent = data.cart_total;
+                }
+                
+                // Temporarily change button text
+                button.innerHTML = '<i class="fas fa-check me-1"></i>Added!';
+                button.classList.remove('btn-primary');
+                button.classList.add('btn-success');
+                
+                // Reset button after 2 seconds
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-primary');
+                    button.disabled = false;
+                }, 2000);
+            } else {
+                throw new Error(data.error || 'Failed to add to cart');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert(error.message || 'Error adding book to cart. Please try again.', 'danger');
+            
+            // Reset button
+            button.innerHTML = originalText;
+            button.disabled = false;
         });
     {% else %}
         window.location.href = "{% url 'account_login' %}";
@@ -248,17 +330,59 @@ function addToCart(bookId) {
 }
 
 function showAlert(message, type) {
+    // Remove any existing alerts first
+    const existingAlerts = document.querySelectorAll('.alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
     const alertHtml = `
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        <div class="alert alert-${type} alert-dismissible fade show position-fixed" 
+             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;" role="alert">
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     `;
-    $('.container').first().prepend(alertHtml);
     
-    setTimeout(function() {
-        $('.alert').fadeOut();
+    document.body.insertAdjacentHTML('afterbegin', alertHtml);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            if (alert.classList.contains('fade')) {
+                alert.classList.remove('show');
+                setTimeout(() => alert.remove(), 300);
+            }
+        });
     }, 5000);
 }
+
+// Set up CSRF for all AJAX requests
+document.addEventListener('DOMContentLoaded', function() {
+    // Add CSRF token to all forms
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        if (!form.querySelector('[name=csrfmiddlewaretoken]')) {
+            const csrfToken = getCSRFToken();
+            if (csrfToken) {
+                const hiddenInput = document.createElement('input');
+                hiddenInput.type = 'hidden';
+                hiddenInput.name = 'csrfmiddlewaretoken';
+                hiddenInput.value = csrfToken;
+                form.appendChild(hiddenInput);
+            }
+        }
+    });
+    
+    // For jQuery if it's being used elsewhere
+    if (typeof $ !== 'undefined') {
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
+                }
+            }
+        });
+    }
+});
 </script>
 {% endblock %}

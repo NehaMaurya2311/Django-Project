@@ -86,81 +86,91 @@
     <!-- Page Specific JavaScript -->
     {% block extra_js %}{% endblock %}
     
-    <!-- Core JavaScript Functionality -->
-    <script>
-        $(document).ready(function() {
-            // Initialize tooltips
-            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-                return new bootstrap.Tooltip(tooltipTriggerEl);
-            });
-            
-            // Back to top functionality
-            $(window).scroll(function() {
-                if ($(this).scrollTop() > 100) {
-                    $('#backToTop').fadeIn();
-                } else {
-                    $('#backToTop').fadeOut();
-                }
-            });
-            
-            $('#backToTop').click(function() {
-                $('html, body').animate({scrollTop: 0}, 800);
-                return false;
-            });
-            
-            // Auto-hide messages after 5 seconds
-            setTimeout(function() {
-                $('.alert').fadeOut();
-            }, 5000);
-            
-            // Loading overlay functions
-            window.showLoading = function() {
-                $('#loadingOverlay').removeClass('d-none');
-            };
-            
-            window.hideLoading = function() {
-                $('#loadingOverlay').addClass('d-none');
-            };
-            
-            // CSRF Token for AJAX requests
-            function getCookie(name) {
-                let cookieValue = null;
-                if (document.cookie && document.cookie !== '') {
-                    const cookies = document.cookie.split(';');
-                    for (let i = 0; i < cookies.length; i++) {
-                        const cookie = cookies[i].trim();
-                        if (cookie.substring(0, name.length + 1) === (name + '=')) {
-                            cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
-                            break;
-                        }
-                    }
-                }
-                return cookieValue;
+   <!-- Add this to your base.html template, preferably in the <head> section or before closing </body> -->
+
+        <!-- Global CSRF Token Setup -->
+        <script>
+        // Global CSRF token setup - Add this to your base.html
+        window.csrfToken = '{{ csrf_token }}';
+
+        // Function to get CSRF token from multiple sources
+        function getCSRFToken() {
+            // First try window.csrfToken
+            if (window.csrfToken) {
+                return window.csrfToken;
             }
             
-            // Set CSRF token for all AJAX requests
-            $.ajaxSetup({
-                beforeSend: function(xhr, settings) {
-                    if (!(/^http:.*/.test(settings.url) || /^https:.*/.test(settings.url))) {
-                        xhr.setRequestHeader("X-CSRFToken", getCookie('csrftoken'));
+            // Try to get from hidden input
+            let tokenInput = document.querySelector('[name=csrfmiddlewaretoken]');
+            if (tokenInput) {
+                return tokenInput.value;
+            }
+            
+            // Try from data attribute
+            let csrfData = document.getElementById('csrf-data');
+            if (csrfData) {
+                return csrfData.dataset.csrf;
+            }
+            
+            // Try from cookies as last resort
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, 10) === 'csrftoken=') {
+                        cookieValue = decodeURIComponent(cookie.substring(10));
+                        break;
                     }
                 }
-            });
+            }
+            return cookieValue;
+        }
+
+        // Global AJAX setup for all requests
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set up fetch interceptor for CSRF
+            const originalFetch = window.fetch;
+            window.fetch = function(url, options = {}) {
+                // Only add CSRF for same-origin requests
+                if (!url.startsWith('http') || url.startsWith(window.location.origin)) {
+                    options.headers = options.headers || {};
+                    
+                    // Add CSRF token if it's a POST, PUT, PATCH, or DELETE request
+                    if (['POST', 'PUT', 'PATCH', 'DELETE'].includes((options.method || 'GET').toUpperCase())) {
+                        const csrfToken = getCSRFToken();
+                        if (csrfToken) {
+                            options.headers['X-CSRFToken'] = csrfToken;
+                        }
+                    }
+                    
+                    // Always include credentials for same-origin requests
+                    options.credentials = options.credentials || 'same-origin';
+                }
+                
+                return originalFetch(url, options);
+            };
+            
+            // jQuery setup if available
+            if (typeof $ !== 'undefined') {
+                $.ajaxSetup({
+                    beforeSend: function(xhr, settings) {
+                        // Only add CSRF for same-origin requests
+                        if (!this.crossDomain) {
+                            const csrfToken = getCSRFToken();
+                            if (csrfToken) {
+                                xhr.setRequestHeader("X-CSRFToken", csrfToken);
+                            }
+                        }
+                    }
+                });
+            }
         });
-    </script>
-    
-    <!-- Google Analytics (Optional - Add your tracking ID) -->
-    {% comment %}
-    <!-- Global site tag (gtag.js) - Google Analytics -->
-    <script async src="https://www.googletagmanager.com/gtag/js?id=GA_TRACKING_ID"></script>
-    <script>
-        window.dataLayer = window.dataLayer || [];
-        function gtag(){dataLayer.push(arguments);}
-        gtag('js', new Date());
-        gtag('config', 'GA_TRACKING_ID');
-    </script>
-    {% endcomment %}
+        </script>
+
+        <!-- Hidden CSRF token fallback -->
+        {% csrf_token %}
+        <div id="csrf-data" data-csrf="{{ csrf_token }}" style="display: none;"></div>
 </body>
 </html>
 

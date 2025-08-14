@@ -1,0 +1,276 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Track Delivery - Order #{{ order.order_id }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <!-- Order Header -->
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h4 class="mb-0">
+                    <i class="fas fa-box"></i> Order #{{ order.order_id }}
+                </h4>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><strong>Order Date:</strong></h6>
+                        <p>{{ order.created_at|date:"F d, Y" }}</p>
+                        
+                        <h6><strong>Status:</strong></h6>
+                        <span class="status-badge status-{{ delivery.status }}">
+                            {{ delivery.get_status_display }}
+                        </span>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><strong>Tracking ID:</strong></h6>
+                        <p class="font-monospace">{{ delivery.tracking_id }}</p>
+                        
+                        <h6><strong>Delivery Partner:</strong></h6>
+                        <p>
+                            {% if delivery.delivery_partner %}
+                                {{ delivery.delivery_partner.name }}
+                                <br><small class="text-muted">{{ delivery.delivery_partner.phone }}</small>
+                            {% else %}
+                                <span class="text-muted">Not assigned yet</span>
+                            {% endif %}
+                        </p>
+                    </div>
+                </div>
+                
+                {% if delivery.estimated_delivery_time %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <i class="fas fa-clock"></i>
+                            <strong>Estimated Delivery:</strong> {{ delivery.estimated_delivery_time|date:"F d, Y g:i A" }}
+                            {% if delivery.actual_delivery_time %}
+                                <br><strong>Delivered:</strong> {{ delivery.actual_delivery_time|date:"F d, Y g:i A" }}
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Delivery Progress Timeline -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-route"></i> Delivery Progress
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="timeline">
+                    {% for status_choice in delivery.DELIVERY_STATUS %}
+                        {% with status_key=status_choice.0 status_display=status_choice.1 %}
+                            <div class="timeline-item">
+                                <div class="timeline-icon 
+                                    {% if status_key == 'assigned' and delivery.status != 'assigned' %}active
+                                    {% elif status_key == 'picked_up' and delivery.status in 'picked_up,in_transit,out_for_delivery,delivered' %}active
+                                    {% elif status_key == 'in_transit' and delivery.status in 'in_transit,out_for_delivery,delivered' %}active
+                                    {% elif status_key == 'out_for_delivery' and delivery.status in 'out_for_delivery,delivered' %}active
+                                    {% elif status_key == 'delivered' and delivery.status == 'delivered' %}active
+                                    {% elif status_key == delivery.status %}current
+                                    {% endif %}">
+                                    {% if status_key == 'assigned' %}<i class="fas fa-clipboard"></i>
+                                    {% elif status_key == 'picked_up' %}<i class="fas fa-hand-paper"></i>
+                                    {% elif status_key == 'in_transit' %}<i class="fas fa-truck"></i>
+                                    {% elif status_key == 'out_for_delivery' %}<i class="fas fa-shipping-fast"></i>
+                                    {% elif status_key == 'delivered' %}<i class="fas fa-check"></i>
+                                    {% elif status_key == 'failed' %}<i class="fas fa-times"></i>
+                                    {% elif status_key == 'returned' %}<i class="fas fa-undo"></i>
+                                    {% endif %}
+                                </div>
+                                <div class="timeline-content">
+                                    <h6>{{ status_display }}</h6>
+                                    {% if status_key == delivery.status %}
+                                        <p class="text-success"><strong>Current Status</strong></p>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        {% endwith %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Delivery Updates -->
+        {% if updates %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-history"></i> Delivery Updates
+                </h5>
+            </div>
+            <div class="card-body">
+                {% for update in updates %}
+                <div class="border-bottom pb-3 mb-3">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div>
+                            <span class="status-badge status-{{ update.status }}">
+                                {{ update.get_status_display }}
+                            </span>
+                            {% if update.location %}
+                                <div class="mt-2">
+                                    <i class="fas fa-map-marker-alt text-muted"></i>
+                                    <small class="text-muted">{{ update.location }}</small>
+                                </div>
+                            {% endif %}
+                            <p class="mt-2 mb-0">{{ update.description }}</p>
+                        </div>
+                        <small class="text-muted">
+                            {{ update.timestamp|date:"M d, Y g:i A" }}
+                        </small>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Delivery Addresses -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-map"></i> Delivery Information
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-warehouse"></i> Pickup Address:</h6>
+                        <p>{{ delivery.pickup_address|linebreaks }}</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6><i class="fas fa-home"></i> Delivery Address:</h6>
+                        <p>{{ delivery.delivery_address|linebreaks }}</p>
+                    </div>
+                </div>
+                
+                {% if delivery.delivery_notes %}
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6><i class="fas fa-sticky-note"></i> Delivery Notes:</h6>
+                        <p class="alert alert-light">{{ delivery.delivery_notes|linebreaks }}</p>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Customer Feedback (if delivered) -->
+        {% if delivery.status == 'delivered' %}
+        <div class="card mb-4">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-star"></i> Rate Your Delivery Experience
+                </h5>
+            </div>
+            <div class="card-body">
+                {% if delivery.customer_rating %}
+                    <div class="alert alert-success">
+                        <h6>Thank you for your feedback!</h6>
+                        <p><strong>Rating:</strong> 
+                            {% for i in "12345" %}
+                                {% if forloop.counter <= delivery.customer_rating %}
+                                    <i class="fas fa-star text-warning"></i>
+                                {% else %}
+                                    <i class="far fa-star text-warning"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </p>
+                        {% if delivery.customer_feedback %}
+                            <p><strong>Feedback:</strong> {{ delivery.customer_feedback }}</p>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <form method="post" action="{% url 'delivery:rate_delivery' delivery.id %}">
+                        {% csrf_token %}
+                        <div class="mb-3">
+                            <label class="form-label">Rate your delivery experience:</label>
+                            <div class="rating">
+                                {% for i in "12345" %}
+                                <input type="radio" name="rating" value="{{ forloop.counter }}" id="star{{ forloop.counter }}" required>
+                                <label for="star{{ forloop.counter }}"><i class="fas fa-star"></i></label>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="feedback" class="form-label">Additional Feedback (Optional):</label>
+                            <textarea name="feedback" id="feedback" class="form-control" rows="3" placeholder="Tell us about your delivery experience..."></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-paper-plane"></i> Submit Feedback
+                        </button>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div class="text-center mb-4">
+            <a href="#" class="btn btn-outline-primary me-2">
+                <i class="fas fa-list"></i> View All Orders
+            </a>
+            <button class="btn btn-outline-secondary" onclick="window.print()">
+                <i class="fas fa-print"></i> Print Tracking Info
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.rating {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+}
+
+.rating input {
+    display: none;
+}
+
+.rating label {
+    color: #ddd;
+    font-size: 1.5rem;
+    margin: 0 2px;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.rating label:hover,
+.rating label:hover ~ label,
+.rating input:checked ~ label {
+    color: #ffc107;
+}
+
+@media print {
+    .btn, .navbar, .footer {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none !important;
+        border: 1px solid #ddd !important;
+    }
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-refresh page every 30 seconds if delivery is in progress
+{% if delivery.status not in 'delivered,failed,returned' %}
+setTimeout(function() {
+    location.reload();
+}, 30000);
+{% endif %}
+</script>
+{% endblock %}

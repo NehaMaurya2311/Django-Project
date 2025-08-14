@@ -1,0 +1,807 @@
+<!-- accounts/templates/accounts/dashboard.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - BookStore</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #ff9a8b 0%, #fad0c4 50%, #ffecd2 100%);
+            min-height: 100vh;
+            font-family: 'Arial', sans-serif;
+        }
+        .navbar {
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 2px 20px rgba(255, 154, 139, 0.1);
+        }
+        .navbar-brand {
+            font-weight: 700;
+            color: #ff6b6b !important;
+            font-size: 1.5rem;
+        }
+        .nav-link {
+            color: #666 !important;
+            font-weight: 500;
+        }
+        .nav-link:hover {
+            color: #ff6b6b !important;
+        }
+        .dashboard-container {
+            padding: 20px 0;
+        }
+        .welcome-section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(255, 154, 139, 0.1);
+            padding: 40px;
+            margin-bottom: 30px;
+        }
+        .welcome-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #ff6b6b;
+            margin-bottom: 10px;
+        }
+        .welcome-subtitle {
+            color: #666;
+            font-size: 1.2rem;
+            margin-bottom: 20px;
+        }
+        .user-type-badge {
+            background: linear-gradient(135deg, #ff9a8b, #ff6b6b);
+            color: white;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-weight: 600;
+            display: inline-block;
+        }
+        
+        /* Main Dashboard Grid */
+        .dashboard-main-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+        
+        .sidebar-content {
+            display: flex;
+            flex-direction: column;
+            gap: 25px;
+        }
+
+        .dashboard-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(255, 154, 139, 0.1);
+            padding: 30px;
+            transition: all 0.3s ease;
+        }
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(255, 154, 139, 0.15);
+        }
+        .card-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(255, 154, 139, 0.1);
+        }
+        .card-icon {
+            background: linear-gradient(135deg, #ff9a8b, #ff6b6b);
+            color: white;
+            width: 50px;
+            height: 50px;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            margin-right: 15px;
+        }
+        .card-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #333;
+            margin: 0;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 154, 139, 0.1);
+        }
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+        .stat-label {
+            color: #666;
+            font-weight: 500;
+        }
+        .stat-value {
+            color: #ff6b6b;
+            font-weight: 700;
+            font-size: 1.2rem;
+        }
+        .quick-action-btn {
+            background: linear-gradient(135deg, #ff9a8b 0%, #ff6b6b 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 10px 20px;
+            font-weight: 600;
+            color: white;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin: 5px;
+        }
+        .quick-action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 107, 107, 0.3);
+            color: white;
+            text-decoration: none;
+        }
+        .secondary-btn {
+            background: transparent;
+            border: 2px solid #ff9a8b;
+            color: #ff6b6b;
+        }
+        .secondary-btn:hover {
+            background: #ff9a8b;
+            color: white;
+        }
+        .recent-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .recent-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid rgba(255, 154, 139, 0.1);
+        }
+        .recent-item:last-child {
+            border-bottom: none;
+        }
+        .recent-icon {
+            background: rgba(255, 154, 139, 0.1);
+            color: #ff6b6b;
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+        }
+        .recent-content {
+            flex-grow: 1;
+        }
+        .recent-title {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .recent-meta {
+            color: #999;
+            font-size: 0.9rem;
+        }
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: #999;
+        }
+        .empty-state i {
+            font-size: 3rem;
+            margin-bottom: 15px;
+            color: #ff9a8b;
+        }
+        .profile-summary {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #fff;
+            box-shadow: 0 5px 15px rgba(255, 154, 139, 0.2);
+            margin-right: 20px;
+        }
+        .default-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #ff9a8b, #ff6b6b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+            margin-right: 20px;
+        }
+        .profile-info h4 {
+            color: #333;
+            margin-bottom: 5px;
+        }
+        .profile-info p {
+            color: #666;
+            margin: 0;
+        }
+        
+        /* Profile Information Styles */
+        .profile-info-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        .info-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 154, 139, 0.1);
+        }
+        .info-item:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            font-weight: 600;
+            color: #666;
+            font-size: 0.9rem;
+        }
+        .info-value {
+            color: #333;
+            font-size: 0.9rem;
+            text-align: right;
+        }
+        .verification-badge {
+            background: #28a745;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.7rem;
+            margin-left: 8px;
+        }
+        .not-verified {
+            background: #dc3545;
+        }
+        
+        @media (max-width: 1024px) {
+            .dashboard-main-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .welcome-title {
+                font-size: 2rem;
+            }
+            .profile-summary {
+                flex-direction: column;
+                text-align: center;
+            }
+            .profile-avatar, .default-avatar {
+                margin-right: 0;
+                margin-bottom: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-light">
+        <div class="container">
+            <a class="navbar-brand" href="{% url 'books:home' %}">
+                <i class="fas fa-book me-2"></i>BookStore
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <div class="navbar-nav ms-auto">
+                    {% if user.user_type == 'admin' or user.is_superuser %}
+                        <a class="nav-link" href="/admin/">Admin Panel</a>
+                    {% endif %}
+                    <a class="nav-link" href="{% url 'books:home' %}">Home</a>
+                    <a class="nav-link" href="{% url 'accounts:logout' %}">Logout</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="dashboard-container">
+        <div class="container">
+            <!-- Welcome Section -->
+            <div class="welcome-section">
+                <div class="profile-summary">
+                    {% if user.profile_picture %}
+                        <img src="{{ user.profile_picture.url }}" alt="Profile Picture" class="profile-avatar">
+                    {% else %}
+                        <div class="default-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                    {% endif %}
+                    
+                    <div class="profile-info">
+                        <h4>
+                            {% if user.get_full_name %}
+                                {{ user.get_full_name }}
+                            {% else %}
+                                {{ user.username }}
+                            {% endif %}
+                        </h4>
+                        <p>{{ user.email|default:"No email provided" }}</p>
+                    </div>
+                </div>
+                
+                <h1 class="welcome-title">
+                    <i class="fas fa-tachometer-alt me-3"></i>Dashboard
+                </h1>
+                <p class="welcome-subtitle">Welcome back! Here's your personalized overview.</p>
+                <span class="user-type-badge">
+                    <i class="fas fa-tag me-1"></i>{{ user.get_user_type_display }}
+                </span>
+            </div>
+
+            <!-- Main Dashboard Grid -->
+            <div class="dashboard-main-grid">
+                <div class="main-content">
+                    <!-- Dashboard Content Based on User Type -->
+                    {% if user.user_type == 'customer' %}
+                        <!-- Customer Stats -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="fas fa-chart-line"></i>
+                                </div>
+                                <h3 class="card-title">Your Statistics</h3>
+                            </div>
+                            
+                            <div class="stat-item">
+                                <span class="stat-label">Total Orders</span>
+                                <span class="stat-value">{{ recent_orders|length|default:0 }}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Wishlist Items</span>
+                                <span class="stat-value">{{ wishlist_count|default:0 }}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Account Status</span>
+                                <span class="stat-value">
+                                    {% if user.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Recent Orders -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="fas fa-shopping-bag"></i>
+                                </div>
+                                <h3 class="card-title">Recent Orders</h3>
+                            </div>
+                            
+                            {% if recent_orders %}
+                                <div class="recent-list">
+                                    {% for order in recent_orders %}
+                                        <div class="recent-item">
+                                            <div class="recent-icon">
+                                                <i class="fas fa-receipt"></i>
+                                            </div>
+                                            <div class="recent-content">
+                                                <div class="recent-title">Order #{{ order.id }}</div>
+                                                <div class="recent-meta">
+                                                    {{ order.created_at|date:"M d, Y" }} • 
+                                                    Status: {{ order.get_status_display|default:"Pending" }}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div class="empty-state">
+                                    <i class="fas fa-shopping-cart"></i>
+                                    <h5>No orders yet</h5>
+                                    <p>Start shopping to see your orders here!</p>
+                                    <a href="#" class="quick-action-btn">Browse Books</a>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                    {% elif user.user_type == 'vendor' %}
+                        {% if user.vendor_profile %}
+                            <!-- Vendor Stats -->
+                            <div class="dashboard-card">
+                                <div class="card-header">
+                                    <div class="card-icon">
+                                        <i class="fas fa-store"></i>
+                                    </div>
+                                    <h3 class="card-title">Vendor Statistics</h3>
+                                </div>
+                                
+                                <div class="stat-item">
+                                    <span class="stat-label">Total Offers</span>
+                                    <span class="stat-value">{{ user.vendor_profile.stock_offers.count|default:0 }}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Open Tickets</span>
+                                    <span class="stat-value">{{ open_tickets_count|default:0 }}</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-label">Profile Status</span>
+                                    <span class="stat-value">
+                                        {% if user.vendor_profile.status == 'approved' %}
+                                            <span style="color: #28a745;">✓ Approved</span>
+                                        {% elif user.vendor_profile.status == 'pending' %}
+                                            <span style="color: #ffc107;">⏳ Pending</span>
+                                        {% elif user.vendor_profile.status == 'rejected' %}
+                                            <span style="color: #dc3545;">✗ Rejected</span>
+                                        {% elif user.vendor_profile.status == 'suspended' %}
+                                            <span style="color: #6c757d;">⚠ Suspended</span>
+                                        {% endif %}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Recent Stock Offers -->
+                            <div class="dashboard-card">
+                                <div class="card-header">
+                                    <div class="card-icon">
+                                        <i class="fas fa-tags"></i>
+                                    </div>
+                                    <h3 class="card-title">Recent Stock Offers</h3>
+                                </div>
+                                
+                                {% if user.vendor_profile.stock_offers.all %}
+                                    <div class="recent-list">
+                                        {% for offer in user.vendor_profile.stock_offers.all|slice:":5" %}
+                                            <div class="recent-item">
+                                                <div class="recent-icon">
+                                                    <i class="fas fa-tag"></i>
+                                                </div>
+                                                <div class="recent-content">
+                                                    <div class="recent-title">{{ offer.book.title|truncatechars:40 }}</div>
+                                                    <div class="recent-meta">
+                                                        {{ offer.created_at|date:"M d, Y" }} • 
+                                                        {{ offer.quantity }} units • 
+                                                        ₹{{ offer.unit_price }} each •
+                                                        <span style="
+                                                            {% if offer.status == 'approved' %}color: #28a745;
+                                                            {% elif offer.status == 'pending' %}color: #ffc107;
+                                                            {% elif offer.status == 'rejected' %}color: #dc3545;
+                                                            {% else %}color: #6c757d;
+                                                            {% endif %}
+                                                        ">{{ offer.get_status_display }}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="empty-state">
+                                        <i class="fas fa-tags"></i>
+                                        <h5>No stock offers yet</h5>
+                                        {% if user.vendor_profile.status == 'approved' %}
+                                            <p>Create your first stock offer to start selling!</p>
+                                            <a href="{% url 'vendors:submit_offer' %}" class="quick-action-btn">Submit Offer</a>
+                                        {% else %}
+                                            <p>Complete your profile approval to submit offers.</p>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% else %}
+                            <div class="dashboard-card">
+                                <div class="empty-state">
+                                    <i class="fas fa-store-slash"></i>
+                                    <h5>No vendor profile</h5>
+                                    <p>Complete your vendor registration to start selling.</p>
+                                    <a href="{% url 'vendors:register' %}" class="quick-action-btn">Setup Profile</a>
+                                </div>
+                            </div>
+                        {% endif %}
+
+                    {% elif user.user_type == 'staff' or user.user_type == 'admin' %}
+                        <!-- Admin Stats -->
+                        <div class="dashboard-card">
+                            <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="fas fa-chart-pie"></i>
+                                </div>
+                                <h3 class="card-title">System Overview</h3>
+                            </div>
+                            
+                            <div class="stat-item">
+                                <span class="stat-label">Total Users</span>
+                                <span class="stat-value">{{ total_users|default:"-" }}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Active Orders</span>
+                                <span class="stat-value">{{ active_orders|default:"-" }}</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-label">Pending Vendors</span>
+                                <span class="stat-value">{{ pending_vendors|default:"-" }}</span>
+                            </div>
+                        </div>
+                    {% endif %}
+
+
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                                <div class="card-icon">
+                                    <i class="fas fa-map-marker-alt"></i>
+                                </div>
+                                <h3 class="card-title">Address Information</h3>
+                        </div>
+                        
+
+                        {% if user.user_type == 'Customer' %}
+
+                        {% if user.address or user.city or user.state or user.pincode %}
+                            <div class="stat-item">
+                                <span class="stat-label">Address:</span>
+                                <span class="stat-value">{{ user.address|default:"Not provided" }}</span>
+                            </div>
+                            
+                            <div class="stat-item">
+                                <span class="stat-label">City:</span>
+                                <span class="stat-value">{{ user.city|default:"Not provided" }}</span>
+                            </div>
+                            
+                            <div class="stat-item">
+                                <span class="stat-label">State:</span>
+                                <span class="stat-value">{{ user.state|default:"Not provided" }}</span>
+                            </div>
+                            
+                            <div class="stat-item">
+                                <span class="stat-label">PIN Code:</span>
+                                <span class="stat-value">{{ user.pincode|default:"Not provided" }}</span>
+                            </div>
+                            
+                            {% if user.get_full_address != ", ,  - " %}
+                                <div class="stat-item">
+                                    <span class="stat-label">Full Address:</span>
+                                    <span class="stat-value">{{ user.get_full_address }}</span>
+                                </div>
+                            {% endif %}
+                        {% else %}
+                            <p class="empty-value">
+                                <i class="fas fa-map-marker-alt me-2"></i>
+                                No address information provided. 
+                                <a href="{% url 'accounts:profile_edit' %}" class="text-decoration-none">Add your address</a>
+                            </p>
+                        {% endif %}
+                        {% endif %}
+                    </div>
+
+                </div>
+
+
+                 
+                <!-- Sidebar Content -->
+                <div class="sidebar-content">
+                    <!-- Quick Actions -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-bolt"></i>
+                            </div>
+                            <h3 class="card-title">Quick Actions</h3>
+                        </div>
+                        
+                        <div class="text-center">
+                            {% if user.user_type == 'customer' %}
+                                <a href="#" class="quick-action-btn">
+                                    <i class="fas fa-shopping-cart me-2"></i>Browse Books
+                                </a>
+                                <a href="#" class="quick-action-btn secondary-btn">
+                                    <i class="fas fa-heart me-2"></i>My Wishlist
+                                </a>
+                                <a href="#" class="quick-action-btn">
+                                    <i class="fas fa-history me-2"></i>Order History
+                                </a>
+                            {% elif user.user_type == 'vendor' %}
+                                {% if user.vendor_profile %}
+                                    <a href="{% url 'vendors:dashboard' %}" class="quick-action-btn">
+                                        <i class="fas fa-tachometer-alt me-2"></i>Vendor Dashboard
+                                    </a>
+                                    <a href="{% url 'vendors:stock_offers' %}" class="quick-action-btn">
+                                        <i class="fas fa-tags me-2"></i>My Offers
+                                    </a>
+                                    <a href="{% url 'vendors:tickets' %}" class="quick-action-btn secondary-btn">
+                                        <i class="fas fa-headset me-2"></i>Support
+                                    </a>
+                                {% else %}
+                                    <a href="{% url 'vendors:register' %}" class="quick-action-btn">
+                                        <i class="fas fa-user-plus me-2"></i>Register as Vendor
+                                    </a>
+                                {% endif %}
+                            {% elif user.user_type == 'staff' or user.user_type == 'admin' %}
+                                {% if user.is_superuser or user.user_type == 'admin' %}
+                                    <a href="/admin/" class="quick-action-btn">
+                                        <i class="fas fa-tachometer-alt me-2"></i>Admin Panel
+                                    </a>
+                                {% endif %}
+                                <a href="#" class="quick-action-btn secondary-btn">
+                                    <i class="fas fa-users me-2"></i>Manage Users
+                                </a>
+                                <a href="#" class="quick-action-btn">
+                                    <i class="fas fa-chart-line me-2"></i>Reports
+                                </a>
+                            {% endif %}
+                            <a href="{% url 'accounts:profile_edit' %}" class="quick-action-btn secondary-btn">
+                                <i class="fas fa-user-edit me-2"></i>Edit Profile
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Profile Information -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-user-circle"></i>
+                            </div>
+                            <h3 class="card-title">Profile Information</h3>
+                        </div>
+                        
+                        <div class="profile-info-grid">
+                            <div class="info-item">
+                                <span class="info-label">Email</span>
+                                <span class="info-value">
+                                    {{ user.email|default:"Not provided" }}
+                                    {% if user.email %}
+                                        {% if user.is_email_verified %}
+                                            <span class="verification-badge">
+                                                <i class="fas fa-check me-1"></i>Verified
+                                            </span>
+                                        {% else %}
+                                            <span class="verification-badge not-verified">
+                                                <i class="fas fa-times me-1"></i>Not Verified
+                                            </span>
+                                        {% endif %}
+                                    {% endif %}
+                                </span>
+                            </div>
+                            
+                            <div class="info-item">
+                                <span class="info-label">Phone</span>
+                                <span class="info-value">{{ user.phone|default:"Not provided" }}</span>
+                            </div>
+
+                            <div class="info-item">
+                                <span class="info-label">Date of Birth:</span>
+                                <span class="info-value">{{ user.date_of_birth|default:"Not provided" }}</span>
+                            </div>
+
+                            <div class="info-item">
+                                <span class="info-label">Location</span>
+                                <span class="info-value">
+                                    {% if user.city and user.state %}
+                                        {{ user.city }}, {{ user.state }}
+                                    {% else %}
+                                        Not provided
+                                    {% endif %}
+                                </span>
+                            </div>
+                            
+                            <div class="info-item">
+                                <span class="info-label">Member Since</span>
+                                <span class="info-value">{{ user.date_joined|date:"F Y" }}</span>
+                            </div>
+                            
+                            <div class="info-item">
+                                <span class="info-label">Last Login</span>
+                                <span class="info-value">
+                                    {% if user.last_login %}
+                                        {{ user.last_login|date:"M d, Y" }}
+                                    {% else %}
+                                        Never
+                                    {% endif %}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Account Status -->
+                    <div class="dashboard-card">
+                        <div class="card-header">
+                            <div class="card-icon">
+                                <i class="fas fa-shield-alt"></i>
+                            </div>
+                            <h3 class="card-title">Account Status</h3>
+                        </div>
+                        
+                        <div class="profile-info-grid">
+                            <div class="info-item">
+                                <span class="info-label">Status</span>
+                                <span class="info-value">
+                                    {% if user.is_active %}
+                                        <span class="verification-badge">
+                                            <i class="fas fa-check me-1"></i>Active
+                                        </span>
+                                    {% else %}
+                                        <span class="verification-badge not-verified">
+                                            <i class="fas fa-times me-1"></i>Inactive
+                                        </span>
+                                    {% endif %}
+                                </span>
+                            </div>
+                            
+                            {% if user.is_staff %}
+                                <div class="info-item">
+                                    <span class="info-label">Staff</span>
+                                    <span class="info-value">
+                                        <span class="verification-badge" style="background: #6f42c1;">
+                                            <i class="fas fa-user-tie me-1"></i>Staff Member
+                                        </span>
+                                    </span>
+                                </div>
+                            {% endif %}
+                            
+                            {% if user.is_superuser %}
+                                <div class="info-item">
+                                    <span class="info-label">Admin</span>
+                                    <span class="info-value">
+                                        <span class="verification-badge" style="background: #fd7e14;">
+                                            <i class="fas fa-crown me-1"></i>Super Admin
+                                        </span>
+                                    </span>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Dashboard animations
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.dashboard-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+
+            // Welcome section animation
+            const welcomeSection = document.querySelector('.welcome-section');
+            welcomeSection.style.opacity = '0';
+            welcomeSection.style.transform = 'translateY(-20px)';
+            
+            setTimeout(() => {
+                welcomeSection.style.transition = 'all 0.8s ease';
+                welcomeSection.style.opacity = '1';
+                welcomeSection.style.transform = 'translateY(0)';
+            }, 50);
+        });
+    </script>
+</body>
+</html>

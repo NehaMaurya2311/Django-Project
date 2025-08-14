@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+
+{% block title %}No Delivery Information - Order #{{ order.order_id }}{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-body text-center py-5">
+                <div class="mb-4">
+                    <i class="fas fa-truck fa-4x text-muted"></i>
+                </div>
+                
+                <h3 class="card-title mb-3">No Delivery Information</h3>
+                
+                <p class="card-text text-muted mb-4">
+                    Delivery information for Order #{{ order.order_id }} is not available yet.
+                    This could mean:
+                </p>
+                
+                <div class="list-group list-group-flush mb-4">
+                    <div class="list-group-item border-0 bg-light">
+                        <i class="fas fa-clock text-warning me-2"></i>
+                        Your order is still being processed
+                    </div>
+                    <div class="list-group-item border-0 bg-light">
+                        <i class="fas fa-box text-info me-2"></i>
+                        Order is being prepared for shipment
+                    </div>
+                    <div class="list-group-item border-0 bg-light">
+                        <i class="fas fa-shipping-fast text-primary me-2"></i>
+                        Delivery partner is being assigned
+                    </div>
+                </div>
+                
+                <div class="row text-start">
+                    <div class="col-12">
+                        <h6><strong>Order Details:</strong></h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Order ID:</strong> {{ order.order_id }}</li>
+                            <li><strong>Order Date:</strong> {{ order.created_at|date:"F d, Y g:i A" }}</li>
+                            <li><strong>Status:</strong> 
+                                <span class="badge bg-warning">{{ order.status|capfirst }}</span>
+                            </li>
+                            {% if order.total_amount %}
+                            <li><strong>Total Amount:</strong> ₹{{ order.total_amount }}</li>
+                            {% endif %}
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-4">
+                    <i class="fas fa-info-circle"></i>
+                    <strong>What's Next?</strong><br>
+                    You'll receive an email notification once your order is dispatched and tracking information becomes available.
+                </div>
+                
+                <div class="mt-4">
+                    <a href="#" class="btn btn-primary me-2">
+                        <i class="fas fa-list"></i> View All Orders
+                    </a>
+                    <a href="#" class="btn btn-outline-secondary">
+                        <i class="fas fa-envelope"></i> Contact Support
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Additional Information Card -->
+        <div class="card mt-4">
+            <div class="card-header">
+                <h6 class="mb-0">
+                    <i class="fas fa-question-circle"></i> Frequently Asked Questions
+                </h6>
+            </div>
+            <div class="card-body">
+                <div class="accordion" id="faqAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="faq1">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse1">
+                                When will I receive tracking information?
+                            </button>
+                        </h2>
+                        <div id="collapse1" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Tracking information is usually available within 24-48 hours after order confirmation. You'll receive an email with your tracking ID once your order is dispatched.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="faq2">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse2">
+                                How long does delivery usually take?
+                            </button>
+                        </h2>
+                        <div id="collapse2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                Standard delivery usually takes 3-7 business days depending on your location. Express delivery options may be available at checkout.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header" id="faq3">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse3">
+                                Can I modify my delivery address?
+                            </button>
+                        </h2>
+                        <div id="collapse3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+                            <div class="accordion-body">
+                                You can modify your delivery address before the order is dispatched. Please contact our support team as soon as possible if you need to make changes.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-refresh page every 60 seconds to check for updates
+setTimeout(function() {
+    location.reload();
+}, 60000);
+</script>
+{% endblock %}

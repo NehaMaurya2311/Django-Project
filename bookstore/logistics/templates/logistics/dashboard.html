@@ -1,0 +1,203 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Logistics Dashboard - Logistics Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">Logistics Dashboard</h1>
+    <p class="page-subtitle">Monitor and manage all pickup operations</p>
+</div>
+
+<!-- Statistics Cards -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number" style="color: var(--primary-coral);">
+            {{ scheduled_pickups }}
+        </div>
+        <div class="stat-label">Scheduled Pickups</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-number" style="color: var(--warning);">
+            {{ in_transit_pickups }}
+        </div>
+        <div class="stat-label">In Transit</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-number" style="color: var(--success);">
+            {{ completed_pickups }}
+        </div>
+        <div class="stat-label">Completed Today</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-number" style="color: var(--secondary-burgundy);">
+            {{ scheduled_pickups|add:in_transit_pickups }}
+        </div>
+        <div class="stat-label">Active Pickups</div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="card">
+    <h3 style="color: var(--secondary-burgundy); margin-bottom: 1.5rem;">Quick Actions</h3>
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <a href="{% url 'logistics:pickup_list' %}" class="btn btn-primary">
+            📋 View All Pickups
+        </a>
+        <a href="{% url 'logistics:pickup_list' %}?status=scheduled" class="btn btn-secondary">
+            📅 Scheduled Pickups
+        </a>
+        <a href="{% url 'logistics:pickup_list' %}?status=in_transit" class="btn btn-warning">
+            🚚 In Transit
+        </a>
+        <a href="/admin/logistics/logisticspartner/" class="btn btn-success">
+            👥 Manage Partners
+        </a>
+    </div>
+</div>
+
+<!-- Recent Pickups -->
+<div class="card">
+    <h3 style="color: var(--secondary-burgundy); margin-bottom: 1.5rem;">Recent Pickups</h3>
+    
+    {% if recent_pickups %}
+        <div style="overflow-x: auto;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Pickup ID</th>
+                        <th>Vendor</th>
+                        <th>Book Title</th>
+                        <th>Status</th>
+                        <th>Logistics Partner</th>
+                        <th>Scheduled Date</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pickup in recent_pickups %}
+                    <tr>
+                        <td><strong>#{{ pickup.id }}</strong></td>
+                        <td>{{ pickup.vendor.business_name }}</td>
+                        <td>{{ pickup.stock_offer.book.title|truncatechars:30 }}</td>
+                        <td>
+                            <span class="status-badge status-{{ pickup.status }}">
+                                {% if pickup.status == 'scheduled' %}📅{% endif %}
+                                {% if pickup.status == 'assigned' %}👤{% endif %}
+                                {% if pickup.status == 'in_transit' %}🚚{% endif %}
+                                {% if pickup.status == 'delivered' %}✅{% endif %}
+                                {% if pickup.status == 'failed' %}❌{% endif %}
+                                {% if pickup.status == 'cancelled' %}🚫{% endif %}
+                                {{ pickup.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            {% if pickup.logistics_partner %}
+                                {{ pickup.logistics_partner.name }}
+                            {% else %}
+                                <span style="color: var(--neutral-medium-gray);">Not Assigned</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ pickup.scheduled_date|date:"M d, Y H:i" }}</td>
+                        <td>
+                            <a href="{% url 'logistics:pickup_detail' pickup.id %}" 
+                               class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
+                                View Details
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <div style="text-align: center; margin-top: 1.5rem;">
+            <a href="{% url 'logistics:pickup_list' %}" class="btn btn-primary">
+                View All Pickups →
+            </a>
+        </div>
+    {% else %}
+        <div style="text-align: center; padding: 3rem; color: var(--neutral-medium-gray);">
+            <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
+            <h3>No Recent Pickups</h3>
+            <p>Recent pickup activities will appear here.</p>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Activity Summary -->
+<div class="card">
+    <h3 style="color: var(--secondary-burgundy); margin-bottom: 1.5rem;">Today's Activity</h3>
+    
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem;">
+        <div style="text-align: center; padding: 1.5rem; background: var(--primary-cream); border-radius: 10px;">
+            <div style="font-size: 2rem; color: var(--primary-coral); margin-bottom: 0.5rem;">🚚</div>
+            <div style="font-size: 1.25rem; font-weight: bold; color: var(--secondary-burgundy);">
+                {{ in_transit_pickups }}
+            </div>
+            <div style="color: var(--neutral-medium-gray);">Vehicles on Road</div>
+        </div>
+        
+        <div style="text-align: center; padding: 1.5rem; background: var(--primary-cream); border-radius: 10px;">
+            <div style="font-size: 2rem; color: var(--success); margin-bottom: 0.5rem;">📍</div>
+            <div style="font-size: 1.25rem; font-weight: bold; color: var(--secondary-burgundy);">
+                {{ completed_pickups }}
+            </div>
+            <div style="color: var(--neutral-medium-gray);">Successful Deliveries</div>
+        </div>
+        
+        <div style="text-align: center; padding: 1.5rem; background: var(--primary-cream); border-radius: 10px;">
+            <div style="font-size: 2rem; color: var(--warning); margin-bottom: 0.5rem;">⏰</div>
+            <div style="font-size: 1.25rem; font-weight: bold; color: var(--secondary-burgundy);">
+                {{ scheduled_pickups }}
+            </div>
+            <div style="color: var(--neutral-medium-gray);">Pending Assignments</div>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Dashboard-specific styles */
+    .stats-grid {
+        animation: fadeInUp 0.6s ease-out;
+    }
+
+    .stat-card {
+        background: linear-gradient(135deg, var(--neutral-white) 0%, var(--primary-cream) 100%);
+        border: 1px solid var(--primary-light-peach);
+    }
+
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .card {
+        animation: slideInLeft 0.6s ease-out;
+        animation-fill-mode: both;
+    }
+
+    .card:nth-child(2) { animation-delay: 0.1s; }
+    .card:nth-child(3) { animation-delay: 0.2s; }
+    .card:nth-child(4) { animation-delay: 0.3s; }
+
+    @keyframes slideInLeft {
+        from {
+            opacity: 0;
+            transform: translateX(-30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+</style>
+{% endblock %}

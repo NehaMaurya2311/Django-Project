@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Request Return - Order #{{ order.order_id }}</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #ff9a8b, #fecfef, #ffc3a0);
+            min-height: 100vh;
+            padding: 20px 0;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        .return-header {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(255, 154, 139, 0.2);
+        }
+        
+        .return-header h1 {
+            color: #d63384;
+            font-size: 2rem;
+            margin-bottom: 10px;
+        }
+        
+        .return-header p {
+            color: #6c757d;
+            margin-bottom: 5px;
+        }
+        
+        .return-form {
+            background: white;
+            border-radius: 15px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(255, 154, 139, 0.2);
+        }
+        
+        .order-items {
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+        
+        .order-items h3 {
+            color: #d63384;
+            margin-bottom: 15px;
+        }
+        
+        .order-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+        
+        .order-item:last-child {
+            border-bottom: none;
+        }
+        
+        .item-image {
+            width: 60px;
+            height: 75px;
+            background: #ffc3a0;
+            border-radius: 8px;
+            margin-right: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #d63384;
+            font-size: 1.5rem;
+        }
+        
+        .item-details {
+            flex: 1;
+        }
+        
+        .item-title {
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+        
+        .item-info {
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-group label {
+            display: block;
+            color: #333;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #ffc3a0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #d63384;
+            box-shadow: 0 0 0 3px rgba(214, 51, 132, 0.1);
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 15px;
+            justify-content: flex-end;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #d63384, #ff9a8b);
+            color: white;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(214, 51, 132, 0.3);
+        }
+        
+        .btn-back {
+            background: #6c757d;
+            color: white;
+            margin-bottom: 20px;
+            width: fit-content;
+        }
+        
+        .return-policy {
+            background: #e7f3ff;
+            border: 1px solid #b6d7ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .return-policy h4 {
+            color: #0c5460;
+            margin-bottom: 10px;
+        }
+        
+        .return-policy ul {
+            color: #0c5460;
+            padding-left: 20px;
+        }
+        
+        .return-policy li {
+            margin-bottom: 5px;
+        }
+        
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-danger {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="{% url 'orders:order_detail' order.order_id %}" class="btn btn-back">← Back to Order</a>
+        
+        <div class="return-header">
+            <h1>Request Return</h1>
+            <p><strong>Order #{{ order.order_id }}</strong></p>
+            <p>Placed on {{ order.created_at|date:"F d, Y" }}</p>
+            <p>Total: ₹{{ order.total_amount }}</p>
+        </div>
+        
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <div class="return-form">
+            <div class="return-policy">
+                <h4>Return Policy</h4>
+                <ul>
+                    <li>Returns must be requested within 30 days of delivery</li>
+                    <li>Items must be in original condition with all packaging</li>
+                    <li>Books should be free from damage, writing, or highlighting</li>
+                    <li>Processing may take 5-7 business days after we receive your return</li>
+                </ul>
+            </div>
+            
+            <div class="order-items">
+                <h3>Items to Return</h3>
+                {% for item in order.items.all %}
+                <div class="order-item">
+                    <div class="item-image">📚</div>
+                    <div class="item-details">
+                        <div class="item-title">{{ item.book.title }}</div>
+                        <div class="item-info">
+                            Quantity: {{ item.quantity }} | Price: ₹{{ item.total }}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="form-group">
+                    <label for="{{ form.reason.id_for_label }}">Reason for Return</label>
+                    {{ form.reason }}
+                </div>
+                
+                <div class="form-group">
+                    <label for="{{ form.description.id_for_label }}">Description</label>
+                    {{ form.description }}
+                    <small style="color: #6c757d; margin-top: 5px; display: block;">
+                        Please provide detailed information about the reason for return
+                    </small>
+                </div>
+                
+                <div class="form-actions">
+                    <a href="{% url 'orders:order_detail' order.order_id %}" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Submit Return Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

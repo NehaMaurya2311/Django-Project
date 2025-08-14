@@ -1,0 +1,166 @@
+<!-- paypal_integration/templates/paypal_integration/payment_success.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payment Successful - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-body text-center py-5">
+                    <!-- Success Icon -->
+                    <div class="mb-4">
+                        <i class="fas fa-check-circle text-success" style="font-size: 4rem;"></i>
+                    </div>
+                    
+                    <!-- Success Message -->
+                    <h2 class="text-success mb-3">Payment Successful!</h2>
+                    <p class="lead mb-4">Thank you for your purchase. Your order has been confirmed.</p>
+                    
+                    <!-- Order Details -->
+                    <div class="alert alert-success">
+                        <h5 class="alert-heading">Order Confirmed</h5>
+                        <p class="mb-1"><strong>Order ID:</strong> #{{ order.order_id }}</p>
+                        <p class="mb-1"><strong>Total Amount:</strong> ₹{{ order.total_amount }}</p>
+                        <p class="mb-1"><strong>Payment Method:</strong> {{ order.payment_method }}</p>
+                        <p class="mb-0"><strong>Transaction ID:</strong> {{ order.payment_transaction_id }}</p>
+                    </div>
+                    
+                    <!-- What's Next -->
+                    <div class="row text-start mb-4">
+                        <div class="col-md-12">
+                            <h5>What happens next?</h5>
+                            <ul class="list-unstyled">
+                                <li class="mb-2">
+                                    <i class="fas fa-envelope text-primary me-2"></i>
+                                    You'll receive an order confirmation email shortly
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-box text-warning me-2"></i>
+                                    Your order will be processed and packed within 1-2 business days
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-truck text-info me-2"></i>
+                                    You'll receive tracking information once your order ships
+                                </li>
+                                <li class="mb-2">
+                                    <i class="fas fa-home text-success me-2"></i>
+                                    Estimated delivery: 3-7 business days
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-grid gap-2 d-md-block">
+                        <a href="{% url 'orders:order_detail' order.order_id %}" class="btn btn-primary btn-lg me-2">
+                            <i class="fas fa-eye me-2"></i>View Order Details
+                        </a>
+                        <a href="{% url 'books:all_books' %}" class="btn btn-outline-secondary btn-lg">
+                            <i class="fas fa-book me-2"></i>Continue Shopping
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Order Items Summary -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0">Order Items</h5>
+                </div>
+                <div class="card-body">
+                    {% for item in order.items.all %}
+                    <div class="row align-items-center mb-3 {% if not forloop.last %}border-bottom pb-3{% endif %}">
+                        <div class="col-md-2">
+                            {% if item.book.cover_image %}
+                                <img src="{{ item.book.cover_image.url }}" class="img-fluid rounded" alt="{{ item.book.title }}" style="max-height: 80px;">
+                            {% else %}
+                                <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 80px; width: 60px;">
+                                    <i class="fas fa-book text-muted"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <h6 class="mb-1">{{ item.book.title }}</h6>
+                            <p class="text-muted small mb-0">
+                                {% for author in item.book.authors.all %}
+                                    {{ author.name }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            </p>
+                        </div>
+                        <div class="col-md-2 text-center">
+                            <span class="badge bg-secondary">Qty: {{ item.quantity }}</span>
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <span class="fw-bold text-success">₹{{ item.total_price }}</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <!-- Total -->
+                    <div class="row mt-3 pt-3 border-top">
+                        <div class="col-md-10 text-end">
+                            <strong>Total:</strong>
+                        </div>
+                        <div class="col-md-2 text-end">
+                            <strong class="text-success">₹{{ order.total_amount }}</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Confetti effect for success page
+document.addEventListener('DOMContentLoaded', function() {
+    // Simple confetti effect (you can enhance this or use a library)
+    function createConfetti() {
+        const colors = ['#f39c12', '#e74c3c', '#9b59b6', '#3498db', '#2ecc71'];
+        
+        for (let i = 0; i < 50; i++) {
+            setTimeout(() => {
+                const confetti = document.createElement('div');
+                confetti.style.position = 'fixed';
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.top = '-10px';
+                confetti.style.width = '10px';
+                confetti.style.height = '10px';
+                confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+                confetti.style.animation = 'fall 3s linear forwards';
+                confetti.style.zIndex = '9999';
+                confetti.style.pointerEvents = 'none';
+                
+                document.body.appendChild(confetti);
+                
+                setTimeout(() => {
+                    confetti.remove();
+                }, 3000);
+            }, i * 100);
+        }
+    }
+    
+    // Create confetti animation keyframes
+    const style = document.createElement('style');
+    style.textContent = `
+        @keyframes fall {
+            from {
+                transform: translateY(-100vh) rotate(0deg);
+            }
+            to {
+                transform: translateY(100vh) rotate(360deg);
+            }
+        }
+    `;
+    document.head.appendChild(style);
+    
+    // Start confetti after a short delay
+    setTimeout(createConfetti, 500);
+});
+</script>
+{% endblock %}

@@ -29,6 +29,29 @@
         padding: 2rem 0;
         margin-bottom: 2rem;
     }
+    .book-meta {
+        font-size: 0.85rem;
+        color: #6c757d;
+    }
+    .already-added {
+        opacity: 0.8;
+        border: 2px solid #28a745;
+        background-color: #f8f9fa;
+    }
+    .checking-duplicate {
+        opacity: 0.7;
+    }
+    .duplicate-overlay {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #28a745;
+        color: white;
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-size: 0.8rem;
+        font-weight: bold;
+    }
 </style>
 {% endblock %}
 
@@ -69,16 +92,26 @@
     {% if query %}
         <div class="d-flex justify-content-between align-items-center mb-4">
             <h2>Search Results for "{{ query }}"</h2>
-            <span class="badge bg-primary">{{ books|length }} results</span>
+            <div>
+                <span class="badge bg-primary me-2">{{ books|length }} results</span>
+                <a href="{% url 'books:search_google_books' %}?q={{ query }}&source=google_books" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-search me-1"></i>Search Our Library
+                </a>
+            </div>
         </div>
         
         {% if books %}
-            <div class="row">
+            <div class="row" id="books-grid">
                 {% for book in books %}
                 <div class="col-md-4 col-lg-3 mb-4">
-                    <div class="card book-card h-100">
+                    <div class="card book-card h-100 position-relative" 
+                         data-google-id="{{ book.google_books_id }}"
+                         data-book-title="{{ book.title }}"
+                         data-book-author="{{ book.authors }}">
+                        
                         {% if book.cover_image %}
-                            <img src="{{ book.cover_image }}" class="card-img-top book-cover" alt="{{ book.title }}">
+                            <img src="{{ book.cover_image }}" class="card-img-top book-cover" alt="{{ book.title }}" 
+                                 onerror="this.onerror=null; this.src='{% static 'images/no-cover.jpg' %}'; this.alt='No cover available';">
                         {% else %}
                             <div class="card-img-top book-cover bg-light d-flex align-items-center justify-content-center">
                                 <i class="fas fa-book fa-3x text-muted"></i>
@@ -97,6 +130,29 @@
                                 </p>
                             {% endif %}
                             
+                            <!-- Additional metadata -->
+                            <div class="book-meta mb-2">
+                                {% if book.publisher %}
+                                    <div><i class="fas fa-building me-1"></i>{{ book.publisher }}</div>
+                                {% endif %}
+                                {% if book.publication_date %}
+                                    <div><i class="fas fa-calendar me-1"></i>{{ book.publication_date }}</div>
+                                {% endif %}
+                                {% if book.pages %}
+                                    <div><i class="fas fa-file-alt me-1"></i>{{ book.pages }} pages</div>
+                                {% endif %}
+                                {% if book.isbn_13 %}
+                                    <div><i class="fas fa-barcode me-1"></i>{{ book.isbn_13 }}</div>
+                                {% endif %}
+                                {% if book.average_rating %}
+                                    <div>
+                                        <i class="fas fa-star text-warning me-1"></i>
+                                        {{ book.average_rating|floatformat:1 }}
+                                        {% if book.ratings_count %}({{ book.ratings_count }} ratings){% endif %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
                             <div class="book-description small text-muted mb-3">
                                 {{ book.description|truncatechars:100|striptags }}
                             </div>
@@ -110,6 +166,12 @@
                                     <input type="hidden" name="categories" value="{{ book.categories }}">
                                     <input type="hidden" name="cover_image" value="{{ book.cover_image }}">
                                     <input type="hidden" name="google_books_id" value="{{ book.google_books_id }}">
+                                    <input type="hidden" name="isbn_10" value="{{ book.isbn_10|default:'' }}">
+                                    <input type="hidden" name="isbn_13" value="{{ book.isbn_13|default:'' }}">
+                                    <input type="hidden" name="pages" value="{{ book.pages|default:'' }}">
+                                    <input type="hidden" name="publisher" value="{{ book.publisher|default:'' }}">
+                                    <input type="hidden" name="publication_date" value="{{ book.publication_date|default:'' }}">
+                                    <input type="hidden" name="language" value="{{ book.language|default:'en' }}">
                                     
                                     <div class="mb-2">
                                         <label class="form-label small">Price (₹)</label>
@@ -117,10 +179,24 @@
                                                step="0.01" min="0" value="299.00" required>
                                     </div>
                                     
-                                    <button type="submit" class="btn btn-success btn-sm w-100">
+                                    <button type="submit" class="btn btn-success btn-sm w-100 add-book-btn">
                                         <i class="fas fa-plus me-1"></i>Add to Library
                                     </button>
                                 </form>
+                                
+                                <!-- Preview links -->
+                                <div class="mt-2 d-flex gap-1">
+                                    {% if book.preview_link %}
+                                        <a href="{{ book.preview_link }}" target="_blank" class="btn btn-outline-secondary btn-sm flex-fill">
+                                            <i class="fas fa-eye me-1"></i>Preview
+                                        </a>
+                                    {% endif %}
+                                    {% if book.info_link %}
+                                        <a href="{{ book.info_link }}" target="_blank" class="btn btn-outline-info btn-sm flex-fill">
+                                            <i class="fas fa-info-circle me-1"></i>Info
+                                        </a>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -132,6 +208,9 @@
                 <i class="fas fa-search fa-3x text-muted mb-3"></i>
                 <h4>No books found</h4>
                 <p class="text-muted">Try searching with different keywords or check your spelling.</p>
+                <a href="{% url 'books:search_google_books' %}" class="btn btn-primary">
+                    <i class="fas fa-search me-2"></i>Try Another Search
+                </a>
             </div>
         {% endif %}
     {% else %}
@@ -139,6 +218,22 @@
             <i class="fas fa-book-open fa-4x text-muted mb-4"></i>
             <h3>Search Google Books</h3>
             <p class="text-muted">Enter a search term above to find books from Google's collection</p>
+            
+            <div class="row mt-4">
+                <div class="col-md-8 mx-auto">
+                    <div class="card">
+                        <div class="card-body">
+                            <h5 class="card-title">Search Tips</h5>
+                            <ul class="list-unstyled">
+                                <li><i class="fas fa-lightbulb text-warning me-2"></i>Use specific book titles for better results</li>
+                                <li><i class="fas fa-lightbulb text-warning me-2"></i>Search by author name to find all their books</li>
+                                <li><i class="fas fa-lightbulb text-warning me-2"></i>Use ISBN for exact book identification</li>
+                                <li><i class="fas fa-lightbulb text-warning me-2"></i>Books already in your library will be marked automatically</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     {% endif %}
 </div>
@@ -148,13 +243,34 @@
 {% block extra_js %}
 <script>
 $(document).ready(function() {
+    // Keep track of books being added to prevent double-clicks
+    const booksBeingAdded = new Set();
+    
+    // Check for existing books on page load
+    checkExistingBooks();
+    
     // Handle AJAX form submission for adding books
     $('.add-book-form').on('submit', function(e) {
         e.preventDefault();
         
         const form = $(this);
-        const button = form.find('button[type="submit"]');
+        const button = form.find('.add-book-btn');
         const originalText = button.html();
+        const card = form.closest('.book-card');
+        const googleBooksId = form.find('input[name="google_books_id"]').val();
+        
+        // Prevent double submission
+        if (booksBeingAdded.has(googleBooksId)) {
+            return;
+        }
+        
+        // Check if already marked as added
+        if (card.hasClass('already-added')) {
+            showAlert('This book has already been added to your library', 'info');
+            return;
+        }
+        
+        booksBeingAdded.add(googleBooksId);
         
         // Show loading state
         button.html('<i class="fas fa-spinner fa-spin me-1"></i>Adding...').prop('disabled', true);
@@ -167,36 +283,178 @@ $(document).ready(function() {
                 'X-Requested-With': 'XMLHttpRequest'
             },
             success: function(response) {
+                booksBeingAdded.delete(googleBooksId);
+                
                 if (response.success) {
-                    button.html('<i class="fas fa-check me-1"></i>Added!').removeClass('btn-success').addClass('btn-secondary');
-                    // Show success message
-                    showAlert('Book added successfully!', 'success');
+                    markBookAsAdded(card, button, response);
+                    showAlert(`"${response.book_title}" added successfully to your library!`, 'success');
                 } else {
-                    button.html(originalText).prop('disabled', false);
-                    showAlert(response.error || 'Error adding book', 'danger');
+                    handleAddBookError(card, button, response, originalText);
                 }
             },
             error: function(xhr) {
+                booksBeingAdded.delete(googleBooksId);
                 button.html(originalText).prop('disabled', false);
-                const errorMsg = xhr.responseJSON ? xhr.responseJSON.error : 'Error adding book';
-                showAlert(errorMsg, 'danger');
+                
+                let errorMsg = 'Error adding book';
+                let alertType = 'danger';
+                
+                if (xhr.responseJSON) {
+                    errorMsg = xhr.responseJSON.error || errorMsg;
+                    
+                    // Handle duplicate book case
+                    if (xhr.responseJSON.existing_book_url) {
+                        markBookAsExisting(card, button, xhr.responseJSON);
+                        alertType = 'info';
+                    }
+                } else if (xhr.status === 400) {
+                    errorMsg = 'This book may already exist in your library';
+                }
+                
+                showAlert(errorMsg, alertType);
             }
         });
     });
     
+    function markBookAsAdded(card, button, response) {
+        // Mark as added and provide link to view
+        button.html('<i class="fas fa-check me-1"></i>Added!')
+              .removeClass('btn-success')
+              .addClass('btn-secondary')
+              .prop('disabled', true);
+        
+        // Add a "View Book" button
+        const viewButton = $(`
+            <a href="${response.redirect_url}" class="btn btn-primary btn-sm w-100 mt-2">
+                <i class="fas fa-eye me-1"></i>View in Library
+            </a>
+        `);
+        button.closest('form').after(viewButton);
+        
+        // Mark the entire card as added
+        card.addClass('already-added');
+        card.append('<div class="duplicate-overlay">✓ In Library</div>');
+        
+        // Remove the form to prevent duplicate additions
+        setTimeout(() => {
+            button.closest('form').fadeOut();
+        }, 2000);
+    }
+    
+    function markBookAsExisting(card, button, bookData) {
+        card.addClass('already-added');
+        button.html('<i class="fas fa-check me-1"></i>Already Added')
+              .removeClass('btn-success')
+              .addClass('btn-secondary')
+              .prop('disabled', true);
+        
+        const viewButton = $(`
+            <a href="${bookData.existing_book_url}" class="btn btn-primary btn-sm w-100 mt-2">
+                <i class="fas fa-eye me-1"></i>View in Library
+            </a>
+        `);
+        button.closest('form').after(viewButton);
+        card.append('<div class="duplicate-overlay">✓ In Library</div>');
+        button.closest('form').fadeOut();
+    }
+    
+    function handleAddBookError(card, button, response, originalText) {
+        button.html(originalText).prop('disabled', false);
+        
+        // Handle specific duplicate case
+        if (response.existing_book_url) {
+            markBookAsExisting(card, button, response);
+        }
+        
+        showAlert(response.error || 'Error adding book', response.existing_book_url ? 'info' : 'danger');
+    }
+    
+    function checkExistingBooks() {
+        $('.book-card[data-google-id]').each(function() {
+            const card = $(this);
+            const googleId = card.data('google-id');
+            const title = card.data('book-title');
+            const author = card.data('book-author');
+            
+            if (googleId) {
+                card.addClass('checking-duplicate');
+                
+                $.ajax({
+                    url: "{% url 'books:check_book_exists' %}",
+                    method: 'GET',
+                    data: {
+                        'google_books_id': googleId,
+                        'title': title,
+                        'author': author
+                    },
+                    success: function(response) {
+                        card.removeClass('checking-duplicate');
+                        
+                        if (response.exists) {
+                            const button = card.find('.add-book-btn');
+                            markBookAsExisting(card, button, {
+                                existing_book_url: response.book_url,
+                                existing_book_title: response.book_title
+                            });
+                        }
+                    },
+                    error: function() {
+                        card.removeClass('checking-duplicate');
+                        // Silently fail - not critical
+                    }
+                });
+            }
+        });
+    }
+    
     function showAlert(message, type) {
+        // Remove existing alerts
+        $('.alert').remove();
+        
+        const iconMap = {
+            'success': 'check-circle',
+            'danger': 'exclamation-triangle',
+            'info': 'info-circle',
+            'warning': 'exclamation-triangle'
+        };
+        
         const alertHtml = `
             <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+                <i class="fas fa-${iconMap[type] || 'info-circle'} me-2"></i>
                 ${message}
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         `;
         $('.container').first().prepend(alertHtml);
         
-        // Auto dismiss after 5 seconds
+        // Auto dismiss after 7 seconds
         setTimeout(function() {
             $('.alert').fadeOut();
-        }, 5000);
+        }, 7000);
+    }
+    
+    // Make showAlert globally available
+    window.showAlert = showAlert;
+    
+    // Handle image loading errors
+    $('.book-cover, img[src*="books.google"]').on('error', function() {
+        $(this).attr('src', '{% static "images/no-cover.jpg" %}')
+               .attr('alt', 'No cover available');
+    });
+    
+    // Add smooth scroll to results after search
+    {% if query and books %}
+        $('html, body').animate({
+            scrollTop: $('.container').first().offset().top - 100
+        }, 500);
+    {% endif %}
+});
+
+// Add keyboard shortcut for search
+$(document).keydown(function(e) {
+    if (e.ctrlKey && e.key === '/') {
+        e.preventDefault();
+        $('input[name="q"]').focus();
     }
 });
 </script>

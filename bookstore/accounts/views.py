@@ -1,11 +1,13 @@
-
 # accounts/views.py
-from django.shortcuts import render, redirect
-from django.contrib.auth import login, authenticate
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib.auth import login, authenticate, logout
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.urls import reverse_lazy
 from django.views.generic import CreateView
+from django.contrib.auth.forms import AuthenticationForm
+
+# Import your actual forms
 from .forms import CustomUserRegistrationForm, ProfileUpdateForm
 from .models import CustomUser
 
@@ -16,13 +18,47 @@ class SignUpView(CreateView):
     success_url = reverse_lazy('accounts:login')
 
     def form_valid(self, form):
-        response = super().form_valid(form)
-        messages.success(self.request, 'Account created successfully! Please log in.')
-        return response
+        """Handle successful form submission"""
+        try:
+            # Save the user
+            user = form.save()
+            
+            # Automatically log the user in after successful signup
+            login(self.request, user)
+            
+            # Add success message
+            messages.success(self.request, 'Welcome to BookStore! Your account has been created successfully.')
+            
+            # Redirect to dashboard or home page (NOT login page)
+            return redirect('accounts:dashboard')  # or 'books:home' if you have it
+            
+        except Exception as e:
+            # If there's any error during user creation
+            messages.error(self.request, f'Error creating account: {str(e)}')
+            return self.form_invalid(form)
+
+    def form_invalid(self, form):
+        """Handle form validation errors"""
+        # Add error message
+        messages.error(self.request, 'Please correct the errors below.')
+        
+        # Print errors to console for debugging
+        print("Form validation errors:")
+        for field, errors in form.errors.items():
+            print(f"{field}: {errors}")
+        
+        return super().form_invalid(form)
+
+    def get_context_data(self, **kwargs):
+        """Add extra context if needed"""
+        context = super().get_context_data(**kwargs)
+        # Add any additional context here
+        return context
+
 
 @login_required
 def profile_view(request):
-    return render(request, 'accounts/profile.html', {'user': request.user})
+    return render(request, 'accounts/dashboard.html')
 
 @login_required
 def profile_edit(request):
@@ -39,32 +75,46 @@ def profile_edit(request):
 
 @login_required
 def dashboard(request):
-    user = request.user
     context = {
-        'user': user,
+        'user': request.user,
     }
     
-    if user.user_type == 'customer':
-        from orders.models import Order
-        from wishlist.models import WishlistItem
-        
-        recent_orders = Order.objects.filter(user=user).order_by('-created_at')[:5]
-        wishlist_count = WishlistItem.objects.filter(user=user).count()
-        
+    # Add customer-specific data
+    if request.user.user_type == 'customer':
+        # Add customer specific context
         context.update({
-            'recent_orders': recent_orders,
-            'wishlist_count': wishlist_count,
+            'recent_orders': [],  # Add actual order queryset when Order model is available
+            'wishlist_count': 0,  # Add actual wishlist count when Wishlist model is available
         })
-        
-    elif user.user_type == 'vendor':
-        from vendors.models import VendorProfile, StockOffer
-        
-        vendor_profile = VendorProfile.objects.filter(user=user).first()
-        recent_offers = StockOffer.objects.filter(vendor=vendor_profile).order_by('-created_at')[:5]
-        
+    
+    # Add vendor-specific data
+    elif request.user.user_type == 'vendor':
+        if hasattr(request.user, 'vendor_profile'):
+            vendor_profile = request.user.vendor_profile
+            
+            # Calculate open tickets count
+            open_tickets_count = vendor_profile.tickets.filter(
+                status__in=['open', 'in_progress']
+            ).count()
+            
+            context.update({
+                'vendor_profile': vendor_profile,
+                'open_tickets_count': open_tickets_count,
+            })
+    
+    # Add admin/staff-specific data
+    elif request.user.user_type in ['staff', 'admin'] or request.user.is_superuser:
+        # Add admin specific context
         context.update({
-            'vendor_profile': vendor_profile,
-            'recent_offers': recent_offers,
+            'total_users': CustomUser.objects.count(),
+            'pending_vendors': 0,  # Add actual count when VendorProfile model is available
+            'active_orders': 0,    # Add actual count when Order model is available
         })
     
     return render(request, 'accounts/dashboard.html', context)
+
+def custom_logout_view(request):
+    """Custom logout view that handles both GET and POST requests"""
+    logout(request)
+    messages.success(request, 'You have been successfully logged out.')
+    return redirect('accounts:login')

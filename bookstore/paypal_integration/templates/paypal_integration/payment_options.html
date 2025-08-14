@@ -1,0 +1,220 @@
+<!-- paypal_integration/templates/paypal_integration/payment_options.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Payment Options - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white">
+                    <h4 class="mb-0">
+                        <i class="fas fa-credit-card me-2"></i>Payment Options
+                    </h4>
+                </div>
+                <div class="card-body">
+                    <!-- Order Summary -->
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <h5>Order Summary</h5>
+                            <p class="mb-1"><strong>Order ID:</strong> #{{ order.order_id }}</p>
+                            <p class="mb-1"><strong>Items:</strong> {{ order.total_items }} items</p>
+                            <p class="mb-1"><strong>Total:</strong> <span class="text-success fw-bold">₹{{ order.total_amount }}</span></p>
+                        </div>
+                        <div class="col-md-6">
+                            <h5>Shipping Address</h5>
+                            <address>
+                                {{ order.shipping_first_name }} {{ order.shipping_last_name }}<br>
+                                {{ order.shipping_address }}<br>
+                                {{ order.shipping_city }}, {{ order.shipping_state }} {{ order.shipping_pincode }}<br>
+                            </address>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Payment Methods -->
+                    <h5 class="mb-3">Choose Payment Method</h5>
+                    
+                    <div class="payment-methods">
+                        <!-- PayPal Payment -->
+                        <div class="card mb-3 payment-option">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <h6 class="mb-2">
+                                            <i class="fab fa-paypal text-primary me-2"></i>
+                                            PayPal
+                                        </h6>
+                                        <p class="text-muted small mb-0">
+                                            Pay securely with your PayPal account or credit/debit card
+                                        </p>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <button class="btn btn-primary" onclick="initiatePayPalPayment()">
+                                            <i class="fab fa-paypal me-2"></i>Pay with PayPal
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Credit/Debit Card -->
+                        <div class="card mb-3 payment-option">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <h6 class="mb-2">
+                                            <i class="fas fa-credit-card text-success me-2"></i>
+                                            Credit/Debit Card
+                                        </h6>
+                                        <p class="text-muted small mb-0">
+                                            Pay with Visa, MasterCard, American Express
+                                        </p>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <button class="btn btn-outline-secondary" disabled>
+                                            Coming Soon
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- UPI -->
+                        <div class="card mb-3 payment-option">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <h6 class="mb-2">
+                                            <i class="fas fa-mobile-alt text-warning me-2"></i>
+                                            UPI Payment
+                                        </h6>
+                                        <p class="text-muted small mb-0">
+                                            Pay using Google Pay, PhonePe, Paytm, or any UPI app
+                                        </p>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <button class="btn btn-outline-secondary" disabled>
+                                            Coming Soon
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Cash on Delivery -->
+                        <div class="card mb-3 payment-option">
+                            <div class="card-body">
+                                <div class="row align-items-center">
+                                    <div class="col-md-8">
+                                        <h6 class="mb-2">
+                                            <i class="fas fa-truck text-info me-2"></i>
+                                            Cash on Delivery
+                                        </h6>
+                                        <p class="text-muted small mb-0">
+                                            Pay when your order is delivered to your doorstep
+                                        </p>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        <button class="btn btn-outline-secondary" disabled>
+                                            Coming Soon
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr>
+
+                    <!-- Security Note -->
+                    <div class="alert alert-info">
+                        <i class="fas fa-shield-alt me-2"></i>
+                        <strong>Secure Payment:</strong> Your payment information is encrypted and secure. We never store your payment details.
+                    </div>
+
+                    <!-- Back to Cart -->
+                    <div class="text-center">
+                        <a href="{% url 'books:cart' %}" class="btn btn-outline-secondary me-2">
+                            <i class="fas fa-arrow-left me-2"></i>Back to Cart
+                        </a>
+                        <a href="{% url 'orders:order_detail' order.order_id %}" class="btn btn-outline-info">
+                            <i class="fas fa-eye me-2"></i>View Order Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Modal -->
+<div class="modal fade" id="paymentModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-body text-center py-4">
+                <div class="spinner-border text-primary mb-3" role="status">
+                    <span class="visually-hidden">Loading...</span>
+                </div>
+                <h5>Processing Payment...</h5>
+                <p class="text-muted">Please wait while we redirect you to PayPal</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function initiatePayPalPayment() {
+    // Show loading modal
+    const modal = new bootstrap.Modal(document.getElementById('paymentModal'));
+    modal.show();
+    
+    // Redirect to PayPal payment creation
+    {% url 'paypal_integration:create_payment' order.order_id as create_payment_url %}
+    {% if create_payment_url %}
+        window.location.href = "{{ create_payment_url }}";
+    {% else %}
+        alert('PayPal integration not available. Please contact support.');
+        modal.hide();
+    {% endif %}
+}
+
+// Add hover effects to payment options
+document.addEventListener('DOMContentLoaded', function() {
+    const paymentOptions = document.querySelectorAll('.payment-option');
+    
+    paymentOptions.forEach(option => {
+        option.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-2px)';
+            this.style.boxShadow = '0 4px 8px rgba(0,0,0,0.1)';
+        });
+        
+        option.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0)';
+            this.style.boxShadow = '';
+        });
+    });
+});
+</script>
+
+<style>
+.payment-option {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.payment-option:hover {
+    border-color: #0d6efd;
+}
+
+.spinner-border {
+    width: 3rem;
+    height: 3rem;
+}
+</style>
+{% endblock %}

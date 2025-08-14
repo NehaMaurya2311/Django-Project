@@ -68,6 +68,19 @@ class StockOffer(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
+    # Add delivery scheduling fields
+    vendor_delivery_date = models.DateTimeField(null=True, blank=True, 
+        help_text="When vendor will deliver the books")
+    vendor_contact_person = models.CharField(max_length=100, blank=True)
+    vendor_contact_phone = models.CharField(max_length=15, blank=True)
+    
+    # Tracking fields
+    is_delivered = models.BooleanField(default=False)
+    delivered_at = models.DateTimeField(null=True, blank=True)
+    delivered_quantity = models.PositiveIntegerField(null=True, blank=True)
+    staff_confirmed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    staff_confirmed_at = models.DateTimeField(null=True, blank=True)
+
     class Meta:
         ordering = ['-created_at']
     
@@ -142,3 +155,17 @@ class VendorTicketResponse(models.Model):
     
     def __str__(self):
         return f"Response to {self.ticket.ticket_id} by {self.user.username}"
+
+
+class OfferStatusNotification(models.Model):
+    stock_offer = models.ForeignKey(StockOffer, on_delete=models.CASCADE)
+    status = models.CharField(max_length=20, choices=[
+        ('approved', 'Offer Approved - Schedule Delivery'),
+        ('pickup_scheduled', 'Pickup Scheduled'),
+        ('in_transit', 'Books in Transit'),
+        ('delivered', 'Delivered to Warehouse'),
+        ('confirmed', 'Stock Confirmed & Added'),
+    ])
+    message = models.TextField()
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)

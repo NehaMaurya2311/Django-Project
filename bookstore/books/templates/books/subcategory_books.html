@@ -72,7 +72,7 @@
                         </div>
                         
                         <button type="submit" class="btn btn-primary w-100 btn-sm">Apply Filters</button>
-                        <a href="{% url 'books:subcategory' category.slug subcategory.slug %}" class="btn btn-outline-secondary w-100 btn-sm mt-2">Clear</a>
+                        <a href="{% url 'books:subcategory_books' category.slug subcategory.slug %}" class="btn btn-outline-secondary w-100 btn-sm mt-2">Clear</a>
                     </form>
                 </div>
             </div>
@@ -193,6 +193,11 @@
         </div>
     </div>
 </div>
+
+<!-- Hidden CSRF Token -->
+{% csrf_token %}
+<div id="csrf-data" data-csrf="{{ csrf_token }}" style="display: none;"></div>
+
 {% endblock %}
 
 {% block extra_css %}
@@ -204,29 +209,106 @@
         transform: translateY(-5px);
         box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     }
+    .btn:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
 </style>
 {% endblock %}
 
 {% block extra_js %}
 <script>
+// Global CSRF token function
+function getCSRFToken() {
+    // First try to get from hidden input
+    let token = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (token) {
+        return token.value;
+    }
+    
+    // Try from data attribute
+    let csrfData = document.getElementById('csrf-data');
+    if (csrfData) {
+        return csrfData.dataset.csrf;
+    }
+    
+    // Try from cookies
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
 function addToCart(bookId) {
     {% if user.is_authenticated %}
-        $.ajax({
-            url: "{% url 'books:add_to_cart' 0 %}".replace('0', bookId),
+        const button = event.target;
+        const originalText = button.innerHTML;
+        const csrfToken = getCSRFToken();
+        
+        if (!csrfToken) {
+            showAlert('Security token missing. Please refresh the page.', 'danger');
+            return;
+        }
+        
+        // Disable button and show loading
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Adding...';
+        
+        fetch("{% url 'books:add_to_cart' 0 %}".replace('0', bookId), {
             method: 'POST',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
-                'X-CSRFToken': $('[name=csrfmiddlewaretoken]').val()
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
             },
-            success: function(response) {
-                if (response.success) {
-                    showAlert(response.message, 'success');
-                    $('.cart-total').text(response.cart_total);
-                }
-            },
-            error: function() {
-                showAlert('Error adding book to cart', 'danger');
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
             }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                // Update cart total in navbar if it exists
+                const cartTotal = document.querySelector('.cart-total');
+                if (cartTotal) {
+                    cartTotal.textContent = data.cart_total;
+                }
+                
+                // Temporarily change button text
+                button.innerHTML = '<i class="fas fa-check me-1"></i>Added!';
+                button.classList.remove('btn-primary');
+                button.classList.add('btn-success');
+                
+                // Reset button after 2 seconds
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-primary');
+                    button.disabled = false;
+                }, 2000);
+            } else {
+                throw new Error(data.error || 'Failed to add to cart');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert(error.message || 'Error adding book to cart. Please try again.', 'danger');
+            
+            // Reset button
+            button.innerHTML = originalText;
+            button.disabled = false;
         });
     {% else %}
         window.location.href = "{% url 'account_login' %}";
@@ -234,17 +316,44 @@ function addToCart(bookId) {
 }
 
 function showAlert(message, type) {
+    // Remove any existing alerts first
+    const existingAlerts = document.querySelectorAll('.alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
     const alertHtml = `
-        <div class="alert alert-${type} alert-dismissible fade show" role="alert">
+        <div class="alert alert-${type} alert-dismissible fade show position-fixed" 
+             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;" role="alert">
             ${message}
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     `;
-    $('.container').first().prepend(alertHtml);
     
-    setTimeout(function() {
-        $('.alert').fadeOut();
+    document.body.insertAdjacentHTML('afterbegin', alertHtml);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            if (alert.classList.contains('fade')) {
+                alert.classList.remove('show');
+                setTimeout(() => alert.remove(), 300);
+            }
+        });
     }, 5000);
 }
+
+// Set up page initialization
+document.addEventListener('DOMContentLoaded', function() {
+    // For jQuery compatibility if needed elsewhere
+    if (typeof $ !== 'undefined') {
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
+                }
+            }
+        });
+    }
+});
 </script>
 {% endblock %}

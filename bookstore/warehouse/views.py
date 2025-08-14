@@ -13,6 +13,8 @@ def is_staff_or_admin(user):
 
 @login_required
 @user_passes_test(is_staff_or_admin)
+@login_required
+@user_passes_test(is_staff_or_admin)
 def warehouse_dashboard(request):
     # Key metrics
     total_books = Stock.objects.count()
@@ -25,11 +27,11 @@ def warehouse_dashboard(request):
     # Recent movements
     recent_movements = StockMovement.objects.select_related('stock__book').order_by('-created_at')[:10]
     
-    # Category-wise stock
+    # Category-wise stock with updated stats
     category_stats = []
     for category in Category.objects.filter(is_active=True):
         category_stock, created = CategoryStock.objects.get_or_create(category=category)
-        if created:
+        if created or True:  # Always update stats for accurate display
             category_stock.update_stats()
         category_stats.append(category_stock)
     
@@ -163,4 +165,9 @@ def low_stock_report(request):
         Q(quantity__lte=F('reorder_level')) & Q(quantity__gt=0)
     ).select_related('book', 'book__category').order_by('quantity')
     
-    return render(request, 'warehouse/low_stock_report.html', {'low_stock_items': low_stock_items})
+    out_of_stock_count = Stock.objects.filter(quantity=0).count()
+    
+    return render(request, 'warehouse/low_stock_report.html', {
+        'low_stock_items': low_stock_items,
+        'out_of_stock_count': out_of_stock_count
+    })

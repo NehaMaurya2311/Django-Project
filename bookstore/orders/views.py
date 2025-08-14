@@ -12,6 +12,125 @@ from .models import Order, OrderItem, OrderTracking, Return, ReturnItem
 from .forms import CheckoutForm, ReturnRequestForm
 from decimal import Decimal
 import json
+from django.views.decorators.csrf import csrf_exempt
+from django.utils import timezone
+
+@login_required
+@csrf_exempt
+def create_from_cart(request):
+    """Create an order from the user's cart"""
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Invalid request method'})
+    
+    try:
+        # Get user's cart
+        cart = get_object_or_404(Cart, user=request.user)
+        
+        if not cart.items.exists():
+            return JsonResponse({'success': False, 'error': 'Cart is empty'})
+        
+        # Check if user has profile with address information
+        user = request.user
+        if not all([
+            getattr(user, 'first_name', None),
+            getattr(user, 'last_name', None),
+            getattr(user, 'email', None),
+        ]):
+            return JsonResponse({
+                'success': False, 
+                'error': 'Please complete your profile information before checkout',
+                'redirect_url': '/accounts/profile/'
+            })
+        
+        with transaction.atomic():
+            # Check stock availability and reserve items
+            for cart_item in cart.items.all():
+                try:
+                    stock = Stock.objects.select_for_update().get(book=cart_item.book)
+                    
+                    # Check if enough stock is available
+                    available_stock = stock.quantity - stock.reserved_quantity
+                    if available_stock < cart_item.quantity:
+                        return JsonResponse({
+                            'success': False,
+                            'error': f'Not enough stock for "{cart_item.book.title}". Available: {available_stock}, Requested: {cart_item.quantity}'
+                        })
+                    
+                    # Reserve the stock
+                    stock.reserved_quantity += cart_item.quantity
+                    stock.save()
+                    
+                except Stock.DoesNotExist:
+                    return JsonResponse({
+                        'success': False,
+                        'error': f'Stock record not found for "{cart_item.book.title}"'
+                    })
+            
+            # Create the order with proper field mapping
+            order = Order.objects.create(
+                user=request.user,
+                status='pending',
+                payment_status='pending',
+                
+                # Billing information (use user profile data as fallback)
+                billing_first_name=getattr(user, 'first_name', ''),
+                billing_last_name=getattr(user, 'last_name', ''),
+                billing_email=getattr(user, 'email', ''),
+                billing_phone=getattr(user, 'phone', ''),
+                billing_address=getattr(user, 'address', 'Address not provided'),
+                billing_city=getattr(user, 'city', 'City not provided'),
+                billing_state=getattr(user, 'state', 'State not provided'),
+                billing_pincode=getattr(user, 'pincode', '000000'),
+                
+                # Shipping information (same as billing for now)
+                shipping_first_name=getattr(user, 'first_name', ''),
+                shipping_last_name=getattr(user, 'last_name', ''),
+                shipping_address=getattr(user, 'address', 'Address not provided'),
+                shipping_city=getattr(user, 'city', 'City not provided'),
+                shipping_state=getattr(user, 'state', 'State not provided'),
+                shipping_pincode=getattr(user, 'pincode', '000000'),
+                
+                # Order totals
+                subtotal=cart.total_price,
+                tax_amount=Decimal('0.00'),
+                shipping_cost=Decimal('0.00'),
+                discount_amount=Decimal('0.00'),
+                total_amount=cart.total_price
+            )
+            
+            # Create order items from cart items
+            for cart_item in cart.items.all():
+                OrderItem.objects.create(
+                    order=order,
+                    book=cart_item.book,
+                    quantity=cart_item.quantity,
+                    price=cart_item.book.price,
+                    total=cart_item.total_price  # Use 'total' not 'total_price'
+                )
+            
+            # Create initial tracking
+            OrderTracking.objects.create(
+                order=order,
+                status='order_placed',
+                description='Order has been placed successfully.'
+            )
+            
+            # Clear the cart after successful order creation
+            cart.items.all().delete()
+            
+            return JsonResponse({
+                'success': True,
+                'order_id': str(order.order_id),  # Convert to string for JSON
+                'message': 'Order created successfully'
+            })
+    
+    except Exception as e:
+        import traceback
+        traceback.print_exc()  # For debugging
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
 
 @login_required
 def checkout(request):
@@ -57,7 +176,7 @@ def checkout(request):
                         shipping_pincode=form.cleaned_data.get('shipping_pincode') or form.cleaned_data['billing_pincode'],
                         
                         subtotal=cart.total_price,
-                        total_amount=cart.total_price,  # Will be updated with shipping/tax
+                        total_amount=cart.total_price,
                         coupon_code=form.cleaned_data.get('coupon_code', ''),
                         notes=form.cleaned_data.get('notes', ''),
                     )
@@ -125,12 +244,13 @@ def checkout(request):
             'billing_first_name': request.user.first_name,
             'billing_last_name': request.user.last_name,
             'billing_email': request.user.email,
-            'billing_phone': request.user.phone,
-            'billing_address': request.user.address,
-            'billing_city': request.user.city,
-            'billing_state': request.user.state,
-            'billing_pincode': request.user.pincode,
         }
+        
+        # Add other fields if they exist on the user model
+        for field in ['phone', 'address', 'city', 'state', 'pincode']:
+            if hasattr(request.user, field):
+                initial_data[f'billing_{field}'] = getattr(request.user, field)
+        
         form = CheckoutForm(initial=initial_data)
     
     context = {

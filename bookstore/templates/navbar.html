@@ -1,13 +1,17 @@
 {% load static %}
 {% load i18n %}
 
-<nav class="navbar navbar-expand-lg navbar-light bg-white sticky-top shadow-sm">
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/navbar.css' %}">
+{% endblock %}
+
+<nav class="navbar navbar-expand-lg navbar-light bg-white shadow-sm">
     <div class="container-fluid">
         <!-- Brand/Logo -->
         <a class="navbar-brand d-flex align-items-center" href="{% url 'books:home' %}">
             <img src="{% static 'images/logo/logo.png' %}" alt="BookStore Logo" height="40" class="me-2 d-none d-sm-inline">
             <span class="brand-text fw-bold fs-4">
-                <span class="text-primary">Book</span><span class="text-secondary">Store</span>
+                <span class="text">Book</span><span class="text">Store</span>
             </span>
         </a>
 
@@ -27,127 +31,116 @@
                     </a>
                 </li>
 
-                <!-- Books Dropdown -->
+                <!-- Books Hierarchical Dropdown -->
                 <li class="nav-item dropdown">
-                    <a class="nav-link dropdown-toggle fw-semibold" href="#" id="booksDropdown" role="button" data-bs-toggle="dropdown">
+                    <a class="nav-link dropdown-toggle fw-semibold" href="#" id="booksDropdown" role="button" 
+                    data-bs-toggle="dropdown" aria-expanded="false">
                         <i class="fas fa-book me-1"></i>{% trans "Books" %}
                     </a>
-                    <ul class="dropdown-menu dropdown-menu-books shadow-lg border-0">
-                        <!-- Fiction Category -->
+                    <ul class="dropdown-menu" aria-labelledby="booksDropdown">
+                        {% for category_data in categories_hierarchy %}
                         <li class="dropdown-submenu">
-                            <a class="dropdown-item dropdown-toggle" href="{% url 'books:category_books' 'fiction' %}">
-                                <i class="fas fa-magic me-2 text-primary"></i>{% trans "Fiction" %}
+                            <a class="dropdown-item dropdown-toggle d-flex justify-content-between align-items-center" 
+                               href="{% url 'books:category_books' category_data.slug %}">
+                                <span>
+                                    {% if category_data.name == 'Fiction' %}
+                                        <i class="fas fa-magic me-2 text-primary"></i>
+                                    {% elif category_data.name == 'Non Fiction' %}
+                                        <i class="fas fa-brain me-2 text-info"></i>
+                                    {% elif category_data.name == 'Coffee Table' %}
+                                        <i class="fas fa-coffee me-2 text-warning"></i>
+                                    {% elif category_data.name == 'Hindi Novels' %}
+                                        <i class="fas fa-language me-2 text-success"></i>
+                                    {% elif category_data.name == 'Comics & Manga' %}
+                                        <i class="fas fa-mask me-2 text-danger"></i>
+                                    {% elif category_data.name == 'Children Books' %}
+                                        <i class="fas fa-child me-2 text-purple"></i>
+                                    {% else %}
+                                        <i class="fas fa-book me-2 text-secondary"></i>
+                                    {% endif %}
+                                    {{ category_data.name }}
+                                </span>
+                                {% if category_data.subcategories %}
+                                    <i class="fas fa-chevron-right ms-2"></i>
+                                {% endif %}
                             </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'fiction' 'fiction-reads' %}">{% trans "Fiction Reads" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'fiction' 'adventure' %}">{% trans "Adventure" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'fiction' 'classic-novels' %}">{% trans "Classic Novels" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'fiction' 'mystery-crime-thriller' %}">{% trans "Mystery, Crime & Thriller" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'fiction' 'romance' %}">{% trans "Romance" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'fiction' 'young-adult' %}">{% trans "Young Adult" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'fiction' 'horror' %}">{% trans "Horror" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'fiction' 'fantasy' %}">{% trans "Fantasy" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'fiction' 'erotic-fiction' %}">{% trans "Erotic Fiction" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'fiction' 'womens-fiction' %}">{% trans "Women's Fiction" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'fiction' 'science-fiction' %}">{% trans "Science Fiction" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'fiction' 'historical-fiction' %}">{% trans "Historical Fiction" %}</a></li>
+                            {% if category_data.subcategories %}
+                            <ul class="dropdown-menu submenu">
+                                {% for subcategory in category_data.subcategories %}
+                                <li class="dropdown-submenu">
+                                    <a class="dropdown-item dropdown-toggle d-flex justify-content-between align-items-center" 
+                                       href="{% url 'books:subcategory_books' category_data.slug subcategory.slug %}">
+                                        <span>{{ subcategory.name }}</span>
+                                        {% if subcategory.subsubcategories %}
+                                            <i class="fas fa-chevron-right ms-2"></i>
+                                        {% endif %}
+                                    </a>
+                                    {% if subcategory.subsubcategories %}
+                                    <ul class="dropdown-menu submenu">
+                                        {% for subsubcategory in subcategory.subsubcategories %}
+                                        <li>
+                                            <a class="dropdown-item" 
+                                               href="{% url 'books:subsubcategory_books' category_data.slug subcategory.slug subsubcategory.slug %}"
+                                               title="{{ subsubcategory.description|default:subsubcategory.name }}">
+                                                <i class="fas fa-caret-right me-2"></i>{{ subsubcategory.name }}
+                                            </a>
+                                        </li>
+                                        {% endfor %}
+                                    </ul>
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
                             </ul>
+                            {% endif %}
                         </li>
-
-                        <!-- Non Fiction Category -->
-                        <li class="dropdown-submenu">
-                            <a class="dropdown-item dropdown-toggle" href="{% url 'books:category_books' 'non-fiction' %}">
-                                <i class="fas fa-brain me-2 text-info"></i>{% trans "Non Fiction" %}
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'non-fiction' 'biography' %}">{% trans "Biography" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'non-fiction' 'self-help' %}">{% trans "Self Help" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'non-fiction' 'business-management' %}">{% trans "Business & Management" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'non-fiction' 'health-fitness' %}">{% trans "Health & Fitness" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'non-fiction' 'spirituality' %}">{% trans "Spirituality" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'non-fiction' 'philosophy' %}">{% trans "Philosophy" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'non-fiction' 'history' %}">{% trans "History" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'non-fiction' 'travel-holiday' %}">{% trans "Travel & Holiday" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'non-fiction' 'science-nature' %}">{% trans "Science & Nature" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'non-fiction' 'sports' %}">{% trans "Sports" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'non-fiction' 'dictionary-reference' %}">{% trans "Dictionary & Reference" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'non-fiction' 'stock-market-books' %}">{% trans "Stock Market Books" %}</a></li>
-                            </ul>
-                        </li>
-
-                        <!-- Coffee Table Category -->
-                        <li class="dropdown-submenu">
-                            <a class="dropdown-item dropdown-toggle" href="{% url 'books:category_books' 'coffee-table' %}">
-                                <i class="fas fa-coffee me-2 text-warning"></i>{% trans "Coffee Table" %}
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'coffee-table' 'history' %}">{% trans "History" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'coffee-table' 'sports' %}">{% trans "Sports" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'coffee-table' 'food-beverage' %}">{% trans "Food & Beverage" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'coffee-table' 'interior-designing' %}">{% trans "Interior Designing" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'coffee-table' 'films-animations' %}">{% trans "Films & Animations" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'coffee-table' 'cars-motorcycles' %}">{% trans "Cars & Motorcycles" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'coffee-table' 'travel-culture' %}">{% trans "Travel & Culture" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'coffee-table' 'wildlife-nature' %}">{% trans "Wildlife & Nature" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'coffee-table' 'gardening' %}">{% trans "Gardening" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'coffee-table' 'science' %}">{% trans "Science" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'coffee-table' 'lifestyle-fashion' %}">{% trans "Lifestyle & Fashion" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'coffee-table' 'art-painting-music' %}">{% trans "Art, Painting & Music" %}</a></li>
-                            </ul>
-                        </li>
-
-                        <!-- Hindi Novels Category -->
-                        <li class="dropdown-submenu">
-                            <a class="dropdown-item dropdown-toggle" href="{% url 'books:category_books' 'hindi-novels' %}">
-                                <i class="fas fa-language me-2 text-success"></i>{% trans "Hindi Novels" %}
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'hindi-novels' 'dictionary-language-studies' %}">{% trans "Dictionary & Language Studies" %}</a></li>
-                            </ul>
-                        </li>
-
-                        <!-- Comics & Manga Category -->
-                        <li class="dropdown-submenu">
-                            <a class="dropdown-item dropdown-toggle" href="{% url 'books:category_books' 'comics-manga' %}">
-                                <i class="fas fa-mask me-2 text-danger"></i>{% trans "Comics & Manga" %}
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'comics-manga' 'indian-comics' %}">{% trans "Indian Comics" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'comics-manga' 'american-comics' %}">{% trans "American Comics" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'comics-manga' 'manga' %}">{% trans "Manga" %}</a></li>
-                            </ul>
-                        </li>
-
-                        <!-- Children Books Category -->
-                        <li class="dropdown-submenu">
-                            <a class="dropdown-item dropdown-toggle" href="{% url 'books:category_books' 'children-books' %}">
-                                <i class="fas fa-child me-2 text-purple"></i>{% trans "Children Books" %}
-                            </a>
-                            <ul class="dropdown-menu">
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'children-books' 'age-0-5' %}">{% trans "Age 0 - 5 Years" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'children-books' 'age-5-8' %}">{% trans "Age 5 - 8 Years" %}</a></li>
-                                <li><a class="dropdown-item" href="{% url 'books:subcategory' 'children-books' 'age-8-13' %}">{% trans "Age 8 - 13 Years" %}</a></li>
-                            </ul>
-                        </li>
-
+                        {% empty %}
+                        <li><span class="dropdown-item-text text-muted">No categories available</span></li>
+                        {% endfor %}
+                        
                         <li><hr class="dropdown-divider"></li>
-                        <li><a class="dropdown-item fw-bold" href="{% url 'books:all_books' %}">
+                        
+                        <!-- Quick Actions -->
+                        <li><a class="dropdown-item" href="{% url 'books:all_books' %}">
                             <i class="fas fa-list me-2"></i>{% trans "View All Books" %}
                         </a></li>
-                        
+                        <li><a class="dropdown-item" href="{% url 'books:search_books' %}">
+                            <i class="fas fa-search me-2"></i>{% trans "Advanced Search" %}
+                        </a></li>
                         {% if user.is_staff %}
-                        <li><hr class="dropdown-divider"></li>
                         <li><a class="dropdown-item" href="{% url 'books:add_book' %}">
                             <i class="fas fa-plus me-2"></i>{% trans "Add Book" %}
                         </a></li>
                         <li><a class="dropdown-item" href="{% url 'books:search_google_books' %}">
-                            <i class="fab fa-google me-2"></i>{% trans "Google Books API" %}
+                            <i class="fab fa-google me-2"></i>{% trans "Google Books" %}
                         </a></li>
                         {% endif %}
                     </ul>
                 </li>
 
-                <!-- Contact/Support -->
+                <!-- Quick Category Links (for larger screens) -->
+                <li class="nav-item dropdown d-none d-xl-block">
+                    <a class="nav-link dropdown-toggle" href="#" id="quickCategoriesDropdown" role="button" 
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        <i class="fas fa-fire me-1"></i>{% trans "Popular" %}
+                    </a>
+                    <ul class="dropdown-menu" aria-labelledby="quickCategoriesDropdown">
+                        <li><a class="dropdown-item" href="{% url 'books:all_books' %}?featured=1">
+                            <i class="fas fa-star me-2 text-warning"></i>{% trans "Featured Books" %}
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'books:all_books' %}?bestseller=1">
+                            <i class="fas fa-trophy me-2 text-success"></i>{% trans "Bestsellers" %}
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'books:all_books' %}?on_sale=1">
+                            <i class="fas fa-tags me-2 text-danger"></i>{% trans "On Sale" %}
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'books:all_books' %}?sort=newest">
+                            <i class="fas fa-clock me-2 text-info"></i>{% trans "New Arrivals" %}
+                        </a></li>
+                    </ul>
+                </li>
+
+                <!-- Support -->
                 <li class="nav-item">
                     <a class="nav-link" href="{% url 'support:create_ticket' %}">
                         <i class="fas fa-headset me-1"></i>{% trans "Support" %}
@@ -155,20 +148,37 @@
                 </li>
             </ul>
 
+            <!-- Search Bar -->
+            <div class="d-flex me-3">
+                <form class="d-flex search-form" method="GET" action="{% url 'books:search_books' %}">
+                    <div class="input-group">
+                        <input class="form-control search-input" type="search" 
+                               placeholder="{% trans 'Search books, authors...' %}" 
+                               name="q" value="{{ request.GET.q|default:'' }}" 
+                               autocomplete="off">
+                        <button class="btn btn-outline-primary search-btn" type="submit" title="{% trans 'Search' %}">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </form>
+            </div>
+
             <!-- Right Side Icons & Links -->
             <div class="navbar-nav ms-auto d-flex align-items-center">
                 <!-- Language Switcher -->
                 <div class="nav-item dropdown me-2">
-                    <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button" data-bs-toggle="dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="languageDropdown" role="button" 
+                       data-bs-toggle="dropdown" aria-expanded="false" title="{% trans 'Language' %}">
                         <i class="fas fa-globe me-1"></i>
                         {% get_current_language as LANGUAGE_CODE %}
-                        {{ LANGUAGE_CODE|upper }}
+                        <span class="d-none d-md-inline">{{ LANGUAGE_CODE|upper }}</span>
                     </a>
                     <ul class="dropdown-menu dropdown-menu-end">
                         {% get_available_languages as LANGUAGES %}
                         {% for lang_code, lang_name in LANGUAGES %}
                             <li>
-                                <a class="dropdown-item" href="{% url 'set_language' %}?language={{ lang_code }}">
+                                <a class="dropdown-item{% if lang_code == LANGUAGE_CODE %} active{% endif %}" 
+                                   href="/set_language/?language={{ lang_code }}">
                                     {{ lang_name }}
                                 </a>
                             </li>
@@ -177,21 +187,27 @@
                 </div>
 
                 <!-- Wishlist -->
+                {% if user.is_authenticated %}
                 <div class="nav-item me-2">
-                    <a class="nav-link position-relative" href="{% url 'wishlist:wishlist' %}" title="{% trans 'Wishlist' %}">
+                    <a class="nav-link position-relative" href="{% url 'wishlist:wishlist' %}" 
+                       title="{% trans 'Wishlist' %}">
                         <i class="far fa-heart fs-5"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger wishlist-count" id="wishlist-count">
-                            {% if user.is_authenticated %}{{ user.wishlist_items.count }}{% else %}0{% endif %}
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger wishlist-count" 
+                              id="wishlist-count">
+                            {{ user.wishlist_items.count|default:0 }}
                         </span>
                     </a>
                 </div>
+                {% endif %}
 
                 <!-- Shopping Cart -->
                 <div class="nav-item me-3">
-                    <a class="nav-link position-relative" href="{% url 'books:cart' %}" title="{% trans 'Shopping Cart' %}">
+                    <a class="nav-link position-relative" href="{% url 'books:cart' %}" 
+                       title="{% trans 'Shopping Cart' %}">
                         <i class="fas fa-shopping-cart fs-5"></i>
-                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary cart-count" id="cart-count">
-                            {% if request.session.cart %}{{ request.session.cart|length }}{% else %}0{% endif %}
+                        <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary cart-count" 
+                              id="cart-count">
+                            {{ cart_total|default:0 }}
                         </span>
                     </a>
                 </div>
@@ -199,38 +215,47 @@
                 <!-- User Account -->
                 {% if user.is_authenticated %}
                     <div class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" 
+                           id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
                             {% if user.profile.profile_picture %}
-                                <img src="{{ user.profile.profile_picture.url }}" alt="Profile" class="rounded-circle me-1" width="30" height="30">
+                                <img src="{{ user.profile.profile_picture.url }}" alt="Profile" 
+                                     class="rounded-circle me-1" width="32" height="32">
                             {% else %}
                                 <i class="fas fa-user-circle fs-4 me-1"></i>
                             {% endif %}
-                            <span class="d-none d-md-inline">{{ user.first_name|default:user.username }}</span>
+                            <span class="d-none d-md-inline">{{ user.first_name|default:user.username|truncatechars:15 }}</span>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <li><a class="dropdown-item" href="{% url 'accounts:profile' %}">
-                                <i class="fas fa-user me-2"></i>{% trans "My Profile" %}
-                            </a></li>
+                            <li><h6 class="dropdown-header">
+                                <i class="fas fa-user-circle me-2"></i>{{ user.get_full_name|default:user.username }}
+                            </h6></li>
+                            <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'accounts:dashboard' %}">
+                                <i class="fas fa-user me-2"></i>{% trans "My Account" %}
+                            </a></li>
+                            {% if user.vendor_profile %}
+                            <li><a class="dropdown-item" href="{% url 'vendors:dashboard' %}">
                                 <i class="fas fa-tachometer-alt me-2"></i>{% trans "Dashboard" %}
                             </a></li>
+                            {% endif %}
+                            
                             <li><a class="dropdown-item" href="{% url 'orders:order_list' %}">
                                 <i class="fas fa-box me-2"></i>{% trans "My Orders" %}
                             </a></li>
                             <li><a class="dropdown-item" href="{% url 'reviews:my_reviews' %}">
                                 <i class="fas fa-star me-2"></i>{% trans "My Reviews" %}
                             </a></li>
-                            <li><hr class="dropdown-divider"></li>
                             {% if user.is_staff or user.groups.all %}
+                                <li><hr class="dropdown-divider"></li>
                                 <li><a class="dropdown-item" href="{% url 'admin:index' %}">
                                     <i class="fas fa-cog me-2"></i>{% trans "Admin Panel" %}
                                 </a></li>
-                                <li><hr class="dropdown-divider"></li>
                             {% endif %}
+                            <li><hr class="dropdown-divider"></li>
                             <li>
-                                <form method="post" action="{% url 'accounts:logout' %}" class="d-inline">
+                                <form method="post" action="{% url 'accounts:logout' %}" class="d-inline w-100">
                                     {% csrf_token %}
-                                    <button type="submit" class="dropdown-item text-danger">
+                                    <button type="submit" class="dropdown-item text-danger w-100 text-start">
                                         <i class="fas fa-sign-out-alt me-2"></i>{% trans "Logout" %}
                                     </button>
                                 </form>
@@ -239,12 +264,14 @@
                     </div>
                 {% else %}
                     <!-- Login/Signup for non-authenticated users -->
-                    <div class="nav-item">
-                        <a class="btn btn-outline-primary me-2" href="{% url 'accounts:login' %}">
-                            <i class="fas fa-sign-in-alt me-1"></i>{% trans "Login" %}
+                    <div class="nav-item d-flex">
+                        <a class="btn btn-outline-primary btn-sm me-2" href="{% url 'accounts:login' %}">
+                            <i class="fas fa-sign-in-alt me-1"></i>
+                            <span class="d-none d-md-inline">{% trans "Login" %}</span>
                         </a>
-                        <a class="btn btn-primary" href="{% url 'accounts:signup' %}">
-                            <i class="fas fa-user-plus me-1"></i>{% trans "Sign Up" %}
+                        <a class="btn btn-primary btn-sm" href="{% url 'accounts:signup' %}">
+                            <i class="fas fa-user-plus me-1"></i>
+                            <span class="d-none d-md-inline">{% trans "Sign Up" %}</span>
                         </a>
                     </div>
                 {% endif %}
@@ -253,4 +280,190 @@
     </div>
 </nav>
 
+<!-- Breadcrumb Navigation -->
+{% if breadcrumbs and breadcrumbs|length > 1 %}
+<nav aria-label="breadcrumb" class="bg-light border-bottom">
+    <div class="container-fluid">
+        <ol class="breadcrumb mb-0 py-2">
+            {% for breadcrumb in breadcrumbs %}
+                {% if breadcrumb.is_active %}
+                    <li class="breadcrumb-item active" aria-current="page">
+                        <i class="fas fa-bookmark me-1"></i>{{ breadcrumb.name|truncatechars:30 }}
+                    </li>
+                {% else %}
+                    <li class="breadcrumb-item">
+                        <a href="{{ breadcrumb.url }}" class="text-decoration-none">{{ breadcrumb.name }}</a>
+                    </li>
+                {% endif %}
+            {% endfor %}
+        </ol>
+    </div>
+</nav>
+{% endif %}
 
+<!-- Enhanced CSS for Hierarchical Dropdowns -->
+<style>
+/* Base dropdown styling */
+.dropdown-menu {
+    border: 1px solid #dee2e6;
+    border-radius: 0.375rem;
+    box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);
+    z-index: 1020;
+}
+
+/* Submenu container */
+.dropdown-submenu {
+    position: relative;
+}
+
+/* Submenu dropdown */
+.dropdown-submenu > .dropdown-menu {
+    position: absolute;
+    top: 0;
+    left: 100%;
+    margin-top: 0;
+    margin-left: -1px;
+    border-radius: 0.375rem;
+    min-width: 200px;
+    display: none;
+}
+
+/* Show submenu on hover */
+.dropdown-submenu:hover > .dropdown-menu {
+    display: block;
+}
+
+/* Dropdown item with arrow */
+.dropdown-submenu > .dropdown-toggle::after {
+    display: none;
+}
+
+.dropdown-submenu > .dropdown-toggle {
+    position: relative;
+}
+
+/* Hover effects */
+.dropdown-item:hover {
+    background-color: #f8f9fa;
+    color: #495057;
+}
+
+.dropdown-submenu:hover > .dropdown-toggle {
+    background-color: #e9ecef;
+    color: #495057;
+}
+
+/* Arrow positioning */
+.dropdown-submenu .fas.fa-chevron-right {
+    font-size: 0.75rem;
+    color: #6c757d;
+}
+
+/* Ensure proper z-index stacking */
+.dropdown-submenu .dropdown-menu {
+    z-index: 1021;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 767.98px) {
+    .dropdown-submenu > .dropdown-menu {
+        position: static;
+        float: none;
+        width: auto;
+        margin-top: 0;
+        background-color: #f8f9fa;
+        border: 0;
+        box-shadow: none;
+        border-radius: 0;
+        display: block;
+        margin-left: 1rem;
+    }
+    
+    .dropdown-submenu:hover > .dropdown-menu {
+        display: block;
+    }
+}
+
+/* Text purple class for children books icon */
+.text-purple {
+    color: #6f42c1 !important;
+}
+
+/* Search form styling */
+.search-form .input-group {
+    width: 300px;
+}
+
+.search-input {
+    border-right: 0;
+}
+
+.search-btn {
+    border-left: 0;
+}
+
+/* Badge styling */
+.badge {
+    font-size: 0.75rem;
+}
+
+.wishlist-count, .cart-count {
+    font-size: 0.6rem;
+    min-width: 1.2rem;
+    height: 1.2rem;
+    line-height: 1;
+    padding: 0.2rem 0.3rem;
+}
+
+/* Navbar brand text */
+.brand-text {
+    font-family: 'Arial', sans-serif;
+    letter-spacing: -1px;
+}
+
+/* Ensure dropdowns work on touch devices */
+@media (hover: none) and (pointer: coarse) {
+    .dropdown-submenu:hover > .dropdown-menu {
+        display: none;
+    }
+    
+    .dropdown-submenu.show > .dropdown-menu {
+        display: block;
+    }
+}
+</style>
+
+<!-- JavaScript for Mobile Touch Support -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Handle touch devices for dropdown submenus
+    const dropdownSubmenus = document.querySelectorAll('.dropdown-submenu');
+    
+    dropdownSubmenus.forEach(function(submenu) {
+        const dropdownToggle = submenu.querySelector('.dropdown-toggle');
+        const dropdownMenu = submenu.querySelector('.dropdown-menu');
+        
+        if (dropdownToggle && dropdownMenu) {
+            dropdownToggle.addEventListener('click', function(e) {
+                // On mobile, prevent default link behavior if there's a submenu
+                if (window.innerWidth <= 767.98) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // Toggle the submenu
+                    submenu.classList.toggle('show');
+                }
+            });
+        }
+    });
+    
+    // Close submenus when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!e.target.closest('.dropdown-submenu')) {
+            dropdownSubmenus.forEach(function(submenu) {
+                submenu.classList.remove('show');
+            });
+        }
+    });
+});
+</script>
