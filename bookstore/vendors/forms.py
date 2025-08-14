@@ -4,7 +4,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth import get_user_model
 from .models import VendorProfile, StockOffer, VendorTicket
 from logistics.models import VendorLocation, DeliverySchedule
-from books.models import Book
+from books.models import Book, Category
 
 User = get_user_model()
 
@@ -160,6 +160,7 @@ class StockOfferForm(forms.ModelForm):
         # Filter books that are active and available
         self.fields['book'].queryset = Book.objects.filter(
             status__in=['available', 'out_of_stock'],
+
         ).order_by('title')
 
     def clean(self):
@@ -335,3 +336,140 @@ class OfferDeliveryDetailsForm(forms.ModelForm):
                 'placeholder': '+91-9876543210'
             }),
         }
+
+
+
+class MultipleStockOfferForm(forms.Form):
+    """Form for handling multiple book stock offers at once"""
+    
+    books_data = forms.CharField(widget=forms.HiddenInput())
+    availability_date = forms.DateField(
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control'
+        })
+    )
+    expiry_date = forms.DateField(
+        widget=forms.DateInput(attrs={
+            'type': 'date', 
+            'class': 'form-control'
+        })
+    )
+    notes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Additional notes about this offer...'
+        })
+    )
+    
+    def clean_books_data(self):
+        """Validate and parse the books JSON data"""
+        books_data = self.cleaned_data.get('books_data')
+        if not books_data:
+            raise forms.ValidationError("No books selected for the offer.")
+        
+        try:
+            books = json.loads(books_data)
+        except json.JSONDecodeError:
+            raise forms.ValidationError("Invalid books data format.")
+        
+        if not isinstance(books, list) or len(books) == 0:
+            raise forms.ValidationError("At least one book must be selected.")
+        
+        # Validate each book entry
+        for book_data in books:
+            required_fields = ['id', 'title', 'quantity', 'price']
+            for field in required_fields:
+                if field not in book_data:
+                    raise forms.ValidationError(f"Missing required field: {field}")
+            
+            # Validate quantity and price
+            try:
+                quantity = int(book_data['quantity'])
+                if quantity <= 0:
+                    raise forms.ValidationError(f"Invalid quantity for {book_data['title']}")
+            except (ValueError, TypeError):
+                raise forms.ValidationError(f"Invalid quantity for {book_data['title']}")
+            
+            try:
+                price = float(book_data['price'])
+                if price <= 0:
+                    raise forms.ValidationError(f"Invalid price for {book_data['title']}")
+            except (ValueError, TypeError):
+                raise forms.ValidationError(f"Invalid price for {book_data['title']}")
+        
+        return books
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        availability_date = cleaned_data.get('availability_date')
+        expiry_date = cleaned_data.get('expiry_date')
+        
+        if availability_date and expiry_date:
+            if expiry_date <= availability_date:
+                raise forms.ValidationError(
+                    "Expiry date must be after availability date."
+                )
+        
+        return cleaned_data
+
+class CategoryBulkOfferForm(forms.Form):
+    """Form for bulk offers by category"""
+    
+    category = forms.ModelChoiceField(
+        queryset=Category.objects.all(),
+        widget=forms.Select(attrs={'class': 'form-select'})
+    )
+    default_quantity = forms.IntegerField(
+        min_value=1,
+        initial=1,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'Default quantity per book'
+        })
+    )
+    default_price = forms.DecimalField(
+        max_digits=10,
+        decimal_places=2,
+        min_value=0.01,
+        widget=forms.NumberInput(attrs={
+            'class': 'form-control',
+            'step': '0.01',
+            'placeholder': 'Default price per book'
+        })
+    )
+    availability_date = forms.DateField(
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control'
+        })
+    )
+    expiry_date = forms.DateField(
+        widget=forms.DateInput(attrs={
+            'type': 'date',
+            'class': 'form-control'
+        })
+    )
+    notes = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={
+            'class': 'form-control',
+            'rows': 3,
+            'placeholder': 'Additional notes about this bulk offer...'
+        })
+    )
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        availability_date = cleaned_data.get('availability_date')
+        expiry_date = cleaned_data.get('expiry_date')
+        
+        if availability_date and expiry_date:
+            if expiry_date <= availability_date:
+                raise forms.ValidationError(
+                    "Expiry date must be after availability date."
+                )
+        
+        return cleaned_data

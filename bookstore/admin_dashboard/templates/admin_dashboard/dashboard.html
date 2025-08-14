@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8fafc;
+            color: #1a202c;
+        }
+
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: #2d3748;
+            color: white;
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-brand {
+            padding: 0 2rem 2rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4299e1;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+        }
+
+        .sidebar-nav li {
+            margin: 0.5rem 0;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: 1rem 2rem;
+            color: #cbd5e0;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background: #4a5568;
+            color: white;
+            border-right: 3px solid #4299e1;
+        }
+
+        .sidebar-nav .icon {
+            margin-right: 1rem;
+            font-size: 1.2rem;
+        }
+
+        /* Main content */
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            padding: 2rem;
+        }
+
+        .dashboard-header {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .dashboard-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+        }
+
+        .dashboard-subtitle {
+            color: #718096;
+        }
+
+        /* Stats cards */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            border-left: 4px solid transparent;
+            transition: transform 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-card.revenue { border-left-color: #48bb78; }
+        .stat-card.orders { border-left-color: #4299e1; }
+        .stat-card.books { border-left-color: #ed8936; }
+        .stat-card.stock { border-left-color: #9f7aea; }
+
+        .stat-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1rem;
+        }
+
+        .stat-title {
+            font-size: 0.9rem;
+            color: #718096;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .stat-icon {
+            width: 3rem;
+            height: 3rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: white;
+        }
+
+        .stat-icon.revenue { background: #48bb78; }
+        .stat-icon.orders { background: #4299e1; }
+        .stat-icon.books { background: #ed8936; }
+        .stat-icon.stock { background: #9f7aea; }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-change {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .stat-change.positive { color: #48bb78; }
+        .stat-change.negative { color: #f56565; }
+
+        /* Charts section */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .chart-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .chart-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 400px;
+        }
+
+        /* Tables */
+        .table-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .table-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .table-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .table-container {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th, td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        tr:hover {
+            background: #f7fafc;
+        }
+
+        /* Status badges */
+        .status-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 500;
+            text-transform: capitalize;
+        }
+
+        .status-badge.delivered,
+        .status-badge.completed,
+        .status-badge.paid {
+            background: #c6f6d5;
+            color: #22543d;
+        }
+
+        .status-badge.pending {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        .status-badge.shipped,
+        .status-badge.processing {
+            background: #bee3f8;
+            color: #2a4365;
+        }
+
+        .status-badge.cancelled {
+            background: #fed7d7;
+            color: #742a2a;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">📚 BookStore Admin</div>
+            <nav>
+                <ul class="sidebar-nav">
+                    <li><a href="{% url 'admin_dashboard:dashboard' %}" class="active">
+                        <span class="icon">📊</span> Dashboard
+                    </a></li>
+                    <li><a href="{% url 'admin_dashboard:products_list' %}">
+                        <span class="icon">📖</span> Products
+                    </a></li>
+                    <li><a href="{% url 'admin_dashboard:categories_list' %}">
+                        <span class="icon">🏷️</span> Categories
+                    </a></li>
+                    <li><a href="{% url 'admin_dashboard:warehouse_dashboard' %}">
+                        <span class="icon">📦</span> Warehouse
+                    </a></li>
+                    <li><a href="{% url 'admin_dashboard:orders_list' %}">
+                        <span class="icon">🛒</span> Orders
+                    </a></li>
+                    <li><a href="{% url 'admin_dashboard:vendors_list' %}">
+                        <span class="icon">🏪</span> Vendors
+                    </a></li>
+                    <li><a href="{% url 'admin_dashboard:coupons_list' %}">
+                        <span class="icon">🎟️</span> Coupons
+                    </a></li>
+                    <li><a href="/admin/">
+                        <span class="icon">⚙️</span> Settings
+                    </a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Dashboard Header -->
+            <div class="dashboard-header">
+                <h1 class="dashboard-title">Dashboard Overview</h1>
+                <p class="dashboard-subtitle">Welcome back! Here's what's happening with your bookstore today.</p>
+            </div>
+
+            <!-- Stats Cards -->
+            <div class="stats-grid">
+                <div class="stat-card revenue">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Total Revenue</div>
+                            <div class="stat-value">₹{{ total_revenue|floatformat:0 }}</div>
+                            <div class="stat-change {% if revenue_growth >= 0 %}positive{% else %}negative{% endif %}">
+                                {% if revenue_growth >= 0 %}↗{% else %}↘{% endif %} {{ revenue_growth|floatformat:1 }}% from last month
+                            </div>
+                        </div>
+                        <div class="stat-icon revenue">💰</div>
+                    </div>
+                </div>
+
+                <div class="stat-card orders">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Total Orders</div>
+                            <div class="stat-value">{{ total_orders }}</div>
+                            <div class="stat-change {% if order_growth >= 0 %}positive{% else %}negative{% endif %}">
+                                {% if order_growth >= 0 %}↗{% else %}↘{% endif %} {{ order_growth|floatformat:1 }}% from last month
+                            </div>
+                        </div>
+                        <div class="stat-icon orders">📋</div>
+                    </div>
+                </div>
+
+                <div class="stat-card books">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Total Books</div>
+                            <div class="stat-value">{{ total_books }}</div>
+                            <div class="stat-change positive">
+                                📚 Available in store
+                            </div>
+                        </div>
+                        <div class="stat-icon books">📚</div>
+                    </div>
+                </div>
+
+                <div class="stat-card stock">
+                    <div class="stat-header">
+                        <div>
+                            <div class="stat-title">Stock Status</div>
+                            <div class="stat-value">{{ total_stock }}</div>
+                            <div class="stat-change {% if out_of_stock > 0 %}negative{% else %}positive{% endif %}">
+                                {{ out_of_stock }} out of stock items
+                            </div>
+                        </div>
+                        <div class="stat-icon stock">📦</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Charts -->
+            <div class="charts-grid">
+                <div class="chart-card">
+                    <h3 class="chart-title">Monthly Revenue Trend</h3>
+                    <div class="chart-container">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-card">
+                    <h3 class="chart-title">Sales by Category</h3>
+                    <div class="chart-container">
+                        <canvas id="categoryChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tables Grid -->
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 2rem;">
+                <!-- Top Books -->
+                <div class="table-card">
+                    <div class="table-header">
+                        <h3 class="table-title">Top 5 Best-Selling Books</h3>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Book Title</th>
+                                    <th>Price</th>
+                                    <th>Sold</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for book in top_books %}
+                                <tr>
+                                    <td>{{ book.book__title|truncatechars:30 }}</td>
+                                    <td>₹{{ book.book__price }}</td>
+                                    <td>{{ book.total_sold }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="3" style="text-align: center; color: #718096;">No sales data available</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Vendor Sales -->
+                <div class="table-card">
+                    <div class="table-header">
+                        <h3 class="table-title">Top Vendors by Sales</h3>
+                    </div>
+                    <div class="table-container">
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Vendor</th>
+                                    <th>Total Sales</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for vendor in vendor_sales %}
+                                <tr>
+                                    <td>{{ vendor.vendor__business_name|truncatechars:25 }}</td>
+                                    <td>₹{{ vendor.total_sales|floatformat:0 }}</td>
+                                </tr>
+                                {% empty %}
+                                <tr>
+                                    <td colspan="2" style="text-align: center; color: #718096;">No vendor sales data</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Orders -->
+            <div class="table-card">
+                <div class="table-header">
+                    <h3 class="table-title">Recent Orders</h3>
+                </div>
+                <div class="table-container">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Order ID</th>
+                                <th>Customer</th>
+                                <th>Date</th>
+                                <th>Total</th>
+                                <th>Status</th>
+                                <th>Payment</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td>{{ order.order_id }}</td>
+                                <td>{{ order.user.username }}</td>
+                                <td>{{ order.created_at|date:"M d, Y" }}</td>
+                                <td>₹{{ order.total_amount }}</td>
+                                <td><span class="status-badge {{ order.status }}">{{ order.get_status_display }}</span></td>
+                                <td><span class="status-badge {{ order.payment_status }}">{{ order.get_payment_status_display }}</span></td>
+                                <td>
+                                    <a href="{% url 'admin_dashboard:orders_list' %}?search={{ order.order_id }}" style="color: #4299e1;">View</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" style="text-align: center; color: #718096;">No recent orders</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Revenue Chart
+        const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+        fetch('{% url "admin_dashboard:api_data" %}?type=monthly_revenue')
+            .then(response => response.json())
+            .then(data => {
+                new Chart(revenueCtx, {
+                    type: 'line',
+                    data: {
+                        labels: data.data.map(item => item.month),
+                        datasets: [{
+                            label: 'Revenue (₹)',
+                            data: data.data.map(item => item.revenue),
+                            borderColor: '#4299e1',
+                            backgroundColor: 'rgba(66, 153, 225, 0.1)',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₹' + value.toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+
+        // Category Chart
+        const categoryCtx = document.getElementById('categoryChart').getContext('2d');
+        fetch('{% url "admin_dashboard:api_data" %}?type=category_sales')
+            .then(response => response.json())
+            .then(data => {
+                const colors = ['#4299e1', '#48bb78', '#ed8936', '#9f7aea', '#f56565', '#38b2ac', '#ecc94b', '#f687b3'];
+                
+                new Chart(categoryCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: data.data.map(item => item.book__category__name || 'Uncategorized'),
+                        datasets: [{
+                            data: data.data.map(item => item.sales),
+                            backgroundColor: colors.slice(0, data.data.length),
+                            borderWidth: 2,
+                            borderColor: '#fff'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    padding: 20,
+                                    usePointStyle: true
+                                }
+                            }
+                        }
+                    }
+                });
+            });
+    </script>
+</body>
+</html>

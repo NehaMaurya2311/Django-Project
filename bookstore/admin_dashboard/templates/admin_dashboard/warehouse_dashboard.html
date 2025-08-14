@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Warehouse Dashboard - Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f8fafc;
+            color: #1a202c;
+        }
+
+        .dashboard-container {
+            display: flex;
+            min-height: 100vh;
+        }
+
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            background: #2d3748;
+            color: white;
+            padding: 2rem 0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        .sidebar-brand {
+            padding: 0 2rem 2rem;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #4299e1;
+        }
+
+        .sidebar-nav {
+            list-style: none;
+        }
+
+        .sidebar-nav li {
+            margin: 0.5rem 0;
+        }
+
+        .sidebar-nav a {
+            display: flex;
+            align-items: center;
+            padding: 1rem 2rem;
+            color: #cbd5e0;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+
+        .sidebar-nav a:hover,
+        .sidebar-nav a.active {
+            background: #4a5568;
+            color: white;
+            border-right: 3px solid #4299e1;
+        }
+
+        .sidebar-nav .icon {
+            margin-right: 1rem;
+            font-size: 1.2rem;
+        }
+
+        /* Main content */
+        .main-content {
+            margin-left: 280px;
+            flex: 1;
+            padding: 2rem;
+        }
+
+        .page-header {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-bottom: 2rem;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .page-title {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+        }
+
+        .page-subtitle {
+            color: #718096;
+        }
+
+        /* Warehouse stats cards */
+        .warehouse-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            text-align: center;
+            border-top: 4px solid;
+            transition: transform 0.2s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-2px);
+        }
+
+        .stat-card.total { border-top-color: #4299e1; }
+        .stat-card.quantity { border-top-color: #48bb78; }
+        .stat-card.out-of-stock { border-top-color: #f56565; }
+        .stat-card.low-stock { border-top-color: #f6ad55; }
+
+        .stat-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: #2d3748;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            color: #718096;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        /* Content sections */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .content-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .card-header {
+            padding: 1.5rem 2rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .card-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: #2d3748;
+        }
+
+        .card-subtitle {
+            font-size: 0.9rem;
+            color: #718096;
+            margin-top: 0.25rem;
+        }
+
+        .card-content {
+            padding: 1.5rem 2rem;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        /* Stock movement list */
+        .movement-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid #f7fafc;
+        }
+
+        .movement-item:last-child {
+            border-bottom: none;
+        }
+
+        .movement-details h4 {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 0.25rem;
+        }
+
+        .movement-details p {
+            font-size: 0.8rem;
+            color: #718096;
+        }
+
+        .movement-quantity {
+            text-align: right;
+        }
+
+        .quantity-in {
+            color: #48bb78;
+            font-weight: 600;
+        }
+
+        .quantity-out {
+            color: #f56565;
+            font-weight: 600;
+        }
+
+        /* Reorder list */
+        .reorder-item {
+            display: flex;
+            align-items: center;
+            padding: 1rem 0;
+            border-bottom: 1px solid #f7fafc;
+        }
+
+        .reorder-item:last-child {
+            border-bottom: none;
+        }
+
+        .book-image {
+            width: 40px;
+            height: 55px;
+            object-fit: cover;
+            border-radius: 4px;
+            margin-right: 1rem;
+            border: 1px solid #e2e8f0;
+        }
+
+        .book-placeholder {
+            width: 40px;
+            height: 55px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            margin-right: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #718096;
+            font-size: 1.2rem;
+        }
+
+        .book-details {
+            flex: 1;
+        }
+
+        .book-details h4 {
+            font-weight: 600;
+            color: #2d3748;
+            margin-bottom: 0.25rem;
+        }
+
+        .book-details p {
+            font-size: 0.8rem;
+            color: #718096;
+        }
+
+        .stock-info {
+            text-align: right;
+        }
+
+        .stock-critical {
+            color: #f56565;
+            font-weight: 600;
+        }
+
+        .stock-low {
+            color: #f6ad55;
+            font-weight: 600;
+        }
+
+        /* Category stock table */
+        .category-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .category-table th,
+        .category-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .category-table th {
+            background: #f7fafc;
+            font-weight: 600;
+            color: #4a5568;
+            font-size: 0.85rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .category-table tr:hover {
+            background: #f7fafc;
+        }
+
+        /* Full width section */
+        .full-width-card {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 2rem;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+            }
+            
+            .main-content {
+                margin-left: 0;
+            }
+            
+            .warehouse-stats {
+                grid-template-columns: repeat(2, 1fr);
+            }
+            
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-brand">📚 BookStore Admin</div>
+            <nav>
+                <ul class="sidebar-nav">
+                    <li><a href="{% url 'admin_dashboard:dashboard' %}">
+                        <span class="icon">📊</span> Dashboard
+                    </a></li>
+                    <li><a href="{% url 'admin_dashboard:products_list' %}">
+                        <span class="icon">📖</span> Products
+                    </a></li>
+                    <li><a href="{% url 'admin_dashboard:categories_list' %}">
+                        <span class="icon">🏷️</span> Categories
+                    </a></li>
+                    <li><a href="{% url 'admin_dashboard:warehouse_dashboard' %}" class="active">
+                        <span class="icon">📦</span> Warehouse
+                    </a></li>
+                    <li><a href="{% url 'admin_dashboard:orders_list' %}">
+                        <span class="icon">🛒</span> Orders
+                    </a></li>
+                    <li><a href="{% url 'admin_dashboard:vendors_list' %}">
+                        <span class="icon">🏪</span> Vendors
+                    </a></li>
+                    <li><a href="{% url 'admin_dashboard:coupons_list' %}">
+                        <span class="icon">🎟️</span> Coupons
+                    </a></li>
+                    <li><a href="/admin/">
+                        <span class="icon">⚙️</span> Settings
+                    </a></li>
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Page Header -->
+            <div class="page-header">
+                <h1 class="page-title">Warehouse Dashboard</h1>
+                <p class="page-subtitle">Monitor inventory levels, stock movements, and warehouse operations</p>
+            </div>
+
+            <!-- Warehouse Statistics Cards -->
+            <div class="warehouse-stats">
+                <div class="stat-card total">
+                    <div class="stat-icon">📚</div>
+                    <div class="stat-value">{{ total_products }}</div>
+                    <div class="stat-label">Total Products</div>
+                </div>
+                <div class="stat-card quantity">
+                    <div class="stat-icon">📦</div>
+                    <div class="stat-value">{{ total_stock_quantity }}</div>
+                    <div class="stat-label">Total Stock Quantity</div>
+                </div>
+                <div class="stat-card out-of-stock">
+                    <div class="stat-icon">❌</div>
+                    <div class="stat-value">{{ out_of_stock }}</div>
+                    <div class="stat-label">Out of Stock</div>
+                </div>
+                <div class="stat-card low-stock">
+                    <div class="stat-icon">⚠️</div>
+                    <div class="stat-value">{{ low_stock }}</div>
+                    <div class="stat-label">Low Stock Items</div>
+                </div>
+            </div>
+
+            <!-- Content Grid -->
+            <div class="content-grid">
+                <!-- Recent Stock Movements -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Recent Stock Movements</h3>
+                        <p class="card-subtitle">Latest inventory changes and updates</p>
+                    </div>
+                    <div class="card-content">
+                        {% for movement in recent_movements %}
+                        <div class="movement-item">
+                            <div class="movement-details">
+                                <h4>{{ movement.stock.book.title|truncatechars:30 }}</h4>
+                                <p>{{ movement.get_movement_type_display }} - {{ movement.reason|default:"No reason provided" }}</p>
+                                <p style="font-size: 0.7rem; margin-top: 0.25rem;">
+                                    {{ movement.created_at|date:"M d, H:i" }}
+                                    {% if movement.performed_by %} by {{ movement.performed_by.username }}{% endif %}
+                                </p>
+                            </div>
+                            <div class="movement-quantity">
+                                {% if movement.movement_type == 'in' %}
+                                <div class="quantity-in">+{{ movement.quantity }}</div>
+                                {% else %}
+                                <div class="quantity-out">{{ movement.quantity }}</div>
+                                {% endif %}
+                                <div style="font-size: 0.8rem; color: #718096;">{{ movement.reference }}</div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div style="text-align: center; padding: 2rem; color: #718096;">
+                            <div style="font-size: 2rem; margin-bottom: 1rem;">📋</div>
+                            <div>No recent stock movements</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Books Needing Reorder -->
+                <div class="content-card">
+                    <div class="card-header">
+                        <h3 class="card-title">Books Needing Reorder</h3>
+                        <p class="card-subtitle">Items below reorder level</p>
+                    </div>
+                    <div class="card-content">
+                        {% for stock in reorder_books %}
+                        <div class="reorder-item">
+                            {% if stock.book.get_cover_image_url %}
+                            <img src="{{ stock.book.get_cover_image_url }}" alt="{{ stock.book.title }}" class="book-image">
+                            {% else %}
+                            <div class="book-placeholder">📖</div>
+                            {% endif %}
+                            <div class="book-details">
+                                <h4>{{ stock.book.title|truncatechars:25 }}</h4>
+                                <p>{{ stock.book.category.name }}</p>
+                                <p>Reorder Level: {{ stock.reorder_level }}</p>
+                            </div>
+                            <div class="stock-info">
+                                {% if stock.quantity == 0 %}
+                                <div class="stock-critical">Out of Stock</div>
+                                {% else %}
+                                <div class="stock-low">{{ stock.quantity }} left</div>
+                                {% endif %}
+                                <div style="font-size: 0.8rem; color: #718096; margin-top: 0.25rem;">
+                                    Location: {{ stock.get_location }}
+                                </div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <div style="text-align: center; padding: 2rem; color: #718096;">
+                            <div style="font-size: 2rem; margin-bottom: 1rem;">✅</div>
+                            <div>All items are above reorder level</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Category Stock Overview -->
+            <div class="full-width-card">
+                <div class="card-header">
+                    <h3 class="card-title">Stock Value by Category</h3>
+                    <p class="card-subtitle">Inventory value distribution across categories</p>
+                </div>
+                <div class="card-content">
+                    <table class="category-table">
+                        <thead>
+                            <tr>
+                                <th>Category</th>
+                                <th>Total Quantity</th>
+                                <th>Total Value</th>
+                                <th>Percentage</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for category in category_stock_value %}
+                            <tr>
+                                <td>
+                                    <div style="font-weight: 600;">{{ category.book__category__name|default:"Uncategorized" }}</div>
+                                </td>
+                                <td>
+                                    <div style="font-weight: 500;">{{ category.total_quantity|default:0 }}</div>
+                                </td>
+                                <td>
+                                    <div style="font-weight: 600; color: #48bb78;">₹{{ category.total_value|floatformat:0|default:0 }}</div>
+                                </td>
+                                <td>
+                                    {% if category.total_value %}
+                                    <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                        <div style="background: #e2e8f0; height: 8px; width: 60px; border-radius: 4px; overflow: hidden;">
+                                            <div style="background: #4299e1; height: 100%; width: {{ category.total_value|floatformat:0|slice:':2' }}%;"></div>
+                                        </div>
+                                        <span style="font-size: 0.9rem;">{{ category.total_value|floatformat:1|slice:':4' }}%</span>
+                                    </div>
+                                    {% else %}
+                                    <span style="color: #718096;">0%</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if category.total_quantity > 100 %}
+                                    <span style="color: #48bb78; font-weight: 500;">Well Stocked</span>
+                                    {% elif category.total_quantity > 50 %}
+                                    <span style="color: #f6ad55; font-weight: 500;">Moderate</span>
+                                    {% elif category.total_quantity > 0 %}
+                                    <span style="color: #f56565; font-weight: 500;">Low Stock</span>
+                                    {% else %}
+                                    <span style="color: #718096; font-weight: 500;">Empty</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" style="text-align: center; padding: 2rem; color: #718096;">
+                                    No stock data available
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

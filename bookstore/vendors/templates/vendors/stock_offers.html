@@ -259,24 +259,28 @@
         </a>
     </div>
 
-    <!-- Stats Summary -->
+        <!-- Stats Summary with REAL DATA -->
     <div class="stats-summary">
         <h5><i class="fas fa-chart-bar me-2"></i>Offers Summary</h5>
         <div class="stats-grid">
             <div class="stat-item">
-                <div class="stat-number">{{ offers|length }}</div>
+                <div class="stat-number">{{ stats.total|default:0 }}</div>
                 <div class="stat-label">Total</div>
             </div>
             <div class="stat-item">
-                <div class="stat-number">{{ offers|length|add:"-1"|default:"0" }}</div>
+                <div class="stat-number">{{ stats.pending|default:0 }}</div>
                 <div class="stat-label">Pending</div>
             </div>
             <div class="stat-item">
-                <div class="stat-number">{{ offers|length|add:"-2"|default:"0" }}</div>
+                <div class="stat-number">{{ stats.approved|default:0 }}</div>
                 <div class="stat-label">Approved</div>
             </div>
             <div class="stat-item">
-                <div class="stat-number">{{ offers|length|add:"-3"|default:"0" }}</div>
+                <div class="stat-number">{{ stats.rejected|default:0 }}</div>
+                <div class="stat-label">Rejected</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-number">{{ stats.processed|default:0 }}</div>
                 <div class="stat-label">Processed</div>
             </div>
         </div>

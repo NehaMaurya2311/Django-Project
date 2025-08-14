@@ -13,8 +13,6 @@ def is_staff_or_admin(user):
 
 @login_required
 @user_passes_test(is_staff_or_admin)
-@login_required
-@user_passes_test(is_staff_or_admin)
 def warehouse_dashboard(request):
     # Key metrics
     total_books = Stock.objects.count()

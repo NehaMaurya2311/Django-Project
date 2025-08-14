@@ -30,6 +30,7 @@ urlpatterns = [
 
 # Translated URLs
 urlpatterns += i18n_patterns(
+    path('admin-dashboard/', include('admin_dashboard.urls')),
     path('admin/', admin.site.urls),
     path('', include('books.urls')),
     path('accounts/', include('accounts.urls')),

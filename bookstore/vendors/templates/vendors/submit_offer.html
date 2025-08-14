@@ -1,13 +1,52 @@
-<!-- vendors/templates/vendors/submit_offer.html -->
 {% extends 'vendors/base.html' %}
 
 {% block title %}Submit Stock Offer - BookStore{% endblock %}
 
 {% block extra_css %}
 <style>
-    .offer-form {
-        max-width: 800px;
+    body {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        min-height: 100vh;
+    }
+    .content-card {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        border-radius: 20px;
+        box-shadow: 0 15px 35px rgba(102, 126, 234, 0.1);
+        padding: 40px;
         margin: 0 auto;
+        max-width: 1200px;
+    }
+    .page-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #667eea;
+        margin-bottom: 10px;
+        text-align: center;
+    }
+    .warehouse-alert {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a52 100%);
+        color: white;
+        border-radius: 15px;
+        padding: 20px;
+        margin-bottom: 25px;
+        text-align: center;
+    }
+    .warehouse-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+    .stat-card {
+        background: rgba(255, 255, 255, 0.2);
+        border-radius: 10px;
+        padding: 15px;
+        text-align: center;
+    }
+    .stat-number {
+        font-size: 2rem;
+        font-weight: 700;
     }
     .form-section {
         background: rgba(255, 255, 255, 0.8);
@@ -21,592 +60,1024 @@
         font-weight: 700;
         font-size: 1.3rem;
         margin-bottom: 20px;
+    }
+    .selection-tabs {
         display: flex;
-        align-items: center;
+        gap: 10px;
+        margin-bottom: 25px;
+        flex-wrap: wrap;
     }
-    .section-title i {
-        margin-right: 10px;
-    }
-    .form-label {
-        font-weight: 600;
-        color: #333;
-        margin-bottom: 8px;
-    }
-    .form-control, .form-select {
-        border: 2px solid #e0e0e0;
-        border-radius: 10px;
-        padding: 12px 15px;
+    .tab-btn {
+        padding: 10px 20px;
+        border: 2px solid #667eea;
+        background: rgba(102, 126, 234, 0.1);
+        color: #667eea;
+        border-radius: 25px;
+        cursor: pointer;
         transition: all 0.3s ease;
+        font-weight: 600;
     }
-    .form-control:focus, .form-select:focus {
-        border-color: #667eea;
-        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    .tab-btn.active {
+        background: #667eea;
+        color: white;
     }
-    .required {
-        color: #dc3545;
-    }
-    .help-text {
-        font-size: 0.9rem;
-        color: #666;
-        margin-top: 5px;
-    }
-    .book-search {
-        position: relative;
-    }
-    .search-results {
-        position: absolute;
-        top: 100%;
-        left: 0;
-        right: 0;
-        background: white;
-        border: 1px solid #e0e0e0;
-        border-top: none;
-        border-radius: 0 0 10px 10px;
-        max-height: 300px;
-        overflow-y: auto;
-        z-index: 1000;
+    .tab-content {
         display: none;
     }
+    .tab-content.active {
+        display: block;
+    }
+    .search-container {
+        position: relative;
+        margin-bottom: 20px;
+    }
+    .search-input {
+        width: 100%;
+        padding: 15px 50px 15px 20px;
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+    }
+    .search-input:focus {
+        border-color: #667eea;
+        outline: none;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+    }
+    .search-results {
+        max-height: 400px;
+        overflow-y: auto;
+        border: 1px solid #e0e0e0;
+        border-top: none;
+        border-radius: 0 0 12px 12px;
+        background: white;
+        position: absolute;
+        width: 100%;
+        z-index: 1000;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
     .search-result-item {
-        padding: 12px 15px;
+        padding: 15px 20px;
         border-bottom: 1px solid #f0f0f0;
         cursor: pointer;
-        transition: background 0.3s ease;
+        transition: all 0.3s ease;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
     }
     .search-result-item:hover {
         background: rgba(102, 126, 234, 0.1);
     }
-    .search-result-item:last-child {
-        border-bottom: none;
-    }
-    .result-title {
+    .result-info h6 {
+        margin: 0 0 5px 0;
         font-weight: 600;
         color: #333;
-        margin-bottom: 5px;
     }
-    .result-authors {
+    .result-info p {
+        margin: 0;
         color: #666;
         font-size: 0.9rem;
     }
-    .selected-book {
-        background: rgba(102, 126, 234, 0.1);
-        border: 2px solid #667eea;
-        border-radius: 10px;
-        padding: 15px;
-        margin-bottom: 20px;
+    .stock-indicator {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        margin-top: 5px;
     }
-    .selected-book-title {
-        font-weight: 700;
-        color: #667eea;
-        font-size: 1.1rem;
-        margin-bottom: 5px;
+    .stock-badge {
+        padding: 3px 8px;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
     }
-    .selected-book-authors {
-        color: #666;
+    .stock-out { background: #ffebee; color: #c62828; }
+    .stock-low { background: #fff3e0; color: #ef6c00; }
+    .stock-ok { background: #e8f5e8; color: #2e7d32; }
+    .priority-high { border-left: 4px solid #f44336; }
+    .priority-medium { border-left: 4px solid #ff9800; }
+    .priority-normal { border-left: 4px solid #4caf50; }
+    .add-btn {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 8px 15px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
     }
-    .calculation-display {
-        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
-        border-radius: 10px;
+    .add-btn:hover {
+        background: #218838;
+        transform: scale(1.05);
+    }
+    .add-btn:disabled {
+        background: #6c757d;
+        cursor: not-allowed;
+    }
+    .category-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+        gap: 15px;
+        margin-bottom: 25px;
+    }
+    .category-card {
+        background: rgba(255, 255, 255, 0.9);
+        border: 2px solid #e0e0e0;
+        border-radius: 12px;
         padding: 20px;
-        text-align: center;
-        margin-bottom: 20px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        position: relative;
     }
-    .calc-row {
+    .category-card:hover {
+        border-color: #667eea;
+        transform: translateY(-2px);
+    }
+    .category-card.high-priority {
+        border-color: #f44336;
+        background: rgba(244, 67, 54, 0.05);
+    }
+    .category-card.medium-priority {
+        border-color: #ff9800;
+        background: rgba(255, 152, 0, 0.05);
+    }
+    .category-name {
+        font-weight: 700;
+        font-size: 1.1rem;
+        color: #333;
+        margin-bottom: 10px;
+    }
+    .category-stats {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 10px;
+        font-size: 0.9rem;
+    }
+    .category-stat {
         display: flex;
         justify-content: space-between;
         align-items: center;
+    }
+    .selected-books {
+        background: rgba(102, 126, 234, 0.05);
+        border-radius: 12px;
+        padding: 20px;
+        margin-bottom: 25px;
+    }
+    .book-item {
+        background: white;
+        border: 1px solid #e0e0e0;
+        border-radius: 8px;
+        padding: 15px;
         margin-bottom: 10px;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 15px;
     }
-    .calc-row:last-child {
-        margin-bottom: 0;
-        padding-top: 10px;
-        border-top: 2px solid #667eea;
-        font-weight: 700;
-        font-size: 1.2rem;
+    .book-controls {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        flex-wrap: wrap;
     }
-    .calc-label {
-        color: #666;
+    .quantity-control {
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
-    .calc-value {
-        color: #333;
-        font-weight: 600;
+    .quantity-input, .price-input {
+        width: 80px;
+        text-align: center;
+        border: 1px solid #e0e0e0;
+        border-radius: 6px;
+        padding: 8px;
     }
-    .calc-total {
-        color: #28a745 !important;
-        font-size: 1.5rem !important;
+    .remove-btn {
+        background: #dc3545;
+        color: white;
+        border: none;
+        padding: 6px 10px;
+        border-radius: 6px;
+        cursor: pointer;
     }
-    .date-inputs {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-        gap: 20px;
-    }
-    .offer-preview {
-        background: rgba(255, 255, 255, 0.9);
-        border: 2px solid #667eea;
+    .offer-summary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
         border-radius: 15px;
         padding: 25px;
         margin-bottom: 25px;
-    }
-    .preview-title {
-        color: #667eea;
-        font-weight: 700;
-        font-size: 1.2rem;
-        margin-bottom: 15px;
         text-align: center;
     }
-    .preview-grid {
+    .summary-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-        gap: 15px;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 20px;
+        margin-top: 15px;
     }
-    .preview-item {
-        text-align: center;
-        padding: 10px;
-        background: rgba(102, 126, 234, 0.05);
-        border-radius: 8px;
-    }
-    .preview-label {
-        font-size: 0.8rem;
-        color: #666;
-        text-transform: uppercase;
-        font-weight: 600;
+    .summary-item h4 {
+        font-size: 1.8rem;
+        font-weight: 700;
         margin-bottom: 5px;
     }
-    .preview-value {
-        font-size: 1.1rem;
-        font-weight: 700;
-        color: #333;
+    .loading-spinner {
+        display: inline-block;
+        width: 20px;
+        height: 20px;
+        border: 3px solid rgba(102, 126, 234, 0.3);
+        border-radius: 50%;
+        border-top-color: #667eea;
+        animation: spin 1s ease-in-out infinite;
     }
-    .submit-section {
-        text-align: center;
-        padding: 30px;
-        background: rgba(255, 255, 255, 0.8);
-        border-radius: 15px;
+    @keyframes spin {
+        to { transform: rotate(360deg); }
     }
-    .terms-checkbox {
-        margin: 20px 0;
-    }
-    .submit-btn {
+    .btn-primary {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
         border: none;
         border-radius: 12px;
         padding: 15px 40px;
         font-weight: 700;
         font-size: 1.1rem;
-        color: white;
         transition: all 0.3s ease;
     }
-    .submit-btn:hover {
+    .btn-primary:hover {
         transform: translateY(-2px);
         box-shadow: 0 10px 30px rgba(102, 126, 234, 0.3);
     }
-    .submit-btn:disabled {
-        background: #6c757d;
-        cursor: not-allowed;
-        transform: none;
-        box-shadow: none;
+    .error-message {
+        background: #f8d7da;
+        border: 1px solid #f5c6cb;
+        color: #721c24;
+        padding: 10px 15px;
+        border-radius: 8px;
+        margin: 10px 0;
     }
-    @media (max-width: 768px) {
-        .date-inputs {
-            grid-template-columns: 1fr;
-        }
-        .preview-grid {
-            grid-template-columns: 1fr;
-        }
-        .calc-row {
-            flex-direction: column;
-            text-align: center;
-        }
+    .success-message {
+        background: #d4edda;
+        border: 1px solid #c3e6cb;
+        color: #155724;
+        padding: 10px 15px;
+        border-radius: 8px;
+        margin: 10px 0;
     }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="content-card">
-    <div class="text-center mb-4">
-        <h1 class="page-title">
-            <i class="fas fa-plus me-3"></i>Submit Stock Offer
-        </h1>
-        <p class="page-subtitle">Add books to your inventory and make them available for sale</p>
+    <h1 class="page-title">
+        <i class="fas fa-plus me-3"></i>Submit Stock Offer
+    </h1>
+    <p class="page-subtitle">Help restock books that are running low in our warehouse</p>
+
+    <!-- Messages -->
+    <div id="messageArea"></div>
+
+    <!-- Warehouse Priority Alert -->
+    {% if warehouse_stats %}
+    <div class="warehouse-alert">
+        <h5><i class="fas fa-exclamation-triangle me-2"></i>Warehouse Needs Your Help!</h5>
+        <p>We have books that need restocking. Your offers for these items will get priority review.</p>
+        <div class="warehouse-stats">
+            <div class="stat-card">
+                <div class="stat-number">{{ warehouse_stats.out_of_stock_books }}</div>
+                <div>Out of Stock</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ warehouse_stats.low_stock_books }}</div>
+                <div>Low Stock</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">{{ warehouse_stats.categories_need_attention }}</div>
+                <div>Categories Need Attention</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Book Selection Section -->
+    <div class="form-section">
+        <h3 class="section-title">
+            <i class="fas fa-book"></i>Select Books to Offer
+        </h3>
+        
+        <!-- Selection Mode Tabs -->
+        <div class="selection-tabs">
+            <button class="tab-btn active" data-tab="individual">
+                <i class="fas fa-search me-2"></i>Search Individual Books
+            </button>
+            <button class="tab-btn" data-tab="category">
+                <i class="fas fa-layer-group me-2"></i>Browse by Category
+            </button>
+        </div>
+
+        <!-- Individual Book Search -->
+        <div id="individual-tab" class="tab-content active">
+            <div class="search-container">
+                <input type="text" 
+                       id="bookSearch" 
+                       class="search-input" 
+                       placeholder="Search for books by title, author, or ISBN..."
+                       autocomplete="off">
+                <i class="fas fa-search" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); color: #999;"></i>
+                <div id="searchResults" class="search-results" style="display: none;"></div>
+                <div id="searchLoading" style="display: none; text-align: center; padding: 20px;">
+                    <div class="loading-spinner"></div>
+                    <p>Searching books...</p>
+                </div>
+            </div>
+            <div class="alert alert-info">
+                <i class="fas fa-lightbulb me-2"></i>
+                <strong>Tip:</strong> Books marked with red or orange badges need restocking and will get priority review!
+            </div>
+        </div>
+
+        <!-- Category Selection -->
+        <div id="category-tab" class="tab-content">
+            <div id="categoryGrid" class="category-grid">
+                <div class="text-center" style="grid-column: 1/-1; padding: 40px;">
+                    <div class="loading-spinner"></div>
+                    <p>Loading categories...</p>
+                </div>
+            </div>
+            <div id="categoryBooks" style="display: none;">
+                <h5>Books in Selected Category:</h5>
+                <div class="alert alert-info mb-3">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Books are sorted by priority - <strong>high priority</strong> items need immediate restocking.
+                </div>
+                <div id="categoryBooksList"></div>
+            </div>
+        </div>
+
+        <!-- Selected Books Display -->
+        <div id="selectedBooks" class="selected-books" style="display: none;">
+            <h5><i class="fas fa-check-circle me-2"></i>Selected Books (<span id="bookCount">0</span>)</h5>
+            <div id="booksList"></div>
+            <div class="text-center mt-3">
+                <button type="button" class="btn btn-outline-danger" onclick="clearAllBooks()">
+                    <i class="fas fa-trash me-2"></i>Clear All
+                </button>
+            </div>
+        </div>
     </div>
 
-    <div class="offer-form">
-        <form method="post" id="stockOfferForm">
-            {% csrf_token %}
-            
-            <!-- Book Selection Section -->
-            <div class="form-section">
-                <h3 class="section-title">
-                    <i class="fas fa-book"></i>Select Book
-                </h3>
-                
-                <div class="book-search">
-                    <label class="form-label">Search for Book <span class="required">*</span></label>
-                    <input type="text" 
-                           class="form-control" 
-                           id="bookSearch" 
-                           placeholder="Start typing book title or ISBN..."
-                           autocomplete="off">
-                    <div class="search-results" id="searchResults"></div>
-                    <div class="help-text">Type at least 3 characters to search for books in our catalog</div>
-                </div>
-                
-                <!-- Selected Book Display -->
-                <div id="selectedBookDisplay" style="display: none;">
-                    <div class="selected-book">
-                        <div class="selected-book-title" id="selectedTitle"></div>
-                        <div class="selected-book-authors" id="selectedAuthors"></div>
-                        <button type="button" class="btn btn-outline-danger btn-sm mt-2" id="clearSelection">
-                            <i class="fas fa-times me-1"></i>Change Book
-                        </button>
-                    </div>
-                </div>
-
-                <!-- Hidden book field -->
-                {{ form.book }}
-                {% for error in form.book.errors %}
-                    <div class="text-danger small">{{ error }}</div>
-                {% endfor %}
+    <!-- Offer Summary -->
+    <div id="offerSummary" class="offer-summary" style="display: none;">
+        <h4><i class="fas fa-chart-line me-2"></i>Offer Summary</h4>
+        <div class="summary-grid">
+            <div class="summary-item">
+                <h4 id="totalBooks">0</h4>
+                <p>Total Books</p>
             </div>
-
-            <!-- Offer Details Section -->
-            <div class="form-section">
-                <h3 class="section-title">
-                    <i class="fas fa-info-circle"></i>Offer Details
-                </h3>
-                
-                <div class="row">
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Quantity <span class="required">*</span></label>
-                        {{ form.quantity }}
-                        <div class="help-text">Number of books you want to offer</div>
-                        {% for error in form.quantity.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    
-                    <div class="col-md-6 mb-3">
-                        <label class="form-label">Unit Price (₹) <span class="required">*</span></label>
-                        {{ form.unit_price }}
-                        <div class="help-text">Price per book in Indian Rupees</div>
-                        {% for error in form.unit_price.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                </div>
-                
-                <!-- Real-time Calculation Display -->
-                <div class="calculation-display" id="calculationDisplay">
-                    <div class="calc-row">
-                        <span class="calc-label">Quantity:</span>
-                        <span class="calc-value" id="displayQuantity">0</span>
-                    </div>
-                    <div class="calc-row">
-                        <span class="calc-label">Unit Price:</span>
-                        <span class="calc-value">₹<span id="displayUnitPrice">0.00</span></span>
-                    </div>
-                    <div class="calc-row">
-                        <span class="calc-label calc-total">Total Amount:</span>
-                        <span class="calc-value calc-total">₹<span id="displayTotal">0.00</span></span>
-                    </div>
-                </div>
+            <div class="summary-item">
+                <h4 id="totalQuantity">0</h4>
+                <p>Total Quantity</p>
             </div>
-
-            <!-- Date Information Section -->
-            <div class="form-section">
-                <h3 class="section-title">
-                    <i class="fas fa-calendar-alt"></i>Availability & Expiry
-                </h3>
-                
-                <div class="date-inputs">
-                    <div>
-                        <label class="form-label">Availability Date <span class="required">*</span></label>
-                        {{ form.availability_date }}
-                        <div class="help-text">When will these books be available for shipping?</div>
-                        {% for error in form.availability_date.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                    
-                    <div>
-                        <label class="form-label">Offer Expiry Date <span class="required">*</span></label>
-                        {{ form.expiry_date }}
-                        <div class="help-text">Until when is this offer valid?</div>
-                        {% for error in form.expiry_date.errors %}
-                            <div class="text-danger small">{{ error }}</div>
-                        {% endfor %}
-                    </div>
-                </div>
+            <div class="summary-item">
+                <h4 id="avgPrice">₹0.00</h4>
+                <p>Average Price</p>
             </div>
-
-            <!-- Additional Notes Section -->
-            <div class="form-section">
-                <h3 class="section-title">
-                    <i class="fas fa-sticky-note"></i>Additional Information
-                </h3>
-                
-                <div class="mb-3">
-                    <label class="form-label">Notes</label>
-                    {{ form.notes }}
-                    <div class="help-text">Any additional information about this offer (optional)</div>
-                    {% for error in form.notes.errors %}
-                        <div class="text-danger small">{{ error }}</div>
-                    {% endfor %}
-                </div>
+            <div class="summary-item">
+                <h4 id="totalValue">₹0.00</h4>
+                <p>Total Value</p>
             </div>
+        </div>
+    </div>
 
-            <!-- Offer Preview -->
-            <div class="offer-preview" id="offerPreview" style="display: none;">
-                <div class="preview-title">
-                    <i class="fas fa-eye me-2"></i>Offer Preview
-                </div>
-                <div class="preview-grid">
-                    <div class="preview-item">
-                        <div class="preview-label">Book</div>
-                        <div class="preview-value" id="previewBook">-</div>
-                    </div>
-                    <div class="preview-item">
-                        <div class="preview-label">Quantity</div>
-                        <div class="preview-value" id="previewQuantity">-</div>
-                    </div>
-                    <div class="preview-item">
-                        <div class="preview-label">Unit Price</div>
-                        <div class="preview-value" id="previewUnitPrice">-</div>
-                    </div>
-                    <div class="preview-item">
-                        <div class="preview-label">Total Amount</div>
-                        <div class="preview-value" id="previewTotal" style="color: #28a745;">-</div>
-                    </div>
-                    <div class="preview-item">
-                        <div class="preview-label">Available From</div>
-                        <div class="preview-value" id="previewAvailableDate">-</div>
-                    </div>
-                    <div class="preview-item">
-                        <div class="preview-label">Expires On</div>
-                        <div class="preview-value" id="previewExpiryDate">-</div>
-                    </div>
-                </div>
+    <!-- Additional Details -->
+    <div class="form-section">
+        <h3 class="section-title">
+            <i class="fas fa-calendar-alt"></i>Offer Details
+        </h3>
+        
+        <div class="row">
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Availability Date *</label>
+                <input type="date" class="form-control" id="availabilityDate" required>
             </div>
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Offer Expiry Date *</label>
+                <input type="date" class="form-control" id="expiryDate" required>
+            </div>
+        </div>
+        
+        <div class="mb-3">
+            <label class="form-label">Additional Notes</label>
+            <textarea class="form-control" rows="3" id="notes" 
+                      placeholder="Any additional information about this offer, book conditions, delivery terms, etc."></textarea>
+        </div>
+    </div>
 
-            <!-- Terms and Submit -->
-            <div class="submit-section">
-                <div class="terms-checkbox">
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="termsCheck" required>
-                        <label class="form-check-label" for="termsCheck">
-                            I agree to the vendor terms and conditions and confirm that all information provided is accurate.
-                        </label>
-                    </div>
-                </div>
-                
-                <div class="d-flex justify-content-center gap-3">
-                    <button type="button" class="btn btn-outline-secondary" onclick="window.history.back()">
-                        <i class="fas fa-arrow-left me-2"></i>Cancel
-                    </button>
-                    <button type="submit" class="submit-btn" id="submitBtn" disabled>
-                        <i class="fas fa-paper-plane me-2"></i>Submit Offer
-                    </button>
-                </div>
-            </div>
-        </form>
+    <!-- Submit Section -->
+    <div class="text-center">
+        <div class="form-check mb-3">
+            <input class="form-check-input" type="checkbox" id="termsCheck" required>
+            <label class="form-check-label" for="termsCheck">
+                I agree to the vendor terms and conditions and confirm all information is accurate
+            </label>
+        </div>
+        
+        <button type="button" class="btn btn-primary" onclick="submitOffer()" disabled id="submitBtn">
+            <i class="fas fa-paper-plane me-2"></i>Submit Stock Offer
+        </button>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    const bookSearch = document.getElementById('bookSearch');
-    const searchResults = document.getElementById('searchResults');
-    const selectedBookDisplay = document.getElementById('selectedBookDisplay');
-    const bookField = document.getElementById('{{ form.book.id_for_label }}');
-    const quantityField = document.getElementById('{{ form.quantity.id_for_label }}');
-    const priceField = document.getElementById('{{ form.unit_price.id_for_label }}');
-    const availabilityField = document.getElementById('{{ form.availability_date.id_for_label }}');
-    const expiryField = document.getElementById('{{ form.expiry_date.id_for_label }}');
-    const notesField = document.getElementById('{{ form.notes.id_for_label }}');
-    const termsCheck = document.getElementById('termsCheck');
-    const submitBtn = document.getElementById('submitBtn');
-    const offerPreview = document.getElementById('offerPreview');
+// Get CSRF token
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+let selectedBooksData = [];
+let searchTimeout = null;
+let categoriesData = [];
+
+// Show messages
+function showMessage(message, type = 'info') {
+    const messageArea = document.getElementById('messageArea');
+    const messageClass = type === 'error' ? 'error-message' : 'success-message';
+    messageArea.innerHTML = `<div class="${messageClass}">${message}</div>`;
     
-    let selectedBook = null;
-    let searchTimeout = null;
+    // Auto-hide after 5 seconds
+    setTimeout(() => {
+        messageArea.innerHTML = '';
+    }, 5000);
+}
 
-    // Book search functionality
-    bookSearch.addEventListener('input', function() {
-        const query = this.value.trim();
+// Tab switching
+document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.addEventListener('click', function() {
+        const tabName = this.dataset.tab;
         
-        clearTimeout(searchTimeout);
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        this.classList.add('active');
         
-        if (query.length < 3) {
-            searchResults.style.display = 'none';
-            return;
-        }
+        document.querySelectorAll('.tab-content').forEach(content => {
+            content.classList.remove('active');
+        });
+        document.getElementById(tabName + '-tab').classList.add('active');
         
-        searchTimeout = setTimeout(() => {
-            // Simulate API call - replace with actual endpoint
-            fetch(`/books/search/?q=${encodeURIComponent(query)}`)
-                .then(response => response.json())
-                .then(data => {
-                    displaySearchResults(data.books || []);
-                })
-                .catch(error => {
-                    console.error('Search error:', error);
-                    searchResults.innerHTML = '<div class="search-result-item">Error searching books</div>';
-                    searchResults.style.display = 'block';
-                });
-        }, 300);
-    });
-
-    function displaySearchResults(books) {
-        if (books.length === 0) {
-            searchResults.innerHTML = '<div class="search-result-item">No books found</div>';
-        } else {
-            searchResults.innerHTML = books.map(book => `
-                <div class="search-result-item" data-book-id="${book.id}" data-book-title="${book.title}" data-book-authors="${book.authors}">
-                    <div class="result-title">${book.title}</div>
-                    <div class="result-authors">${book.authors}</div>
-                </div>
-            `).join('');
-        }
-        searchResults.style.display = 'block';
-    }
-
-    // Book selection
-    searchResults.addEventListener('click', function(e) {
-        const item = e.target.closest('.search-result-item');
-        if (item) {
-            selectedBook = {
-                id: item.dataset.bookId,
-                title: item.dataset.bookTitle,
-                authors: item.dataset.bookAuthors
-            };
-            
-            // Update form
-            bookField.value = selectedBook.id;
-            
-            // Show selected book
-            document.getElementById('selectedTitle').textContent = selectedBook.title;
-            document.getElementById('selectedAuthors').textContent = `By: ${selectedBook.authors}`;
-            selectedBookDisplay.style.display = 'block';
-            
-            // Hide search results
-            searchResults.style.display = 'none';
-            bookSearch.value = '';
-            
-            updatePreview();
-        }
-    });
-
-    // Clear selection
-    document.getElementById('clearSelection').addEventListener('click', function() {
-        selectedBook = null;
-        bookField.value = '';
-        selectedBookDisplay.style.display = 'none';
-        bookSearch.focus();
-        updatePreview();
-    });
-
-    // Real-time calculation
-    function updateCalculation() {
-        const quantity = parseInt(quantityField.value) || 0;
-        const unitPrice = parseFloat(priceField.value) || 0;
-        const total = quantity * unitPrice;
-        
-        document.getElementById('displayQuantity').textContent = quantity;
-        document.getElementById('displayUnitPrice').textContent = unitPrice.toFixed(2);
-        document.getElementById('displayTotal').textContent = total.toFixed(2);
-    }
-
-    // Update preview
-    function updatePreview() {
-        const quantity = quantityField.value;
-        const unitPrice = priceField.value;
-        const availableDate = availabilityField.value;
-        const expiryDate = expiryField.value;
-        
-        const hasRequiredFields = selectedBook && quantity && unitPrice && availableDate && expiryDate;
-        
-        if (hasRequiredFields) {
-            const total = (parseInt(quantity) || 0) * (parseFloat(unitPrice) || 0);
-            
-            document.getElementById('previewBook').textContent = selectedBook.title;
-            document.getElementById('previewQuantity').textContent = `${quantity} units`;
-            document.getElementById('previewUnitPrice').textContent = `₹${parseFloat(unitPrice).toFixed(2)}`;
-            document.getElementById('previewTotal').textContent = `₹${total.toFixed(2)}`;
-            document.getElementById('previewAvailableDate').textContent = new Date(availableDate).toLocaleDateString();
-            document.getElementById('previewExpiryDate').textContent = new Date(expiryDate).toLocaleDateString();
-            
-            offerPreview.style.display = 'block';
-        } else {
-            offerPreview.style.display = 'none';
-        }
-        
-        updateSubmitButton();
-    }
-
-    // Update submit button state
-    function updateSubmitButton() {
-        const hasRequiredFields = selectedBook && 
-                                 quantityField.value && 
-                                 priceField.value && 
-                                 availabilityField.value && 
-                                 expiryField.value &&
-                                 termsCheck.checked;
-        
-        submitBtn.disabled = !hasRequiredFields;
-    }
-
-    // Event listeners
-    quantityField.addEventListener('input', () => {
-        updateCalculation();
-        updatePreview();
-    });
-
-    priceField.addEventListener('input', () => {
-        updateCalculation();
-        updatePreview();
-    });
-
-    [availabilityField, expiryField].forEach(field => {
-        field.addEventListener('change', updatePreview);
-    });
-
-    termsCheck.addEventListener('change', updateSubmitButton);
-
-    // Set minimum dates
-    const today = new Date().toISOString().split('T')[0];
-    availabilityField.setAttribute('min', today);
-    expiryField.setAttribute('min', today);
-
-    // Form animations
-    const sections = document.querySelectorAll('.form-section');
-    sections.forEach((section, index) => {
-        section.style.opacity = '0';
-        section.style.transform = 'translateY(20px)';
-        
-        setTimeout(() => {
-            section.style.transition = 'all 0.5s ease';
-            section.style.opacity = '1';
-            section.style.transform = 'translateY(0)';
-        }, index * 150);
-    });
-
-    // Hide search results when clicking outside
-    document.addEventListener('click', function(e) {
-        if (!e.target.closest('.book-search')) {
-            searchResults.style.display = 'none';
-        }
-    });
-
-    // Form submission
-    document.getElementById('stockOfferForm').addEventListener('submit', function(e) {
-        if (!selectedBook) {
-            e.preventDefault();
-            alert('Please select a book for your offer.');
-            bookSearch.focus();
+        // Load category data when category tab is opened
+        if (tabName === 'category' && categoriesData.length === 0) {
+            loadCategories();
         }
     });
 });
+
+// Book search functionality
+document.getElementById('bookSearch').addEventListener('input', function() {
+    const query = this.value.trim();
+    const searchResults = document.getElementById('searchResults');
+    const searchLoading = document.getElementById('searchLoading');
+    
+    clearTimeout(searchTimeout);
+    
+    if (query.length < 2) {
+        searchResults.style.display = 'none';
+        return;
+    }
+    
+    searchLoading.style.display = 'block';
+    searchResults.style.display = 'none';
+    
+    searchTimeout = setTimeout(() => {
+        fetch(`{% url 'vendors:book_search_api' %}?q=${encodeURIComponent(query)}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                searchLoading.style.display = 'none';
+                if (data.error) {
+                    showMessage(data.error, 'error');
+                    searchResults.innerHTML = '<div class="search-result-item">Error loading results. Please try again.</div>';
+                } else {
+                    displaySearchResults(data.books || []);
+                }
+            })
+            .catch(error => {
+                searchLoading.style.display = 'none';
+                console.error('Search error:', error);
+                showMessage('Error searching books. Please try again.', 'error');
+                searchResults.innerHTML = '<div class="search-result-item">Error loading results. Please try again.</div>';
+                searchResults.style.display = 'block';
+            });
+    }, 300);
+});
+
+function displaySearchResults(books) {
+    const searchResults = document.getElementById('searchResults');
+    
+    if (books.length === 0) {
+        searchResults.innerHTML = '<div class="search-result-item">No books found. Try different search terms.</div>';
+    } else {
+        searchResults.innerHTML = books.map(book => {
+            const isAlreadySelected = selectedBooksData.find(selected => selected.id === book.id);
+            const stockBadgeClass = book.stock_status === 'out_of_stock' ? 'stock-out' : 
+                                   book.stock_status === 'low_stock' ? 'stock-low' : 'stock-ok';
+            const stockBadgeText = book.stock_status === 'out_of_stock' ? 'OUT OF STOCK' : 
+                                  book.stock_status === 'low_stock' ? 'LOW STOCK' : 
+                                  book.stock_status === 'no_stock_record' ? 'NO RECORD' : 'IN STOCK';
+            const priorityClass = `priority-${book.priority_level}`;
+            
+            return `
+                <div class="search-result-item ${priorityClass}">
+                    <div class="result-info">
+                        <h6>${book.title}</h6>
+                        <p>By: ${book.authors} | ISBN: ${book.isbn} | Category: ${book.category}</p>
+                        <div class="stock-indicator">
+                            <span class="stock-badge ${stockBadgeClass}">${stockBadgeText}</span>
+                            <small>Current: ${book.current_stock} | Reorder Level: ${book.reorder_level}</small>
+                            ${book.existing_pending > 0 ? `<small class="text-warning">Pending: ${book.existing_pending}</small>` : ''}
+                        </div>
+                    </div>
+                    <button class="add-btn" 
+                            onclick="addBook(${book.id}, '${book.title.replace(/'/g, "\\'")}', '${book.authors.replace(/'/g, "\\'")}', '${book.isbn}', ${book.suggested_quantity}, '${book.priority_level}')"
+                            ${isAlreadySelected ? 'disabled' : ''}>
+                        <i class="fas fa-${isAlreadySelected ? 'check' : 'plus'} me-1"></i>
+                        ${isAlreadySelected ? 'Added' : 'Add'}
+                    </button>
+                </div>
+            `;
+        }).join('');
+    }
+    searchResults.style.display = 'block';
+}
+
+// Category loading
+function loadCategories() {
+    fetch('{% url "vendors:categories_api" %}')
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                showMessage(data.error, 'error');
+                document.getElementById('categoryGrid').innerHTML = 
+                    '<div class="alert alert-danger">Error loading categories. Please refresh the page.</div>';
+            } else {
+                categoriesData = data.categories || [];
+                displayCategories(categoriesData);
+            }
+        })
+        .catch(error => {
+            console.error('Categories loading error:', error);
+            showMessage('Error loading categories. Please refresh the page.', 'error');
+            document.getElementById('categoryGrid').innerHTML = 
+                '<div class="alert alert-danger">Error loading categories. Please refresh the page.</div>';
+        });
+}
+
+function displayCategories(categories) {
+    const categoryGrid = document.getElementById('categoryGrid');
+    
+    if (categories.length === 0) {
+        categoryGrid.innerHTML = '<div class="alert alert-info">No categories available at the moment.</div>';
+        return;
+    }
+    
+    categoryGrid.innerHTML = categories.map(category => {
+        const priorityClass = category.priority === 'high' ? 'high-priority' : 
+                             category.priority === 'medium' ? 'medium-priority' : '';
+        
+        return `
+            <div class="category-card ${priorityClass}" onclick="selectCategory(${category.id}, '${category.name}')">
+                <div class="category-name">
+                    <i class="fas fa-layer-group me-2"></i>${category.name}
+                    ${category.priority === 'high' ? '<i class="fas fa-exclamation-triangle text-danger ms-2"></i>' : ''}
+                </div>
+                <div class="category-stats">
+                    <div class="category-stat">
+                        <span>Total Books:</span>
+                        <strong>${category.total_books}</strong>
+                    </div>
+                    <div class="category-stat">
+                        <span>Out of Stock:</span>
+                        <strong class="text-danger">${category.out_of_stock_books}</strong>
+                    </div>
+                    <div class="category-stat">
+                        <span>Low Stock:</span>
+                        <strong class="text-warning">${category.low_stock_books}</strong>
+                    </div>
+                    <div class="category-stat">
+                        <span>Needs Attention:</span>
+                        <strong class="text-primary">${category.needs_attention}</strong>
+                    </div>
+                </div>
+                ${category.needs_attention > 0 ? `
+                    <div class="mt-2">
+                        <small class="text-primary">
+                            <i class="fas fa-star me-1"></i>
+                            ${category.needs_attention} books need restocking!
+                        </small>
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }).join('');
+}
+
+function selectCategory(categoryId, categoryName) {
+    // Highlight selected category
+    document.querySelectorAll('.category-card').forEach(card => {
+        card.style.border = '2px solid #e0e0e0';
+    });
+    event.target.closest('.category-card').style.border = '2px solid #667eea';
+    
+    // Load books for this category
+    loadCategoryBooks(categoryId, categoryName);
+}
+
+function loadCategoryBooks(categoryId, categoryName) {
+    const categoryBooksDiv = document.getElementById('categoryBooks');
+    const categoryBooksList = document.getElementById('categoryBooksList');
+    
+    categoryBooksList.innerHTML = '<div class="text-center p-4"><div class="loading-spinner"></div><p>Loading books...</p></div>';
+    categoryBooksDiv.style.display = 'block';
+    
+    fetch(`{% url "vendors:category_books_api" %}?category_id=${categoryId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.error) {
+                showMessage(data.error, 'error');
+                categoryBooksList.innerHTML = `<div class="alert alert-danger">${data.error}</div>`;
+                return;
+            }
+            
+            displayCategoryBooks(data.books || [], data.summary || {});
+        })
+        .catch(error => {
+            console.error('Category books loading error:', error);
+            showMessage('Error loading books. Please try again.', 'error');
+            categoryBooksList.innerHTML = '<div class="alert alert-danger">Error loading books. Please try again.</div>';
+        });
+}
+
+function displayCategoryBooks(books, summary) {
+    const categoryBooksList = document.getElementById('categoryBooksList');
+    
+    if (books.length === 0) {
+        categoryBooksList.innerHTML = '<div class="alert alert-info">No books found in this category.</div>';
+        return;
+    }
+    
+    // Add summary
+    let summaryHTML = `
+        <div class="alert alert-primary mb-3">
+            <h6><i class="fas fa-info-circle me-2"></i>Category Summary</h6>
+            <div class="row">
+                <div class="col-3">High Priority: <strong class="text-danger">${summary.high_priority}</strong></div>
+                <div class="col-3">Medium Priority: <strong class="text-warning">${summary.medium_priority}</strong></div>
+                <div class="col-3">Normal Priority: <strong class="text-success">${summary.normal_priority}</strong></div>
+                <div class="col-3">Total Books: <strong>${summary.total_books}</strong></div>
+            </div>
+        </div>
+    `;
+    
+    categoryBooksList.innerHTML = summaryHTML + books.map(book => {
+        const isAlreadySelected = selectedBooksData.find(selected => selected.id === book.id);
+        const stockBadgeClass = book.stock_status === 'out_of_stock' ? 'stock-out' : 
+                               book.stock_status === 'low_stock' ? 'stock-low' : 'stock-ok';
+        const stockBadgeText = book.stock_status === 'out_of_stock' ? 'OUT OF STOCK' : 
+                              book.stock_status === 'low_stock' ? 'LOW STOCK' : 
+                              book.stock_status === 'no_stock_record' ? 'NO RECORD' : 'IN STOCK';
+        const priorityClass = `priority-${book.priority}`;
+        
+        return `
+            <div class="search-result-item ${priorityClass}">
+                <div class="result-info">
+                    <h6>${book.title}</h6>
+                    <p>By: ${book.authors} | ISBN: ${book.isbn}</p>
+                    <div class="stock-indicator">
+                        <span class="stock-badge ${stockBadgeClass}">${stockBadgeText}</span>
+                        <small>Current: ${book.current_stock} | Reorder: ${book.reorder_level} | Suggested: ${book.suggested_quantity}</small>
+                        ${book.existing_pending > 0 ? `<small class="text-warning">Your Pending: ${book.existing_pending}</small>` : ''}
+                    </div>
+                </div>
+                <button class="add-btn" 
+                        onclick="addBook(${book.id}, '${book.title.replace(/'/g, "\\'")}', '${book.authors.replace(/'/g, "\\'")}', '${book.isbn}', ${book.suggested_quantity}, '${book.priority}')"
+                        ${isAlreadySelected ? 'disabled' : ''}>
+                    <i class="fas fa-${isAlreadySelected ? 'check' : 'plus'} me-1"></i>
+                    ${isAlreadySelected ? 'Added' : 'Add'}
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
+function addBook(id, title, author, isbn, suggestedQuantity = 1, priority = 'normal') {
+    // Check if book already exists
+    if (selectedBooksData.find(book => book.id === id)) {
+        showMessage('This book is already in your selection.', 'error');
+        return;
+    }
+    
+    selectedBooksData.push({
+        id: id,
+        title: title,
+        author: author,
+        isbn: isbn,
+        quantity: suggestedQuantity,
+        price: 0,
+        priority: priority
+    });
+    
+    updateSelectedBooksDisplay();
+    updateSummary();
+    
+    // Hide search results
+    document.getElementById('searchResults').style.display = 'none';
+    document.getElementById('bookSearch').value = '';
+    
+    // Update button states in search results
+    const addButtons = document.querySelectorAll(`[onclick*="addBook(${id}"]`);
+    addButtons.forEach(btn => {
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-check me-1"></i>Added';
+    });
+    
+    showMessage(`Added "${title}" to your offer`, 'success');
+}
+
+function updateSelectedBooksDisplay() {
+    const selectedBooksDiv = document.getElementById('selectedBooks');
+    const booksList = document.getElementById('booksList');
+    const bookCount = document.getElementById('bookCount');
+    
+    if (selectedBooksData.length === 0) {
+        selectedBooksDiv.style.display = 'none';
+        return;
+    }
+    
+    bookCount.textContent = selectedBooksData.length;
+    
+    // Sort by priority for display
+    const sortedBooks = [...selectedBooksData].sort((a, b) => {
+        const priorityOrder = {'high': 0, 'medium': 1, 'normal': 2};
+        return priorityOrder[a.priority] - priorityOrder[b.priority];
+    });
+    
+    booksList.innerHTML = sortedBooks.map(book => {
+        const priorityBadge = book.priority === 'high' ? '<span class="stock-badge stock-out">HIGH PRIORITY</span>' :
+                             book.priority === 'medium' ? '<span class="stock-badge stock-low">MEDIUM PRIORITY</span>' :
+                             '<span class="stock-badge stock-ok">NORMAL</span>';
+        
+        return `
+            <div class="book-item">
+                <div class="book-info">
+                    <h6>${book.title}</h6>
+                    <p>By: ${book.author} | ISBN: ${book.isbn}</p>
+                    <div>${priorityBadge}</div>
+                </div>
+                <div class="book-controls">
+                    <div class="quantity-control">
+                        <label>Qty:</label>
+                        <input type="number" class="quantity-input" value="${book.quantity}" min="1" 
+                               onchange="updateBookQuantity(${book.id}, this.value)">
+                    </div>
+                    <div class="quantity-control">
+                        <label>₹:</label>
+                        <input type="number" class="price-input" value="${book.price}" min="0" step="0.01"
+                               onchange="updateBookPrice(${book.id}, this.value)" placeholder="0.00">
+                    </div>
+                    <button class="remove-btn" onclick="removeBook(${book.id})">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    selectedBooksDiv.style.display = 'block';
+}
+
+function updateBookQuantity(id, quantity) {
+    const book = selectedBooksData.find(b => b.id === id);
+    if (book) {
+        book.quantity = parseInt(quantity) || 1;
+        updateSummary();
+    }
+}
+
+function updateBookPrice(id, price) {
+    const book = selectedBooksData.find(b => b.id === id);
+    if (book) {
+        book.price = parseFloat(price) || 0;
+        updateSummary();
+    }
+}
+
+function removeBook(id) {
+    const book = selectedBooksData.find(b => b.id === id);
+    if (confirm(`Remove "${book.title}" from your offer?`)) {
+        selectedBooksData = selectedBooksData.filter(book => book.id !== id);
+        updateSelectedBooksDisplay();
+        updateSummary();
+        
+        // Re-enable add buttons for this book
+        const addButtons = document.querySelectorAll(`[onclick*="addBook(${id}"]`);
+        addButtons.forEach(btn => {
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-plus me-1"></i>Add';
+        });
+        
+        showMessage(`Removed "${book.title}" from your offer`, 'success');
+    }
+}
+
+function clearAllBooks() {
+    if (confirm('Are you sure you want to remove all selected books?')) {
+        selectedBooksData = [];
+        updateSelectedBooksDisplay();
+        updateSummary();
+        
+        // Re-enable all add buttons
+        document.querySelectorAll('.add-btn').forEach(btn => {
+            if (btn.disabled) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-plus me-1"></i>Add';
+            }
+        });
+        
+        showMessage('All books cleared from your offer', 'success');
+    }
+}
+
+function updateSummary() {
+    const summaryDiv = document.getElementById('offerSummary');
+    
+    if (selectedBooksData.length === 0) {
+        summaryDiv.style.display = 'none';
+        updateSubmitButtonState();
+        return;
+    }
+    
+    const totalBooks = selectedBooksData.length;
+    const totalQuantity = selectedBooksData.reduce((sum, book) => sum + book.quantity, 0);
+    const totalValue = selectedBooksData.reduce((sum, book) => sum + (book.quantity * book.price), 0);
+    const avgPrice = totalQuantity > 0 ? totalValue / totalQuantity : 0;
+    
+    document.getElementById('totalBooks').textContent = totalBooks;
+    document.getElementById('totalQuantity').textContent = totalQuantity;
+    document.getElementById('avgPrice').textContent = '₹' + avgPrice.toFixed(2);
+    document.getElementById('totalValue').textContent = '₹' + totalValue.toFixed(2);
+    
+    summaryDiv.style.display = 'block';
+    updateSubmitButtonState();
+}
+
+function updateSubmitButtonState() {
+    const submitBtn = document.getElementById('submitBtn');
+    const termsCheck = document.getElementById('termsCheck');
+    const availabilityDate = document.getElementById('availabilityDate');
+    const expiryDate = document.getElementById('expiryDate');
+    
+    const hasBooks = selectedBooksData.length > 0;
+    const allBooksHavePrice = selectedBooksData.every(book => book.price > 0);
+    const hasRequiredFields = availabilityDate.value && expiryDate.value;
+    const termsAccepted = termsCheck.checked;
+    
+    submitBtn.disabled = !(hasBooks && allBooksHavePrice && hasRequiredFields && termsAccepted);
+    
+    // Update button text to show what's missing
+    if (!hasBooks) {
+        submitBtn.innerHTML = '<i class="fas fa-info-circle me-2"></i>Select Books First';
+    } else if (!allBooksHavePrice) {
+        submitBtn.innerHTML = '<i class="fas fa-tag me-2"></i>Set Prices for All Books';
+    } else if (!hasRequiredFields) {
+        submitBtn.innerHTML = '<i class="fas fa-calendar me-2"></i>Set Dates';
+    } else if (!termsAccepted) {
+        submitBtn.innerHTML = '<i class="fas fa-check me-2"></i>Accept Terms';
+    } else {
+        submitBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i>Submit Stock Offer';
+    }
+}
+
+function submitOffer() {
+    if (selectedBooksData.length === 0) {
+        showMessage('Please select at least one book for your offer.', 'error');
+        return;
+    }
+    
+    const invalidBooks = selectedBooksData.filter(book => book.price <= 0);
+    if (invalidBooks.length > 0) {
+        showMessage('Please set a valid price for all selected books.', 'error');
+        return;
+    }
+    
+    const availabilityDate = document.getElementById('availabilityDate').value;
+    const expiryDate = document.getElementById('expiryDate').value;
+    const notes = document.getElementById('notes').value;
+
+    if (!availabilityDate || !expiryDate) {
+        showMessage('Please select both an availability and expiry date.', 'error');
+        return;
+    }
+
+    if (new Date(expiryDate) <= new Date(availabilityDate)) {
+        showMessage('The expiry date must be after the availability date.', 'error');
+        return;
+    }
+
+    if (!document.getElementById('termsCheck').checked) {
+        showMessage('You must agree to the terms and conditions.', 'error');
+        return;
+    }
+
+    // Disable submit button and show loading
+    const submitBtn = document.getElementById('submitBtn');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Submitting...';
+
+    // Prepare the data to be sent
+    const formData = {
+        books_data: JSON.stringify(selectedBooksData.map(book => ({
+            id: book.id,
+            quantity: book.quantity,
+            price: book.price
+        }))),
+        availability_date: availabilityDate,
+        expiry_date: expiryDate,
+        notes: notes
+    };
+
+    // Send the data to the server
+    fetch('{% url "vendors:submit_multiple_offer" %}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            showMessage(data.message || 'Offers submitted successfully!', 'success');
+            // Redirect after a short delay
+            setTimeout(() => {
+                window.location.href = '{% url "vendors:stock_offers" %}';
+            }, 2000);
+        } else {
+            showMessage(data.message || 'Error submitting offers', 'error');
+            submitBtn.disabled = false;
+            updateSubmitButtonState();
+        }
+    })
+    .catch(error => {
+        console.error('Submission error:', error);
+        showMessage('An unexpected error occurred. Please try again.', 'error');
+        submitBtn.disabled = false;
+        updateSubmitButtonState();
+    });
+}
+
+// Event listeners for form fields to update button state
+document.getElementById('availabilityDate').addEventListener('change', updateSubmitButtonState);
+document.getElementById('expiryDate').addEventListener('change', updateSubmitButtonState);
+document.getElementById('termsCheck').addEventListener('change', updateSubmitButtonState);
+
+// Set minimum dates (today for availability, tomorrow for expiry)
+const today = new Date().toISOString().split('T')[0];
+const tomorrow = new Date();
+tomorrow.setDate(tomorrow.getDate() + 1);
+const tomorrowStr = tomorrow.toISOString().split('T')[0];
+
+document.getElementById('availabilityDate').min = today;
+document.getElementById('expiryDate').min = tomorrowStr;
+
+// Call the update function on page load to set initial state
+updateSummary();
+updateSubmitButtonState();
 </script>
 {% endblock %}

@@ -51,6 +51,7 @@ INSTALLED_APPS = [
     'reviews',
     'paypal_integration',
     'support',
+    'admin_dashboard',
 ]
 
 MIDDLEWARE = [
