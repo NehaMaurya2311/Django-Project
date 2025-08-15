@@ -1,0 +1,334 @@
+{% extends 'wishlist/base_wishlist.html' %}
+{% load static %}
+
+{% block title %}{{ collection.name }} - Collections{% endblock %}
+
+{% block wishlist_content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="{% url 'wishlist:wishlist' %}">Wishlist</a></li>
+                <li class="breadcrumb-item"><a href="{% url 'wishlist:collections' %}">Collections</a></li>
+                <li class="breadcrumb-item active">{{ collection.name }}</li>
+            </ol>
+        </nav>
+        <h1 class="h2">{{ collection.name }}</h1>
+        {% if collection.description %}
+        <p class="text-muted">{{ collection.description }}</p>
+        {% endif %}
+    </div>
+    <div class="col-md-4 text-md-end">
+        <div class="btn-group" role="group">
+            <button class="btn btn-outline-primary" onclick="addBooksToCollection({{ collection.id }})">
+                                <i class="fas fa-plus"></i> Add Books
+            </button>
+            <button class="btn btn-outline-secondary" onclick="editCollection({{ collection.id }})">
+                <i class="fas fa-edit"></i> Edit
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="row mb-3">
+    <div class="col-md-12">
+        <div class="d-flex gap-3 text-muted">
+            <span><i class="fas fa-lock"></i> {{ collection.get_privacy_display }}</span>
+            <span><i class="fas fa-book"></i> {{ items.paginator.count }} books</span>
+            <span><i class="fas fa-clock"></i> Updated {{ collection.updated_at|timesince }} ago</span>
+        </div>
+    </div>
+</div>
+
+{% if items %}
+    <div class="row g-4">
+        {% for item in items %}
+        <div class="col-md-6 col-lg-4 col-xl-3" id="collection-item-{{ item.id }}">
+            <div class="card h-100 wishlist-item">
+                {% if item.priority >= 4 %}
+                <span class="wishlist-badge bg-warning text-dark">
+                    <i class="fas fa-star"></i> High Priority
+                </span>
+                {% endif %}
+                
+                <a href="{% url 'books:book_detail' item.book.slug %}">
+                    {% if item.book.cover_image %}
+                    <img src="{{ item.book.cover_image.url }}" class="card-img-top" alt="{{ item.book.title }}">
+                    {% else %}
+                    <img src="{% static 'images/no-cover.jpg' %}" class="card-img-top" alt="No cover">
+                    {% endif %}
+                </a>
+                
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">
+                        <a href="{% url 'books:book_detail' item.book.slug %}" class="text-decoration-none text-dark">
+                            {{ item.book.title|truncatechars:50 }}
+                        </a>
+                    </h5>
+                    <p class="card-text text-muted small">by {{ item.book.author }}</p>
+                    
+                    {% if item.notes %}
+                    <div class="alert alert-light small mb-2">
+                        <i class="fas fa-sticky-note"></i> {{ item.notes|truncatechars:100 }}
+                    </div>
+                    {% endif %}
+                    
+                    <div class="mt-auto">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                {% if item.book.sale_price %}
+                                <span class="text-danger fw-bold">${{ item.book.sale_price }}</span>
+                                <span class="text-muted text-decoration-line-through small">${{ item.book.price }}</span>
+                                {% else %}
+                                <span class="fw-bold">${{ item.book.price }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="priority-stars" data-priority="{{ item.priority }}">
+                                {% for i in "12345" %}
+                                    <i class="fas fa-star {% if i|add:0 > item.priority %}text-muted{% else %}text-warning{% endif %}" 
+                                       onclick="updatePriority({{ item.id }}, {{ i }})"
+                                       style="cursor: pointer;"></i>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="btn-group w-100" role="group">
+                            <button class="btn btn-sm btn-outline-primary" onclick="editItemNotes({{ item.id }})">
+                                <i class="fas fa-edit"></i> Notes
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" onclick="removeFromCollection({{ item.id }})">
+                                <i class="fas fa-times"></i> Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if items.has_other_pages %}
+    <nav aria-label="Collection pagination" class="mt-5">
+        <ul class="pagination justify-content-center">
+            {% if items.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ items.previous_page_number }}">Previous</a>
+            </li>
+            {% endif %}
+            
+            {% for num in items.paginator.page_range %}
+                {% if items.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > items.number|add:'-3' and num < items.number|add:'3' %}
+                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if items.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ items.next_page_number }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    
+{% else %}
+    <div class="empty-wishlist">
+        <img src="{% static 'images/empty-collection.svg' %}" alt="Empty collection">
+        <h3>This collection is empty</h3>
+        <p class="text-muted">Add books from your wishlist to this collection</p>
+        <button class="btn btn-primary mt-3" onclick="addBooksToCollection({{ collection.id }})">
+            <i class="fas fa-plus"></i> Add Books
+        </button>
+    </div>
+{% endif %}
+
+<!-- Edit Notes Modal -->
+<div class="modal fade" id="editNotesModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Edit Notes</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editNotesForm">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="item-notes" class="form-label">Notes</label>
+                        <textarea class="form-control" id="item-notes" rows="4"></textarea>
+                        <small class="form-text text-muted">Add personal notes about this book</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Notes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Books Modal -->
+<div class="modal fade" id="addBooksModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Add Books to Collection</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <input type="text" class="form-control" id="searchBooks" placeholder="Search your wishlist...">
+                </div>
+                <div id="availableBooks" class="row g-3">
+                    <!-- Books will be loaded here via AJAX -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="addSelectedBooks()">Add Selected</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{{ block.super }}
+<script>
+    function updatePriority(itemId, priority) {
+        fetch(`/wishlist/collections/item/${itemId}/priority/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ priority: priority })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Update stars display
+                const stars = document.querySelector(`#collection-item-${itemId} .priority-stars`);
+                stars.setAttribute('data-priority', priority);
+                stars.querySelectorAll('i').forEach((star, index) => {
+                    if (index < priority) {
+                        star.classList.remove('text-muted');
+                        star.classList.add('text-warning');
+                    } else {
+                        star.classList.remove('text-warning');
+                        star.classList.add('text-muted');
+                    }
+                });
+                showToast('Priority updated', 'success');
+            }
+        });
+    }
+    
+    function editItemNotes(itemId) {
+        // Load current notes and show modal
+        const modal = new bootstrap.Modal(document.getElementById('editNotesModal'));
+        modal.show();
+        
+        // Set form action
+        document.getElementById('editNotesForm').onsubmit = function(e) {
+            e.preventDefault();
+            saveNotes(itemId);
+        };
+    }
+    
+    function saveNotes(itemId) {
+        const notes = document.getElementById('item-notes').value;
+        
+        fetch(`/wishlist/collections/item/${itemId}/notes/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ notes: notes })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('editNotesModal')).hide();
+                showToast('Notes saved', 'success');
+                // Reload to show updated notes
+                location.reload();
+            }
+        });
+    }
+    
+    function removeFromCollection(itemId) {
+        if (confirm('Remove this book from the collection?')) {
+            fetch(`/wishlist/collections/item/${itemId}/remove/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const item = document.getElementById(`collection-item-${itemId}`);
+                    item.style.opacity = '0';
+                    setTimeout(() => item.remove(), 300);
+                    showToast('Book removed from collection', 'info');
+                }
+            });
+        }
+    }
+    
+    function addBooksToCollection(collectionId) {
+        const modal = new bootstrap.Modal(document.getElementById('addBooksModal'));
+        modal.show();
+        
+        // Load available books from wishlist
+        fetch(`/wishlist/collections/${collectionId}/available-books/`)
+            .then(response => response.json())
+            .then(data => {
+                const container = document.getElementById('availableBooks');
+                container.innerHTML = data.books.map(book => `
+                    <div class="col-md-6">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" value="${book.id}" id="book-${book.id}">
+                            <label class="form-check-label" for="book-${book.id}">
+                                <strong>${book.title}</strong> by ${book.author}
+                            </label>
+                        </div>
+                    </div>
+                `).join('');
+            });
+    }
+    
+    function addSelectedBooks() {
+        const selected = Array.from(document.querySelectorAll('#availableBooks input:checked'))
+            .map(input => input.value);
+        
+        if (selected.length === 0) {
+            alert('Please select at least one book');
+            return;
+        }
+        
+        fetch(`/wishlist/collections/{{ collection.id }}/add-books/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ book_ids: selected })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                bootstrap.Modal.getInstance(document.getElementById('addBooksModal')).hide();
+                showToast(`${selected.length} books added to collection`, 'success');
+                location.reload();
+            }
+        });
+    }
+</script>
+{% endblock %}

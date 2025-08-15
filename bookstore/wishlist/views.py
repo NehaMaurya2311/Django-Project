@@ -142,3 +142,140 @@ def collection_detail(request, collection_id):
     }
     
     return render(request, 'wishlist/collection_detail.html', context)
+
+
+
+
+# Add these imports at the top of your existing wishlist/views.py
+from django.views.decorators.http import require_POST
+from django.db.models import Q
+import json
+
+# Add these views to your existing wishlist/views.py file (after your existing views)
+
+@login_required
+@require_POST
+def create_collection(request):
+    name = request.POST.get('name')
+    description = request.POST.get('description', '')
+    privacy = request.POST.get('privacy', 'private')
+    
+    if name:
+        collection = WishlistCollection.objects.create(
+            user=request.user,
+            name=name,
+            description=description,
+            privacy=privacy
+        )
+        messages.success(request, f'Collection "{name}" created successfully!')
+    else:
+        messages.error(request, 'Collection name is required.')
+    
+    return redirect('wishlist:collections')
+
+@login_required
+@require_POST
+def edit_collection(request, collection_id):
+    collection = get_object_or_404(WishlistCollection, id=collection_id, user=request.user)
+    
+    collection.name = request.POST.get('name', collection.name)
+    collection.description = request.POST.get('description', collection.description)
+    collection.privacy = request.POST.get('privacy', collection.privacy)
+    collection.save()
+    
+    messages.success(request, 'Collection updated successfully!')
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': True})
+    
+    return redirect('wishlist:collection_detail', collection_id=collection.id)
+
+@login_required
+@require_POST
+def delete_collection(request, collection_id):
+    collection = get_object_or_404(WishlistCollection, id=collection_id, user=request.user)
+    collection_name = collection.name
+    collection.delete()
+    
+    messages.success(request, f'Collection "{collection_name}" deleted successfully!')
+    
+    if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
+        return JsonResponse({'success': True})
+    
+    return redirect('wishlist:collections')
+
+@login_required
+def get_available_books(request, collection_id):
+    collection = get_object_or_404(WishlistCollection, id=collection_id, user=request.user)
+    
+    # Get books from wishlist that are not in this collection
+    wishlist_books = WishlistItem.objects.filter(user=request.user).select_related('book')
+    collection_book_ids = collection.books.values_list('id', flat=True)
+    available_books = wishlist_books.exclude(book__id__in=collection_book_ids)
+    
+    books_data = [{
+        'id': item.book.id,
+        'title': item.book.title,
+        'author': ', '.join([author.name for author in item.book.authors.all()])
+    } for item in available_books]
+    
+    return JsonResponse({'books': books_data})
+
+@login_required
+@require_POST
+def add_books_to_collection(request, collection_id):
+    collection = get_object_or_404(WishlistCollection, id=collection_id, user=request.user)
+    
+    data = json.loads(request.body)
+    book_ids = data.get('book_ids', [])
+    
+    added_count = 0
+    for book_id in book_ids:
+        book = get_object_or_404(Book, id=book_id)
+        # Check if user has this book in wishlist
+        if WishlistItem.objects.filter(user=request.user, book=book).exists():
+            WishlistCollectionItem.objects.get_or_create(
+                collection=collection,
+                book=book,
+                defaults={'priority': 1}
+            )
+            added_count += 1
+    
+    return JsonResponse({
+        'success': True,
+        'message': f'{added_count} books added to collection'
+    })
+
+@login_required
+@require_POST
+def update_item_priority(request, item_id):
+    item = get_object_or_404(WishlistCollectionItem, id=item_id, collection__user=request.user)
+    
+    data = json.loads(request.body)
+    priority = data.get('priority', 1)
+    
+    item.priority = max(1, min(5, int(priority)))  # Ensure priority is between 1-5
+    item.save()
+    
+    return JsonResponse({'success': True})
+
+@login_required
+@require_POST
+def update_item_notes(request, item_id):
+    item = get_object_or_404(WishlistCollectionItem, id=item_id, collection__user=request.user)
+    
+    data = json.loads(request.body)
+    notes = data.get('notes', '')
+    
+    item.notes = notes
+    item.save()
+    
+    return JsonResponse({'success': True})
+
+@login_required
+@require_POST
+def remove_from_collection(request, item_id):
+    item = get_object_or_404(WishlistCollectionItem, id=item_id, collection__user=request.user)
+    item.delete()
+    
+    return JsonResponse({'success': True})

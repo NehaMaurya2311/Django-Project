@@ -1,0 +1,124 @@
+{% extends 'wishlist/base_wishlist.html' %}
+{% load static %}
+
+{% block title %}My Wishlist - {{ block.super }}{% endblock %}
+
+{% block wishlist_content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="h2">My Wishlist</h1>
+        <p class="text-muted">Books you want to read</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <a href="{% url 'wishlist:collections' %}" class="btn btn-outline-primary">
+            <i class="fas fa-folder"></i> My Collections
+        </a>
+    </div>
+</div>
+
+{% if items %}
+    <div class="row g-4">
+        {% for item in items %}
+        <div class="col-md-6 col-lg-4 col-xl-3" id="wishlist-item-{{ item.book.id }}">
+            <div class="card h-100 wishlist-item">
+                {% if item.book.discount_percentage %}
+                <span class="wishlist-badge">-{{ item.book.discount_percentage }}%</span>
+                {% endif %}
+                
+                <a href="{% url 'books:book_detail' item.book.slug %}">
+                    {% if item.book.cover_image %}
+                    <img src="{{ item.book.cover_image.url }}" class="card-img-top" alt="{{ item.book.title }}">
+                    {% else %}
+                    <img src="{% static 'images/no-cover.jpg' %}" class="card-img-top" alt="No cover">
+                    {% endif %}
+                </a>
+                
+                <div class="card-body d-flex flex-column">
+                    <h5 class="card-title">
+                        <a href="{% url 'books:book_detail' item.book.slug %}" class="text-decoration-none text-dark">
+                            {{ item.book.title|truncatechars:50 }}
+                        </a>
+                    </h5>
+                    <p class="card-text text-muted small">by {{ item.book.author }}</p>
+                    
+                    <div class="mt-auto">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div>
+                                {% if item.book.sale_price %}
+                                <span class="text-danger fw-bold">${{ item.book.sale_price }}</span>
+                                <span class="text-muted text-decoration-line-through small">${{ item.book.price }}</span>
+                                {% else %}
+                                <span class="fw-bold">${{ item.book.price }}</span>
+                                {% endif %}
+                            </div>
+                            <div class="text-warning small">
+                                {% for i in "12345" %}
+                                    {% if i|add:0 <= item.book.average_rating %}
+                                    <i class="fas fa-star"></i>
+                                    {% else %}
+                                    <i class="far fa-star"></i>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="wishlist-actions">
+                            <form action="{% url 'wishlist:move_to_cart' item.book.id %}" method="post" class="flex-grow-1">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-primary btn-sm w-100">
+                                    <i class="fas fa-shopping-cart"></i> Move to Cart
+                                </button>
+                            </form>
+                            <button onclick="toggleWishlist({{ item.book.id }})" class="btn btn-outline-danger btn-sm">
+                                <i class="fas fa-heart-broken"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-transparent text-muted small">
+                    Added {{ item.added_at|timesince }} ago
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if items.has_other_pages %}
+    <nav aria-label="Wishlist pagination" class="mt-5">
+        <ul class="pagination justify-content-center">
+            {% if items.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ items.previous_page_number }}">Previous</a>
+            </li>
+            {% endif %}
+            
+            {% for num in items.paginator.page_range %}
+                {% if items.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > items.number|add:'-3' and num < items.number|add:'3' %}
+                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+            
+            {% if items.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ items.next_page_number }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    
+{% else %}
+    <div class="empty-wishlist">
+        <img src="{% static 'images/empty-wishlist.svg' %}" alt="Empty wishlist">
+        <h3>Your wishlist is empty</h3>
+        <p class="text-muted">Start adding books you'd like to read!</p>
+        <a href="{% url 'books:home' %}" class="btn btn-primary mt-3">
+            <i class="fas fa-book"></i> Browse Books
+        </a>
+    </div>
+{% endif %}
+{% endblock %}

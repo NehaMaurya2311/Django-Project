@@ -1,0 +1,101 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block extra_css %}
+<style>
+    .wishlist-container {
+        min-height: 60vh;
+    }
+    
+    .wishlist-item {
+        transition: all 0.3s ease;
+        position: relative;
+    }
+    
+    .wishlist-item:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    
+    .wishlist-actions {
+        display: flex;
+        gap: 0.5rem;
+        margin-top: 1rem;
+    }
+    
+    .wishlist-badge {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: #ff4757;
+        color: white;
+        padding: 0.25rem 0.5rem;
+        border-radius: 0.25rem;
+        font-size: 0.75rem;
+    }
+    
+    .empty-wishlist {
+        text-align: center;
+        padding: 3rem;
+    }
+    
+    .empty-wishlist img {
+        max-width: 200px;
+        opacity: 0.5;
+        margin-bottom: 1rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container wishlist-container py-5">
+    {% block wishlist_content %}
+    {% endblock %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    function toggleWishlist(bookId) {
+        fetch(`/wishlist/toggle/${bookId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'X-Requested-With': 'XMLHttpRequest',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Show toast notification
+                showToast(data.message, data.in_wishlist ? 'success' : 'info');
+                
+                // Update UI if needed
+                if (!data.in_wishlist) {
+                    const item = document.querySelector(`#wishlist-item-${bookId}`);
+                    if (item) {
+                        item.style.opacity = '0';
+                        setTimeout(() => item.remove(), 300);
+                    }
+                }
+            }
+        })
+        .catch(error => console.error('Error:', error));
+    }
+    
+    function showToast(message, type = 'info') {
+        // Create toast element
+        const toast = document.createElement('div');
+        toast.className = `alert alert-${type} position-fixed top-0 end-0 m-3`;
+        toast.style.zIndex = '9999';
+        toast.textContent = message;
+        
+        document.body.appendChild(toast);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+</script>
+{% endblock %}

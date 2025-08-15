@@ -6,45 +6,63 @@
 <div class="row mb-4">
     <div class="col-12">
         <h1><i class="fas fa-warehouse"></i> Warehouse Dashboard</h1>
-        <p class="text-muted">Real-time inventory management overview</p>
+        <p class="text-muted">Real-time inventory management and vendor stock offers</p>
     </div>
 </div>
 
 <!-- Key Metrics Cards -->
 <div class="row mb-4">
-    <div class="col-md-3 mb-3">
+    <div class="col-md-2 mb-3">
         <div class="card card-stat h-100 bg-primary text-white">
             <div class="card-body text-center">
                 <i class="fas fa-book fa-2x mb-2"></i>
-                <h2 class="mb-1">{{ total_books }}</h2>
+                <h3 class="mb-1">{{ total_books }}</h3>
                 <p class="mb-0">Total Books</p>
             </div>
         </div>
     </div>
-    <div class="col-md-3 mb-3">
+    <div class="col-md-2 mb-3">
         <div class="card card-stat h-100 bg-success text-white">
             <div class="card-body text-center">
                 <i class="fas fa-boxes fa-2x mb-2"></i>
-                <h2 class="mb-1">{{ total_quantity }}</h2>
+                <h3 class="mb-1">{{ total_quantity }}</h3>
                 <p class="mb-0">Total Stock</p>
             </div>
         </div>
     </div>
-    <div class="col-md-3 mb-3">
+    <div class="col-md-2 mb-3">
         <div class="card card-stat h-100 bg-warning text-white">
             <div class="card-body text-center">
                 <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
-                <h2 class="mb-1">{{ low_stock }}</h2>
-                <p class="mb-0">Low Stock Items</p>
+                <h3 class="mb-1">{{ low_stock }}</h3>
+                <p class="mb-0">Low Stock</p>
             </div>
         </div>
     </div>
-    <div class="col-md-3 mb-3">
+    <div class="col-md-2 mb-3">
         <div class="card card-stat h-100 bg-danger text-white">
             <div class="card-body text-center">
                 <i class="fas fa-times-circle fa-2x mb-2"></i>
-                <h2 class="mb-1">{{ out_of_stock }}</h2>
+                <h3 class="mb-1">{{ out_of_stock }}</h3>
                 <p class="mb-0">Out of Stock</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 mb-3">
+        <div class="card card-stat h-100 bg-info text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-clipboard-list fa-2x mb-2"></i>
+                <h3 class="mb-1">{{ pending_offers }}</h3>
+                <p class="mb-0">Pending Offers</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-2 mb-3">
+        <div class="card card-stat h-100 bg-secondary text-white">
+            <div class="card-body text-center">
+                <i class="fas fa-calendar-day fa-2x mb-2"></i>
+                <h3 class="mb-1">{{ today_offers }}</h3>
+                <p class="mb-0">Today's Offers</p>
             </div>
         </div>
     </div>
@@ -58,11 +76,20 @@
                 <h5><i class="fas fa-bolt"></i> Quick Actions</h5>
             </div>
             <div class="card-body">
+                <a href="{% url 'warehouse:stock_offers_list' %}" class="btn btn-primary me-2 mb-2">
+                    <i class="fas fa-handshake"></i> View Stock Offers
+                    {% if pending_offers > 0 %}
+                        <span class="badge bg-warning text-dark ms-1">{{ pending_offers }}</span>
+                    {% endif %}
+                </a>
                 <a href="{% url 'warehouse:stock_list' %}" class="btn btn-outline-primary me-2 mb-2">
                     <i class="fas fa-list"></i> View All Stock
                 </a>
                 <a href="{% url 'warehouse:low_stock_report' %}" class="btn btn-outline-warning me-2 mb-2">
                     <i class="fas fa-exclamation-triangle"></i> Low Stock Report
+                    {% if low_stock > 0 %}
+                        <span class="badge bg-warning text-dark ms-1">{{ low_stock }}</span>
+                    {% endif %}
                 </a>
                 <a href="/admin/warehouse/stock/" class="btn btn-outline-info me-2 mb-2">
                     <i class="fas fa-cog"></i> Manage Stock (Admin)
@@ -76,32 +103,110 @@
 </div>
 
 <div class="row">
+    <!-- Stock Offers Section -->
+    <div class="col-md-6 mb-4">
+        <div class="card h-100">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5><i class="fas fa-handshake"></i> Recent Stock Offers</h5>
+                <a href="{% url 'warehouse:stock_offers_list' %}" class="btn btn-sm btn-outline-primary">
+                    View All Offers
+                </a>
+            </div>
+            <div class="card-body">
+                {% if recent_offers %}
+                    <div class="list-group list-group-flush">
+                        {% for offer in recent_offers %}
+                        <div class="list-group-item px-0">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="flex-grow-1">
+                                    <div class="d-flex justify-content-between">
+                                        <h6 class="mb-1">
+                                            <a href="{% url 'warehouse:vendor_offers' offer.vendor.id %}" class="text-decoration-none">
+                                                {{ offer.vendor.business_name }}
+                                            </a>
+                                        </h6>
+                                        <small class="text-muted">{{ offer.created_at|timesince }} ago</small>
+                                    </div>
+                                    <p class="mb-1">
+                                        <strong>{{ offer.book.title|truncatechars:40 }}</strong>
+                                        <br>
+                                        <small class="text-muted">
+                                            Qty: {{ offer.quantity }} • Price: ₹{{ offer.unit_price }} • 
+                                            Total: <strong>₹{{ offer.total_amount }}</strong>
+                                        </small>
+                                    </p>
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <span class="badge 
+                                            {% if offer.status == 'pending' %}bg-warning text-dark
+                                            {% elif offer.status == 'approved' %}bg-success
+                                            {% elif offer.status == 'rejected' %}bg-danger
+                                            {% else %}bg-secondary{% endif %}">
+                                            {{ offer.get_status_display }}
+                                        </span>
+                                        
+                                        {% if offer.status == 'pending' %}
+                                            <div class="btn-group" role="group">
+                                                <a href="{% url 'warehouse:offer_detail' offer.id %}" 
+                                                   class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> View
+                                                </a>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    
+                    {% if pending_offers > 8 %}
+                        <div class="text-center mt-3">
+                            <a href="{% url 'warehouse:stock_offers_list' %}?status=pending" class="btn btn-primary">
+                                View {{ pending_offers }} Pending Offers
+                            </a>
+                        </div>
+                    {% endif %}
+                {% else %}
+                    <div class="text-center py-4">
+                        <i class="fas fa-handshake fa-3x text-muted mb-3"></i>
+                        <p class="text-muted">No recent stock offers</p>
+                        <small class="text-muted">Vendor offers will appear here when submitted</small>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
     <!-- Recent Stock Movements -->
-    <div class="col-md-8 mb-4">
+    <div class="col-md-6 mb-4">
         <div class="card h-100">
             <div class="card-header">
                 <h5><i class="fas fa-history"></i> Recent Stock Movements</h5>
             </div>
             <div class="card-body">
                 {% if recent_movements %}
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead class="table-light">
+                    <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                        <table class="table table-hover table-sm">
+                            <thead class="table-light sticky-top">
                                 <tr>
                                     <th>Book</th>
                                     <th>Type</th>
-                                    <th>Quantity</th>
-                                    <th>Reference</th>
+                                    <th>Qty</th>
                                     <th>Date</th>
-                                    <th>User</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {% for movement in recent_movements %}
                                 <tr class="{% if movement.movement_type == 'in' %}movement-in{% elif movement.movement_type == 'out' %}movement-out{% elif movement.movement_type == 'adjustment' %}movement-adjustment{% endif %}">
                                     <td>
-                                        <strong>{{ movement.stock.book.title|truncatechars:30 }}</strong>
-                                        <br><small class="text-muted">{{ movement.stock.book.authors.all|join:", " }}</small>
+                                        <div>
+                                            <strong>{{ movement.stock.book.title|truncatechars:25 }}</strong>
+                                            {% if movement.auto_created_from_delivery %}
+                                                <br><small class="text-success">
+                                                    <i class="fas fa-truck"></i> Vendor Delivery
+                                                </small>
+                                            {% endif %}
+                                        </div>
                                     </td>
                                     <td>
                                         <span class="badge 
@@ -118,9 +223,9 @@
                                             {% if movement.quantity > 0 %}+{% endif %}{{ movement.quantity }}
                                         </strong>
                                     </td>
-                                    <td>{{ movement.reference|default:"-" }}</td>
-                                    <td>{{ movement.created_at|date:"M d, H:i" }}</td>
-                                    <td>{{ movement.performed_by.username|default:"System" }}</td>
+                                    <td>
+                                        <small>{{ movement.created_at|date:"M d, H:i" }}</small>
+                                    </td>
                                 </tr>
                                 {% endfor %}
                             </tbody>
@@ -135,45 +240,85 @@
             </div>
         </div>
     </div>
-    
-    <!-- Category Stats -->
-    <div class="col-md-4 mb-4">
-        <div class="card h-100">
+</div>
+
+<!-- Category Stats -->
+<div class="row">
+    <div class="col-12 mb-4">
+        <div class="card">
             <div class="card-header">
                 <h5><i class="fas fa-chart-pie"></i> Category Stock Overview</h5>
             </div>
             <div class="card-body">
                 {% if category_stats %}
-                    {% for category_stat in category_stats %}
-                    <div class="d-flex justify-content-between align-items-center mb-3 p-2 border rounded">
-                        <div>
-                            <strong>{{ category_stat.category.name }}</strong>
-                            <br>
-                            <small class="text-muted">
-                                {{ category_stat.total_books }} books • 
-                                {{ category_stat.total_quantity }} units
-                            </small>
-                            {% if category_stat.low_stock_books > 0 %}
-                                <br><small class="text-warning">
-                                    <i class="fas fa-exclamation-triangle"></i> 
-                                    {{ category_stat.low_stock_books }} low stock
-                                </small>
-                            {% endif %}
-                            {% if category_stat.out_of_stock_books > 0 %}
-                                <br><small class="text-danger">
-                                    <i class="fas fa-times-circle"></i> 
-                                    {{ category_stat.out_of_stock_books }} out of stock
-                                </small>
-                            {% endif %}
-                        </div>
-                        <div class="text-end">
-                            <div class="progress" style="width: 100px; height: 8px;">
-                                <div class="progress-bar bg-success" 
-                                     style="width: {% widthratio category_stat.total_quantity 1000 100 %}%"></div>
+                    <div class="row">
+                        {% for category_stat in category_stats %}
+                        <div class="col-md-4 col-lg-3 mb-3">
+                            <div class="card border-0 shadow-sm h-100">
+                                <div class="card-body">
+                                    <div class="d-flex justify-content-between align-items-start mb-2">
+                                        <h6 class="card-title mb-0">{{ category_stat.category.name }}</h6>
+                                        <div class="dropdown">
+                                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" 
+                                                    data-bs-toggle="dropdown">
+                                                <i class="fas fa-ellipsis-v"></i>
+                                            </button>
+                                            <ul class="dropdown-menu">
+                                                <li>
+                                                    <a class="dropdown-item" href="{% url 'warehouse:stock_list' %}?category={{ category_stat.category.slug }}">
+                                                        <i class="fas fa-list"></i> View Stock
+                                                    </a>
+                                                </li>
+                                                <li>
+                                                    <a class="dropdown-item" href="{% url 'warehouse:stock_offers_list' %}?category={{ category_stat.category.id }}">
+                                                        <i class="fas fa-handshake"></i> View Offers
+                                                    </a>
+                                                </li>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="row text-center">
+                                        <div class="col-6">
+                                            <div class="text-primary">
+                                                <strong>{{ category_stat.total_books }}</strong>
+                                                <br><small>Books</small>
+                                            </div>
+                                        </div>
+                                        <div class="col-6">
+                                            <div class="text-success">
+                                                <strong>{{ category_stat.total_quantity }}</strong>
+                                                <br><small>Units</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {% if category_stat.low_stock_books > 0 or category_stat.out_of_stock_books > 0 %}
+                                        <hr class="my-2">
+                                        <div class="row text-center">
+                                            {% if category_stat.low_stock_books > 0 %}
+                                                <div class="col-6">
+                                                    <small class="text-warning">
+                                                        <i class="fas fa-exclamation-triangle"></i> 
+                                                        {{ category_stat.low_stock_books }} Low
+                                                    </small>
+                                                </div>
+                                            {% endif %}
+                                            {% if category_stat.out_of_stock_books > 0 %}
+                                                <div class="col-6">
+                                                    <small class="text-danger">
+                                                        <i class="fas fa-times-circle"></i> 
+                                                        {{ category_stat.out_of_stock_books }} Out
+                                                    </small>
+                                                </div>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </div>
                             </div>
                         </div>
+                        {% endfor %}
                     </div>
-                    {% endfor %}
                 {% else %}
                     <div class="text-center py-4">
                         <i class="fas fa-chart-pie fa-3x text-muted mb-3"></i>

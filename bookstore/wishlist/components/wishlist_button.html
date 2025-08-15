@@ -1,0 +1,14 @@
+{% load wishlist_tags %}
+
+{% with in_wishlist=book|is_in_wishlist:user %}
+<button 
+    class="btn btn-sm {% if in_wishlist %}btn-danger{% else %}btn-outline-danger{% endif %} wishlist-btn"
+    onclick="toggleWishlist({{ book.id }})"
+    data-book-id="{{ book.id }}"
+    title="{% if in_wishlist %}Remove from wishlist{% else %}Add to wishlist{% endif %}">
+    <i class="fas fa-heart{% if not in_wishlist %}-o{% endif %}"></i>
+    {% if show_text %}
+        {% if in_wishlist %}In Wishlist{% else %}Add to Wishlist{% endif %}
+    {% endif %}
+</button>
+{% endwith %}

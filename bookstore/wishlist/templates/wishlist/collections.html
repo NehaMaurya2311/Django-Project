@@ -1,0 +1,114 @@
+{% extends 'wishlist/base_wishlist.html' %}
+{% load static %}
+
+{% block title %}My Collections - {{ block.super }}{% endblock %}
+
+{% block wishlist_content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1 class="h2">My Collections</h1>
+        <p class="text-muted">Organize your wishlist into collections</p>
+    </div>
+    <div class="col-md-4 text-md-end">
+        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createCollectionModal">
+            <i class="fas fa-plus"></i> Create Collection
+        </button>
+    </div>
+</div>
+
+{% if collections %}
+    <div class="row g-4">
+        {% for collection in collections %}
+        <div class="col-md-6 col-lg-4">
+            <div class="card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start mb-2">
+                        <h5 class="card-title">
+                            <a href="{% url 'wishlist:collection_detail' collection.id %}" class="text-decoration-none">
+                                {{ collection.name }}
+                            </a>
+                        </h5>
+                        <span class="badge bg-{{ collection.privacy|default:'private' }}">
+                            {{ collection.get_privacy_display }}
+                        </span>
+                    </div>
+                    
+                    {% if collection.description %}
+                    <p class="card-text text-muted">{{ collection.description|truncatechars:100 }}</p>
+                    {% endif %}
+                    
+                    <div class="d-flex justify-content-between align-items-center">
+                        <small class="text-muted">
+                            <i class="fas fa-book"></i> {{ collection.books.count }} books
+                        </small>
+                        <small class="text-muted">
+                            Updated {{ collection.updated_at|timesince }} ago
+                        </small>
+                    </div>
+                </div>
+                
+                <div class="card-footer bg-transparent">
+                    <div class="btn-group w-100" role="group">
+                        <a href="{% url 'wishlist:collection_detail' collection.id %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-eye"></i> View
+                        </a>
+                        <button class="btn btn-sm btn-outline-secondary" onclick="editCollection({{ collection.id }})">
+                            <i class="fas fa-edit"></i> Edit
+                        </button>
+                        <button class="btn btn-sm btn-outline-danger" onclick="deleteCollection({{ collection.id }})">
+                            <i class="fas fa-trash"></i> Delete
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+{% else %}
+    <div class="empty-wishlist">
+        <img src="{% static 'images/empty-collections.svg' %}" alt="No collections">
+        <h3>No collections yet</h3>
+        <p class="text-muted">Create collections to organize your wishlist</p>
+        <button class="btn btn-primary mt-3" data-bs-toggle="modal" data-bs-target="#createCollectionModal">
+            <i class="fas fa-folder-plus"></i> Create Your First Collection
+        </button>
+    </div>
+{% endif %}
+
+<!-- Create Collection Modal -->
+<div class="modal fade" id="createCollectionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Create New Collection</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'wishlist:create_collection' %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="collection-name" class="form-label">Collection Name</label>
+                        <input type="text" class="form-control" id="collection-name" name="name" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="collection-description" class="form-label">Description (optional)</label>
+                        <textarea class="form-control" id="collection-description" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label for="collection-privacy" class="form-label">Privacy</label>
+                        <select class="form-select" id="collection-privacy" name="privacy">
+                            <option value="private">Private</option>
+                            <option value="public">Public</option>
+                            <option value="friends">Friends Only</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Create Collection</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

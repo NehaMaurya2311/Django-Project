@@ -1,0 +1,301 @@
+{% extends 'warehouse/base.html' %}
+
+{% block title %}Stock Offers Management{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-md-8">
+        <h1><i class="fas fa-handshake"></i> Stock Offers Management</h1>
+        <p class="text-muted">Review and manage vendor stock offers</p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'warehouse:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<!-- Filters -->
+<div class="card mb-4">
+    <div class="card-body">
+        <form method="GET" class="row g-3">
+            <div class="col-md-3">
+                <label class="form-label">Status</label>
+                <select name="status" class="form-select">
+                    <option value="">All Status</option>
+                    <option value="pending" {% if current_status == 'pending' %}selected{% endif %}>Pending Review</option>
+                    <option value="approved" {% if current_status == 'approved' %}selected{% endif %}>Approved</option>
+                    <option value="rejected" {% if current_status == 'rejected' %}selected{% endif %}>Rejected</option>
+                    <option value="processed" {% if current_status == 'processed' %}selected{% endif %}>Processed</option>
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Vendor</label>
+                <select name="vendor" class="form-select">
+                    <option value="">All Vendors</option>
+                    {% for vendor in vendors %}
+                        <option value="{{ vendor.id }}" {% if current_vendor == vendor.id|slugify %}selected{% endif %}>
+                            {{ vendor.business_name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Category</label>
+                <select name="category" class="form-select">
+                    <option value="">All Categories</option>
+                    {% for category in categories %}
+                        <option value="{{ category.id }}" {% if current_category == category.id|slugify %}selected{% endif %}>
+                            {{ category.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label">Priority</label>
+                <select name="priority" class="form-select">
+                    <option value="">All Priorities</option>
+                    <option value="high" {% if current_priority == 'high' %}selected{% endif %}>High (Out of Stock)</option>
+                    <option value="medium" {% if current_priority == 'medium' %}selected{% endif %}>Medium (Low Stock)</option>
+                </select>
+            </div>
+            <div class="col-12">
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i> Filter
+                </button>
+                <a href="{% url 'warehouse:stock_offers_list' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-times"></i> Clear Filters
+                </a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Offers List -->
+<div class="card">
+    <div class="card-header">
+        <h5>
+            Stock Offers 
+            {% if offers.paginator.count > 0 %}
+                <span class="badge bg-primary">{{ offers.paginator.count }} total</span>
+            {% endif %}
+        </h5>
+    </div>
+    <div class="card-body">
+        {% if offers %}
+            <div class="table-responsive">
+                <table class="table table-hover">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Vendor</th>
+                            <th>Book Details</th>
+                            <th>Offer Details</th>
+                            <th>Current Stock</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Submitted</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for offer in offers %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'warehouse:vendor_offers' offer.vendor.id %}" 
+                                   class="text-decoration-none">
+                                    <strong>{{ offer.vendor.business_name }}</strong>
+                                </a>
+                                <br>
+                                <small class="text-muted">{{ offer.vendor.contact_person }}</small>
+                            </td>
+                            <td>
+                                <div>
+                                    <strong>{{ offer.book.title|truncatechars:40 }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        {{ offer.book.authors.all|join:", " }}
+                                        <br>
+                                        <span class="badge bg-light text-dark">{{ offer.book.category.name }}</span>
+                                    </small>
+                                </div>
+                            </td>
+                            <td>
+                                <div>
+                                    <strong>Qty: {{ offer.quantity }}</strong>
+                                    <br>
+                                    <small>Price: ₹{{ offer.unit_price }}</small>
+                                    <br>
+                                    <strong class="text-success">Total: ₹{{ offer.total_amount }}</strong>
+                                </div>
+                            </td>
+                            <td class="text-center">
+                                <div class="mb-1">
+                                    <strong class="
+                                        {% if offer.current_stock == 0 %}text-danger
+                                        {% elif offer.current_stock <= offer.reorder_level %}text-warning
+                                        {% else %}text-success{% endif %}">
+                                        {{ offer.current_stock }}
+                                    </strong>
+                                </div>
+                                <small class="text-muted">Reorder: {{ offer.reorder_level }}</small>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ offer.priority_class }}">
+                                    {{ offer.priority_text }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge 
+                                    {% if offer.status == 'pending' %}bg-warning text-dark
+                                    {% elif offer.status == 'approved' %}bg-success
+                                    {% elif offer.status == 'rejected' %}bg-danger
+                                    {% else %}bg-secondary{% endif %}">
+                                    {{ offer.get_status_display }}
+                                </span>
+                                {% if offer.reviewed_at %}
+                                    <br><small class="text-muted">
+                                        by {{ offer.reviewed_by.username }}
+                                    </small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <small>{{ offer.created_at|date:"M d, Y" }}</small>
+                                <br>
+                                <small class="text-muted">{{ offer.created_at|time:"H:i" }}</small>
+                            </td>
+                            <td>
+                                <div class="btn-group-vertical" role="group">
+                                    <a href="{% url 'warehouse:offer_detail' offer.id %}" 
+                                       class="btn btn-sm btn-outline-primary">
+                                        <i class="fas fa-eye"></i> View
+                                    </a>
+                                    {% if offer.status == 'pending' %}
+                                        <button type="button" class="btn btn-sm btn-success" 
+                                                data-bs-toggle="modal" data-bs-target="#approveModal{{ offer.id }}">
+                                            <i class="fas fa-check"></i> Approve
+                                        </button>
+                                        <button type="button" class="btn btn-sm btn-danger" 
+                                                data-bs-toggle="modal" data-bs-target="#rejectModal{{ offer.id }}">
+                                            <i class="fas fa-times"></i> Reject
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            {% if offers.has_other_pages %}
+                <nav aria-label="Page navigation">
+                    <ul class="pagination justify-content-center">
+                        {% if offers.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page=1{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.vendor %}&vendor={{ request.GET.vendor }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.priority %}&priority={{ request.GET.priority }}{% endif %}">First</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ offers.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.vendor %}&vendor={{ request.GET.vendor }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.priority %}&priority={{ request.GET.priority }}{% endif %}">Previous</a>
+                            </li>
+                        {% endif %}
+
+                        <li class="page-item active">
+                            <span class="page-link">{{ offers.number }} of {{ offers.paginator.num_pages }}</span>
+                        </li>
+
+                        {% if offers.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ offers.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.vendor %}&vendor={{ request.GET.vendor }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.priority %}&priority={{ request.GET.priority }}{% endif %}">Next</a>
+                            </li>
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ offers.paginator.num_pages }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}{% if request.GET.vendor %}&vendor={{ request.GET.vendor }}{% endif %}{% if request.GET.category %}&category={{ request.GET.category }}{% endif %}{% if request.GET.priority %}&priority={{ request.GET.priority }}{% endif %}">Last</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+            {% endif %}
+        {% else %}
+            <div class="text-center py-5">
+                <i class="fas fa-handshake fa-4x text-muted mb-3"></i>
+                <h4 class="text-muted">No Stock Offers Found</h4>
+                <p class="text-muted">No offers match your current filters.</p>
+                <a href="{% url 'warehouse:stock_offers_list' %}" class="btn btn-primary">
+                    <i class="fas fa-refresh"></i> View All Offers
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Approve/Reject Modals -->
+{% for offer in offers %}
+    {% if offer.status == 'pending' %}
+        <!-- Approve Modal -->
+        <div class="modal fade" id="approveModal{{ offer.id }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="post" action="{% url 'warehouse:approve_offer' offer.id %}">
+                        {% csrf_token %}
+                        <div class="modal-header">
+                            <h5 class="modal-title">Approve Stock Offer</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p><strong>Vendor:</strong> {{ offer.vendor.business_name }}</p>
+                            <p><strong>Book:</strong> {{ offer.book.title }}</p>
+                            <p><strong>Quantity:</strong> {{ offer.quantity }} units</p>
+                            <p><strong>Total Value:</strong> ₹{{ offer.total_amount }}</p>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Admin Notes (Optional)</label>
+                                <textarea name="admin_notes" class="form-control" rows="3" 
+                                          placeholder="Add any notes about this approval..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-check"></i> Approve Offer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reject Modal -->
+        <div class="modal fade" id="rejectModal{{ offer.id }}" tabindex="-1">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <form method="post" action="{% url 'warehouse:reject_offer' offer.id %}">
+                        {% csrf_token %}
+                        <div class="modal-header">
+                            <h5 class="modal-title">Reject Stock Offer</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p><strong>Vendor:</strong> {{ offer.vendor.business_name }}</p>
+                            <p><strong>Book:</strong> {{ offer.book.title }}</p>
+                            <p><strong>Quantity:</strong> {{ offer.quantity }} units</p>
+                            <p><strong>Total Value:</strong> ₹{{ offer.total_amount }}</p>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Rejection Reason <span class="text-danger">*</span></label>
+                                <textarea name="rejection_reason" class="form-control" rows="3" required
+                                          placeholder="Please provide a clear reason for rejecting this offer..."></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-danger">
+                                <i class="fas fa-times"></i> Reject Offer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+{% endfor %}
+{% endblock %}
