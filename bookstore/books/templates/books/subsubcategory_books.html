@@ -3,7 +3,9 @@
 {% load i18n %}
 
 {% block title %}{{ subsubcategory.name }} - {{ subcategory.name }} - {{ category.name }} | BookStore{% endblock %}
-
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/books.css' %}?v=1.0">
+{% endblock %}
 {% block content %}
 <div class="container-fluid py-4">
     <!-- Breadcrumb -->
@@ -231,53 +233,4 @@
     </div>
 </div>
 
-<style>
-.book-card {
-    transition: transform 0.3s ease, box-shadow 0.3s ease;
-}
 
-.book-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 10px 25px rgba(0,0,0,0.1) !important;
-}
-
-.book-cover {
-    height: 250px;
-    object-fit: cover;
-    transition: transform 0.3s ease;
-}
-
-.book-placeholder {
-    height: 250px;
-    background-color: #f8f9fa;
-}
-
-.book-card:hover .book-cover {
-    transform: scale(1.05);
-}
-
-.book-badges {
-    position: absolute;
-    top: 10px;
-    left: 10px;
-    z-index: 10;
-}
-
-.book-badges .badge {
-    display: block;
-    margin-bottom: 5px;
-    font-size: 0.7rem;
-}
-
-.book-title a:hover {
-    color: #007cba !important;
-}
-
-.filter-title {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 0.5rem;
-}
-</style>
-{% endblock %}

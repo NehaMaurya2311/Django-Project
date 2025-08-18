@@ -1,0 +1,419 @@
+<!-- coupons/templates/coupons/sale_books.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Books On Sale - {{ block.super }}{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Sale Header -->
+    <div class="text-center mb-5">
+        <h1 class="display-4 text-danger">
+            <i class="fas fa-fire me-3"></i>Books On Sale
+        </h1>
+        <p class="lead">Amazing discounts on your favorite books!</p>
+        {% if total_books > 0 %}
+            <div class="badge bg-danger fs-6">{{ total_books }} books on sale</div>
+        {% endif %}
+    </div>
+    
+    <!-- Active Sales Info -->
+    {% if active_sales %}
+        <div class="row mb-4">
+            {% for sale in active_sales %}
+                <div class="col-md-4 mb-3">
+                    <div class="card border-danger">
+                        <div class="card-body text-center">
+                            <h5 class="card-title text-danger">{{ sale.name }}</h5>
+                            {% if sale.description %}
+                                <p class="card-text small">{{ sale.description }}</p>
+                            {% endif %}
+                            <p class="small text-muted">
+                                <i class="fas fa-clock"></i>
+                                Valid until {{ sale.valid_to|date:"M d, Y H:i" }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+    
+    <!-- Books on Sale -->
+    {% if books_on_sale %}
+        <div class="row">
+            {% for item in books_on_sale %}
+                {% with book=item.book sale_item=item.sale_item %}
+                <div class="col-md-3 col-lg-3 mb-4">
+                    <div class="card h-100 book-card sale-card">
+                        <div class="position-relative">
+                            <a href="{% url 'books:book_detail' book.slug %}">
+                                {% if book.get_cover_image_url %}
+                                    <img src="{{ book.get_cover_image_url }}" class="card-img-top" style="height: 250px; object-fit: cover;" alt="{{ book.title }}">
+                                {% else %}
+                                    <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 250px;">
+                                        <i class="fas fa-book fa-3x text-muted"></i>
+                                    </div>
+                                {% endif %}
+                            </a>
+                            
+                            <!-- Sale Badge -->
+                            <div class="position-absolute top-0 start-0 m-2">
+                                <span class="badge bg-danger fs-6 sale-badge">
+                                    {{ item.discount_percentage }}% OFF
+                                </span>
+                            </div>
+                            
+                            <!-- Additional Badges -->
+                            <div class="position-absolute top-0 end-0 m-2">
+                                {% if book.is_bestseller %}
+                                    <span class="badge bg-warning text-dark mb-1 d-block">BESTSELLER</span>
+                                {% endif %}
+                                {% if book.is_featured %}
+                                    <span class="badge bg-info text-dark mb-1 d-block">FEATURED</span>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Quick Actions -->
+                            <div class="position-absolute bottom-0 end-0 m-2 book-actions" style="opacity: 0; transition: opacity 0.3s;">
+                                {% if user.is_authenticated %}
+                                    <button class="btn btn-sm btn-outline-light me-1" onclick="addToCart({{ book.id }})" title="Add to Cart">
+                                        <i class="fas fa-shopping-cart"></i>
+                                    </button>
+                                    <button class="btn btn-sm btn-outline-light" onclick="toggleWishlist({{ book.id }})" title="Add to Wishlist">
+                                        <i class="far fa-heart"></i>
+                                    </button>
+                                {% endif %}
+                            </div>
+                        </div>
+                        
+                        <div class="card-body d-flex flex-column">
+                            <h6 class="card-title">
+                                <a href="{% url 'books:book_detail' book.slug %}" class="text-decoration-none">
+                                    {{ book.title|truncatechars:45 }}
+                                </a>
+                            </h6>
+                            
+                            <p class="text-muted small mb-2">
+                                {% for author in book.authors.all %}
+                                    {{ author.name }}{% if not forloop.last %}, {% endif %}
+                                {% endfor %}
+                            </p>
+                            
+                            <p class="small text-info mb-2">{{ book.category.name }}</p>
+                            
+                            <!-- Rating -->
+                            <div class="mb-2">
+                                {% for i in "12345" %}
+                                    {% if book.average_rating >= forloop.counter %}
+                                        <i class="fas fa-star text-warning"></i>
+                                    {% else %}
+                                        <i class="far fa-star text-muted"></i>
+                                    {% endif %}
+                                {% endfor %}
+                                <small class="text-muted">({{ book.total_reviews }})</small>
+                            </div>
+                            
+                            <!-- Price Section -->
+                            <div class="mt-auto">
+                                <div class="price-section mb-3">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <div>
+                                            <span class="h5 text-success mb-0">₹{{ item.sale_price }}</span>
+                                            <br>
+                                            <small class="text-muted text-decoration-line-through">₹{{ item.original_price }}</small>
+                                        </div>
+                                        <div class="text-end">
+                                            <div class="badge bg-success">
+                                                Save ₹{{ item.original_price|sub:item.sale_price }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Action Buttons -->
+                                <div class="d-grid gap-2">
+                                    {% if user.is_authenticated %}
+                                        <button class="btn btn-danger btn-sm" onclick="addToCart({{ book.id }})">
+                                            <i class="fas fa-shopping-cart me-1"></i>Add to Cart
+                                        </button>
+                                    {% else %}
+                                        <a href="{% url 'account_login' %}" class="btn btn-outline-danger btn-sm">
+                                            <i class="fas fa-sign-in-alt me-1"></i>Login to Buy
+                                        </a>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endwith %}
+            {% endfor %}
+        </div>
+        
+        <!-- Call to Action -->
+        <div class="text-center mt-5">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h4>Don't Miss Out!</h4>
+                    <p class="mb-3">These amazing deals won't last forever. Shop now and save big!</p>
+                    <a href="{% url 'books:all_books' %}" class="btn btn-light btn-lg">
+                        <i class="fas fa-shopping-bag me-2"></i>Browse All Books
+                    </a>
+                </div>
+            </div>
+        </div>
+    {% else %}
+        <!-- No Sales -->
+        <div class="text-center py-5">
+            <i class="fas fa-tag fa-4x text-muted mb-3"></i>
+            <h4>No books on sale right now</h4>
+            <p class="text-muted">Check back later for amazing deals!</p>
+            <a href="{% url 'books:all_books' %}" class="btn btn-primary">
+                <i class="fas fa-book me-2"></i>Browse All Books
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Hidden CSRF Token -->
+{% csrf_token %}
+<div id="csrf-data" data-csrf="{{ csrf_token }}" style="display: none;"></div>
+
+{% endblock %}
+
+{% block extra_css %}
+<style>
+.sale-card {
+    transition: transform 0.3s, box-shadow 0.3s;
+    border: 2px solid transparent;
+}
+
+.sale-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 15px 35px rgba(220, 53, 69, 0.3);
+    border-color: #dc3545;
+}
+
+.sale-card:hover .book-actions {
+    opacity: 1 !important;
+}
+
+.sale-badge {
+    animation: pulse 2s infinite;
+    box-shadow: 0 0 10px rgba(220, 53, 69, 0.5);
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+.price-section {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 10px;
+    border-radius: 8px;
+    border-left: 4px solid #dc3545;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.book-actions button {
+    backdrop-filter: blur(10px);
+    background: rgba(0, 0, 0, 0.5);
+}
+</style>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Global CSRF token function
+function getCSRFToken() {
+    let token = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (token) return token.value;
+    
+    let csrfData = document.getElementById('csrf-data');
+    if (csrfData) return csrfData.dataset.csrf;
+    
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+function addToCart(bookId) {
+    {% if user.is_authenticated %}
+        const button = event.target;
+        const originalText = button.innerHTML;
+        const csrfToken = getCSRFToken();
+        
+        if (!csrfToken) {
+            showAlert('Security token missing. Please refresh the page.', 'danger');
+            return;
+        }
+        
+        // Disable button and show loading
+        button.disabled = true;
+        button.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Adding...';
+        
+        fetch("{% url 'books:add_to_cart' 0 %}".replace('0', bookId), {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                // Update cart total in navbar if it exists
+                const cartTotal = document.querySelector('.cart-total');
+                if (cartTotal) {
+                    cartTotal.textContent = data.cart_total;
+                }
+                
+                // Temporarily change button text
+                button.innerHTML = '<i class="fas fa-check me-1"></i>Added!';
+                button.classList.remove('btn-danger');
+                button.classList.add('btn-success');
+                
+                // Reset button after 2 seconds
+                setTimeout(() => {
+                    button.innerHTML = originalText;
+                    button.classList.remove('btn-success');
+                    button.classList.add('btn-danger');
+                    button.disabled = false;
+                }, 2000);
+            } else {
+                throw new Error(data.error || 'Failed to add to cart');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert(error.message || 'Error adding book to cart. Please try again.', 'danger');
+            
+            // Reset button
+            button.innerHTML = originalText;
+            button.disabled = false;
+        });
+    {% else %}
+        window.location.href = "{% url 'account_login' %}";
+    {% endif %}
+}
+
+function toggleWishlist(bookId) {
+    {% if user.is_authenticated %}
+        const button = event.target;
+        const icon = button.querySelector('i');
+        const csrfToken = getCSRFToken();
+        
+        if (!csrfToken) {
+            showAlert('Security token missing. Please refresh the page.', 'danger');
+            return;
+        }
+        
+        fetch("{% url 'wishlist:toggle' 0 %}".replace('0', bookId), {
+            method: 'POST',
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest',
+                'X-CSRFToken': csrfToken,
+                'Content-Type': 'application/json'
+            },
+            credentials: 'same-origin'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showAlert(data.message, 'success');
+                
+                // Update icon
+                if (data.in_wishlist) {
+                    icon.classList.remove('far');
+                    icon.classList.add('fas');
+                } else {
+                    icon.classList.remove('fas');
+                    icon.classList.add('far');
+                }
+            } else {
+                showAlert('Error updating wishlist', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Error updating wishlist. Please try again.', 'danger');
+        });
+    {% else %}
+        window.location.href = "{% url 'account_login' %}";
+    {% endif %}
+}
+
+function showAlert(message, type) {
+    // Remove any existing alerts first
+    const existingAlerts = document.querySelectorAll('.alert');
+    existingAlerts.forEach(alert => alert.remove());
+    
+    const alertHtml = `
+        <div class="alert alert-${type} alert-dismissible fade show position-fixed" 
+             style="top: 20px; right: 20px; z-index: 9999; min-width: 300px;" role="alert">
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    `;
+    
+    document.body.insertAdjacentHTML('afterbegin', alertHtml);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        const alerts = document.querySelectorAll('.alert');
+        alerts.forEach(alert => {
+            if (alert.classList.contains('fade')) {
+                alert.classList.remove('show');
+                setTimeout(() => alert.remove(), 300);
+            }
+        });
+    }, 5000);
+}
+
+// Set up page initialization
+document.addEventListener('DOMContentLoaded', function() {
+    // Add animation to sale badges
+    const saleBadges = document.querySelectorAll('.sale-badge');
+    saleBadges.forEach((badge, index) => {
+        setTimeout(() => {
+            badge.style.animation = 'pulse 2s infinite';
+        }, index * 200);
+    });
+    
+    // For jQuery compatibility if needed elsewhere
+    if (typeof $ !== 'undefined') {
+        $.ajaxSetup({
+            beforeSend: function(xhr, settings) {
+                if (!this.crossDomain) {
+                    xhr.setRequestHeader("X-CSRFToken", getCSRFToken());
+                }
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

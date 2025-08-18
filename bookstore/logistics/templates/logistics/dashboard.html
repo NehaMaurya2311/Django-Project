@@ -4,200 +4,644 @@
 
 {% block content %}
 <div class="page-header">
-    <h1 class="page-title">Logistics Dashboard</h1>
-    <p class="page-subtitle">Monitor and manage all pickup operations</p>
+    <h1 class="page-title">📦 Logistics Dashboard</h1>
+    <p class="page-subtitle">Monitor vendor deliveries and manage pickup operations</p>
 </div>
 
-<!-- Statistics Cards -->
+<!-- ENHANCED Statistics Cards -->
 <div class="stats-grid">
-    <div class="stat-card">
-        <div class="stat-number" style="color: var(--primary-coral);">
-            {{ scheduled_pickups }}
-        </div>
-        <div class="stat-label">Scheduled Pickups</div>
-    </div>
-    
-    <div class="stat-card">
+    <!-- New Delivery Schedule Stats -->
+    <div class="stat-card delivery-stats">
         <div class="stat-number" style="color: var(--warning);">
-            {{ in_transit_pickups }}
+            {{ pending_assignments }}
         </div>
-        <div class="stat-label">In Transit</div>
+        <div class="stat-label">⏳ Need Partner Assignment</div>
     </div>
     
-    <div class="stat-card">
-        <div class="stat-number" style="color: var(--success);">
-            {{ completed_pickups }}
+    <div class="stat-card delivery-stats">
+        <div class="stat-number" style="color: var(--primary-orange);">
+            {{ assigned_deliveries }}
         </div>
-        <div class="stat-label">Completed Today</div>
+        <div class="stat-label">👤 Partner Assigned</div>
     </div>
     
-    <div class="stat-card">
+    <div class="stat-card delivery-stats">
+        <div class="stat-number" style="color: var(--primary-coral);">
+            {{ active_deliveries }}
+        </div>
+        <div class="stat-label">🚚 In Transit</div>
+    </div>
+    
+    <div class="stat-card delivery-stats">
         <div class="stat-number" style="color: var(--secondary-burgundy);">
-            {{ scheduled_pickups|add:in_transit_pickups }}
+            {{ pending_confirmations }}
         </div>
-        <div class="stat-label">Active Pickups</div>
+        <div class="stat-label">📋 Need Confirmation</div>
     </div>
-</div>
-
-<!-- Quick Actions -->
-<div class="card">
-    <h3 style="color: var(--secondary-burgundy); margin-bottom: 1.5rem;">Quick Actions</h3>
-    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
-        <a href="{% url 'logistics:pickup_list' %}" class="btn btn-primary">
-            📋 View All Pickups
-        </a>
-        <a href="{% url 'logistics:pickup_list' %}?status=scheduled" class="btn btn-secondary">
-            📅 Scheduled Pickups
-        </a>
-        <a href="{% url 'logistics:pickup_list' %}?status=in_transit" class="btn btn-warning">
-            🚚 In Transit
-        </a>
-        <a href="/admin/logistics/logisticspartner/" class="btn btn-success">
-            👥 Manage Partners
-        </a>
-    </div>
-</div>
-
-<!-- Recent Pickups -->
-<div class="card">
-    <h3 style="color: var(--secondary-burgundy); margin-bottom: 1.5rem;">Recent Pickups</h3>
     
-    {% if recent_pickups %}
-        <div style="overflow-x: auto;">
-            <table class="table">
-                <thead>
-                    <tr>
-                        <th>Pickup ID</th>
-                        <th>Vendor</th>
-                        <th>Book Title</th>
-                        <th>Status</th>
-                        <th>Logistics Partner</th>
-                        <th>Scheduled Date</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for pickup in recent_pickups %}
-                    <tr>
-                        <td><strong>#{{ pickup.id }}</strong></td>
-                        <td>{{ pickup.vendor.business_name }}</td>
-                        <td>{{ pickup.stock_offer.book.title|truncatechars:30 }}</td>
-                        <td>
-                            <span class="status-badge status-{{ pickup.status }}">
-                                {% if pickup.status == 'scheduled' %}📅{% endif %}
-                                {% if pickup.status == 'assigned' %}👤{% endif %}
-                                {% if pickup.status == 'in_transit' %}🚚{% endif %}
-                                {% if pickup.status == 'delivered' %}✅{% endif %}
-                                {% if pickup.status == 'failed' %}❌{% endif %}
-                                {% if pickup.status == 'cancelled' %}🚫{% endif %}
-                                {{ pickup.get_status_display }}
-                            </span>
-                        </td>
-                        <td>
-                            {% if pickup.logistics_partner %}
-                                {{ pickup.logistics_partner.name }}
-                            {% else %}
-                                <span style="color: var(--neutral-medium-gray);">Not Assigned</span>
-                            {% endif %}
-                        </td>
-                        <td>{{ pickup.scheduled_date|date:"M d, Y H:i" }}</td>
-                        <td>
-                            <a href="{% url 'logistics:pickup_detail' pickup.id %}" 
-                               class="btn btn-secondary" style="padding: 0.5rem 1rem; font-size: 0.875rem;">
-                                View Details
+    <div class="stat-card delivery-stats">
+        <div class="stat-number" style="color: var(--success);">
+            {{ completed_deliveries }}
+        </div>
+        <div class="stat-label">✅ Completed</div>
+    </div>
+    
+    <div class="stat-card delivery-stats">
+        <div class="stat-number" style="color: var(--info);">
+            {{ active_partners }}
+        </div>
+        <div class="stat-label">👥 Active Partners</div>
+    </div>
+</div>
+
+<!-- Priority Actions Section -->
+{% if pending_assignments > 0 or pending_confirmations > 0 %}
+<div class="card urgent-actions">
+    <h3 style="color: var(--danger); margin-bottom: 1.5rem;">
+        🚨 Priority Actions Required
+    </h3>
+    
+    <div style="display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2rem;">
+        {% if pending_assignments > 0 %}
+            <div class="urgent-alert">
+                <strong>{{ pending_assignments }} deliveries</strong> need logistics partner assignment
+                <a href="{% url 'logistics:delivery_list' %}?status=scheduled" class="btn btn-warning" style="margin-left: 1rem;">
+                    🎯 Assign Partners
+                </a>
+            </div>
+        {% endif %}
+        
+        {% if pending_confirmations > 0 %}
+            <div class="urgent-alert">
+                <strong>{{ pending_confirmations }} deliveries</strong> arrived and need stock confirmation
+                <a href="{% url 'logistics:pending_receipts' %}" class="btn btn-danger" style="margin-left: 1rem;">
+                    📋 Confirm Stock
+                </a>
+            </div>
+        {% endif %}
+    </div>
+</div>
+{% endif %}
+
+<!-- Quick Navigation -->
+<div class="card">
+    <h3 style="color: var(--secondary-burgundy); margin-bottom: 1.5rem;">🚀 Quick Actions</h3>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem;">
+        <a href="{% url 'logistics:delivery_list' %}" class="action-card">
+            <div class="action-icon">📋</div>
+            <div class="action-text">All Deliveries</div>
+            <div class="action-count">{{ pending_assignments|add:assigned_deliveries|add:active_deliveries }}</div>
+        </a>
+        
+        <a href="{% url 'logistics:delivery_list' %}?status=scheduled" class="action-card">
+            <div class="action-icon">⏰</div>
+            <div class="action-text">Need Assignment</div>
+            <div class="action-count">{{ pending_assignments }}</div>
+        </a>
+        
+        <a href="{% url 'logistics:delivery_list' %}?status=in_transit" class="action-card">
+            <div class="action-icon">🚚</div>
+            <div class="action-text">In Transit</div>
+            <div class="action-count">{{ active_deliveries }}</div>
+        </a>
+        
+        <a href="{% url 'logistics:pending_receipts' %}" class="action-card">
+            <div class="action-icon">📦</div>
+            <div class="action-text">Confirm Stock</div>
+            <div class="action-count">{{ pending_confirmations }}</div>
+        </a>
+        
+        <a href="/admin/logistics/logisticspartner/" class="action-card">
+            <div class="action-icon">👥</div>
+            <div class="action-text">Manage Partners</div>
+            <div class="action-count">{{ active_partners }}</div>
+        </a>
+        
+        <a href="{% url 'logistics:pickup_list' %}" class="action-card legacy">
+            <div class="action-icon">📜</div>
+            <div class="action-text">Legacy Pickups</div>
+            <div class="action-count">{{ scheduled_pickups|add:in_transit_pickups }}</div>
+        </a>
+    </div>
+</div>
+
+<!-- Recent Scheduled Deliveries (Need Attention) -->
+{% if recent_scheduled_deliveries %}
+<div class="card">
+    <div class="section-header">
+        <h3 style="color: var(--secondary-burgundy); margin: 0;">
+            🎯 Deliveries Needing Assignment
+        </h3>
+        <a href="{% url 'logistics:delivery_list' %}?status=scheduled" class="view-all-link">
+            View All → 
+        </a>
+    </div>
+    
+    <div style="overflow-x: auto; margin-top: 1.5rem;">
+        <table class="table delivery-table">
+            <thead>
+                <tr>
+                    <th>Delivery ID</th>
+                    <th>Vendor</th>
+                    <th>Book</th>
+                    <th>Scheduled Date</th>
+                    <th>Contact</th>
+                    <th>Value</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for delivery in recent_scheduled_deliveries %}
+                <tr class="delivery-row">
+                    <td>
+                        <strong style="color: var(--primary-coral);">#{{ delivery.id }}</strong>
+                        <div style="font-size: 0.8rem; color: var(--neutral-medium-gray);">
+                            {{ delivery.created_at|timesince }} ago
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 600; color: var(--secondary-burgundy);">
+                            {{ delivery.vendor.business_name }}
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--neutral-medium-gray);">
+                            {{ delivery.vendor.city|default:"Unknown City" }}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 500;">
+                            {{ delivery.stock_offer.book.title|truncatechars:30 }}
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--neutral-medium-gray);">
+                            Qty: {{ delivery.stock_offer.quantity }}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 500; color: var(--primary-orange);">
+                            📅 {{ delivery.scheduled_delivery_date|date:"M d, Y" }}
+                        </div>
+                        <div style="font-size: 0.8rem; color: var(--neutral-medium-gray);">
+                            🕐 {{ delivery.scheduled_delivery_date|time:"H:i" }}
+                        </div>
+                    </td>
+                    <td>
+                        <div>{{ delivery.contact_person }}</div>
+                        <div style="font-size: 0.8rem; color: var(--neutral-medium-gray);">
+                            📞 {{ delivery.contact_phone }}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="font-weight: 600; color: var(--success);">
+                            ₹{{ delivery.stock_offer.total_amount }}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="{% url 'logistics:delivery_detail' delivery.id %}" 
+                               class="btn btn-sm btn-primary">
+                                👁️ View
                             </a>
-                        </td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
-        </div>
-        
-        <div style="text-align: center; margin-top: 1.5rem;">
-            <a href="{% url 'logistics:pickup_list' %}" class="btn btn-primary">
-                View All Pickups →
-            </a>
-        </div>
-    {% else %}
-        <div style="text-align: center; padding: 3rem; color: var(--neutral-medium-gray);">
-            <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
-            <h3>No Recent Pickups</h3>
-            <p>Recent pickup activities will appear here.</p>
-        </div>
-    {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
 </div>
+{% endif %}
 
-<!-- Activity Summary -->
+<!-- Pending Stock Confirmations -->
+{% if pending_receipts %}
 <div class="card">
-    <h3 style="color: var(--secondary-burgundy); margin-bottom: 1.5rem;">Today's Activity</h3>
+    <div class="section-header">
+        <h3 style="color: var(--danger); margin: 0;">
+            📋 Stock Confirmations Needed
+        </h3>
+        <a href="{% url 'logistics:pending_receipts' %}" class="view-all-link">
+            Confirm All →
+        </a>
+    </div>
     
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 2rem;">
-        <div style="text-align: center; padding: 1.5rem; background: var(--primary-cream); border-radius: 10px;">
-            <div style="font-size: 2rem; color: var(--primary-coral); margin-bottom: 0.5rem;">🚚</div>
-            <div style="font-size: 1.25rem; font-weight: bold; color: var(--secondary-burgundy);">
-                {{ in_transit_pickups }}
+    <div style="overflow-x: auto; margin-top: 1.5rem;">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Delivery</th>
+                    <th>Vendor</th>
+                    <th>Book Details</th>
+                    <th>Arrived</th>
+                    <th>Partner</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for delivery in pending_receipts %}
+                <tr class="urgent-row">
+                    <td>
+                        <strong>#{{ delivery.id }}</strong>
+                    </td>
+                    <td>{{ delivery.vendor.business_name }}</td>
+                    <td>
+                        <div>{{ delivery.stock_offer.book.title|truncatechars:25 }}</div>
+                        <div style="font-size: 0.8rem; color: var(--neutral-medium-gray);">
+                            Qty: {{ delivery.stock_offer.quantity }}
+                        </div>
+                    </td>
+                    <td>
+                        <div style="color: var(--success);">
+                            {{ delivery.actual_delivery_time|date:"M d, H:i" }}
+                        </div>
+                    </td>
+                    <td>
+                        {{ delivery.assigned_partner.name|default:"N/A" }}
+                    </td>
+                    <td>
+                        <a href="{% url 'logistics:confirm_receipt' delivery.id %}" 
+                           class="btn btn-sm btn-danger">
+                            ✅ Confirm Stock
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+<!-- System Overview -->
+<div class="row" style="margin-top: 2rem;">
+    <div class="col-md-8">
+        <!-- Today's Activity Summary -->
+        <div class="card">
+            <h3 style="color: var(--secondary-burgundy); margin-bottom: 1.5rem;">📊 Today's Activity</h3>
+            
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 1.5rem;">
+                <div class="activity-stat">
+                    <div class="activity-icon" style="color: var(--primary-coral);">🚚</div>
+                    <div class="activity-number">{{ active_deliveries }}</div>
+                    <div class="activity-label">Active Deliveries</div>
+                </div>
+                
+                <div class="activity-stat">
+                    <div class="activity-icon" style="color: var(--success);">✅</div>
+                    <div class="activity-number">{{ completed_deliveries }}</div>
+                    <div class="activity-label">Completed Today</div>
+                </div>
+                
+                <div class="activity-stat">
+                    <div class="activity-icon" style="color: var(--warning);">⏰</div>
+                    <div class="activity-number">{{ pending_assignments }}</div>
+                    <div class="activity-label">Need Assignment</div>
+                </div>
+                
+                <div class="activity-stat">
+                    <div class="activity-icon" style="color: var(--info);">👥</div>
+                    <div class="activity-number">{{ active_partners }}</div>
+                    <div class="activity-label">Active Partners</div>
+                </div>
             </div>
-            <div style="color: var(--neutral-medium-gray);">Vehicles on Road</div>
         </div>
-        
-        <div style="text-align: center; padding: 1.5rem; background: var(--primary-cream); border-radius: 10px;">
-            <div style="font-size: 2rem; color: var(--success); margin-bottom: 0.5rem;">📍</div>
-            <div style="font-size: 1.25rem; font-weight: bold; color: var(--secondary-burgundy);">
-                {{ completed_pickups }}
+    </div>
+    
+    <div class="col-md-4">
+        <!-- Legacy System Status -->
+        <div class="card legacy-card">
+            <h4 style="color: var(--neutral-dark-gray); margin-bottom: 1rem;">Legacy Pickup System</h4>
+            
+            <div class="legacy-stats">
+                <div class="legacy-stat">
+                    <span class="legacy-number">{{ scheduled_pickups }}</span>
+                    <span class="legacy-label">Scheduled</span>
+                </div>
+                <div class="legacy-stat">
+                    <span class="legacy-number">{{ in_transit_pickups }}</span>
+                    <span class="legacy-label">In Transit</span>
+                </div>
+                <div class="legacy-stat">
+                    <span class="legacy-number">{{ completed_pickups }}</span>
+                    <span class="legacy-label">Completed</span>
+                </div>
             </div>
-            <div style="color: var(--neutral-medium-gray);">Successful Deliveries</div>
-        </div>
-        
-        <div style="text-align: center; padding: 1.5rem; background: var(--primary-cream); border-radius: 10px;">
-            <div style="font-size: 2rem; color: var(--warning); margin-bottom: 0.5rem;">⏰</div>
-            <div style="font-size: 1.25rem; font-weight: bold; color: var(--secondary-burgundy);">
-                {{ scheduled_pickups }}
-            </div>
-            <div style="color: var(--neutral-medium-gray);">Pending Assignments</div>
+            
+            <a href="{% url 'logistics:pickup_list' %}" class="btn btn-secondary btn-sm" style="width: 100%; margin-top: 1rem;">
+                View Legacy Pickups
+            </a>
         </div>
     </div>
 </div>
 
 <style>
-    /* Dashboard-specific styles */
+/* Enhanced Dashboard Styles */
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card.delivery-stats {
+    background: linear-gradient(135deg, var(--neutral-white) 0%, var(--primary-cream) 100%);
+    border: 1px solid var(--primary-light-peach);
+    border-left: 4px solid var(--primary-coral);
+    transition: all 0.3s ease;
+}
+
+.stat-card.delivery-stats:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+}
+
+.urgent-actions {
+    background: linear-gradient(135deg, rgba(255, 107, 107, 0.05) 0%, rgba(255, 255, 255, 0.95) 100%);
+    border-left: 5px solid var(--danger);
+}
+
+.urgent-alert {
+    background: rgba(255, 193, 7, 0.1);
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid var(--warning);
+    flex: 1;
+    min-width: 300px;
+}
+
+.action-card {
+    background: var(--neutral-white);
+    border: 2px solid var(--primary-light-peach);
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-decoration: none;
+    color: var(--neutral-dark-gray);
+    transition: all 0.3s ease;
+    text-align: center;
+    position: relative;
+}
+
+.action-card:hover {
+    border-color: var(--primary-coral);
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+    text-decoration: none;
+    color: var(--neutral-dark-gray);
+}
+
+.action-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.action-text {
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.action-count {
+    background: var(--primary-coral);
+    color: white;
+    border-radius: 20px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.8rem;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.action-card.legacy {
+    border-color: var(--neutral-medium-gray);
+    opacity: 0.7;
+}
+
+.action-card.legacy:hover {
+    border-color: var(--neutral-dark-gray);
+    opacity: 1;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.view-all-link {
+    color: var(--primary-orange);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.view-all-link:hover {
+    color: var(--primary-coral);
+    text-decoration: underline;
+}
+
+.delivery-table .delivery-row:hover {
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.urgent-row {
+    background: rgba(255, 193, 7, 0.1);
+}
+
+.activity-stat {
+    text-align: center;
+    padding: 1rem;
+    background: var(--primary-cream);
+    border-radius: 10px;
+    transition: all 0.3s ease;
+}
+
+.activity-stat:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+
+.activity-icon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.activity-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--secondary-burgundy);
+    margin-bottom: 0.25rem;
+}
+
+.activity-label {
+    color: var(--neutral-medium-gray);
+    font-size: 0.9rem;
+}
+
+.legacy-card {
+    background: var(--neutral-light-gray);
+}
+
+.legacy-stats {
+    display: flex;
+    justify-content: space-between;
+    margin: 1rem 0;
+}
+
+.legacy-stat {
+    text-align: center;
+    flex: 1;
+}
+
+.legacy-number {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--neutral-dark-gray);
+}
+
+.legacy-label {
+    font-size: 0.8rem;
+    color: var(--neutral-medium-gray);
+}
+
+/* Animation for stats */
+.stat-card {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.stat-card:nth-child(2) { animation-delay: 0.1s; }
+.stat-card:nth-child(3) { animation-delay: 0.2s; }
+.stat-card:nth-child(4) { animation-delay: 0.3s; }
+.stat-card:nth-child(5) { animation-delay: 0.4s; }
+.stat-card:nth-child(6) { animation-delay: 0.5s; }
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* Auto-refresh indicator */
+.auto-refresh-indicator {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background: var(--success);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.auto-refresh-indicator.show {
+    opacity: 1;
+}
+
+@media (max-width: 768px) {
     .stats-grid {
-        animation: fadeInUp 0.6s ease-out;
+        grid-template-columns: repeat(2, 1fr);
     }
-
-    .stat-card {
-        background: linear-gradient(135deg, var(--neutral-white) 0%, var(--primary-cream) 100%);
-        border: 1px solid var(--primary-light-peach);
+    
+    .urgent-alert {
+        min-width: 100%;
     }
-
-    @keyframes fadeInUp {
-        from {
-            opacity: 0;
-            transform: translateY(30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateY(0);
-        }
+    
+    .section-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.5rem;
     }
-
-    .card {
-        animation: slideInLeft 0.6s ease-out;
-        animation-fill-mode: both;
-    }
-
-    .card:nth-child(2) { animation-delay: 0.1s; }
-    .card:nth-child(3) { animation-delay: 0.2s; }
-    .card:nth-child(4) { animation-delay: 0.3s; }
-
-    @keyframes slideInLeft {
-        from {
-            opacity: 0;
-            transform: translateX(-30px);
-        }
-        to {
-            opacity: 1;
-            transform: translateX(0);
-        }
-    }
+}
 </style>
+
+<script>
+// Auto-refresh functionality
+let refreshInterval;
+
+function startAutoRefresh() {
+    refreshInterval = setInterval(() => {
+        if (document.visibilityState === 'visible') {
+            // Show refresh indicator
+            const indicator = document.createElement('div');
+            indicator.className = 'auto-refresh-indicator show';
+            indicator.textContent = '🔄 Refreshing...';
+            document.body.appendChild(indicator);
+            
+            setTimeout(() => {
+                window.location.reload();
+            }, 1000);
+        }
+    }, 60000); // Refresh every minute
+}
+
+function stopAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+}
+
+// Start auto-refresh when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    startAutoRefresh();
+    
+    // Animate statistics cards on load
+    const statCards = document.querySelectorAll('.stat-card');
+    statCards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+    });
+    
+    // Add click handlers for urgent actions
+    document.querySelectorAll('.urgent-alert .btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            btn.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                btn.style.transform = 'scale(1)';
+            }, 150);
+        });
+    });
+});
+
+// Pause auto-refresh when page is hidden
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+        stopAutoRefresh();
+    } else {
+        startAutoRefresh();
+    }
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', () => {
+    stopAutoRefresh();
+});
+
+// Add real-time badge updates for urgent items
+function updateUrgentBadges() {
+    fetch('/logistics/api/urgent-counts/')
+        .then(response => response.json())
+        .then(data => {
+            // Update action card counts
+            document.querySelectorAll('.action-count').forEach(badge => {
+                const card = badge.closest('.action-card');
+                const href = card.getAttribute('href');
+                
+                if (href.includes('status=scheduled')) {
+                    badge.textContent = data.pending_assignments || '0';
+                    badge.style.display = data.pending_assignments > 0 ? 'inline-block' : 'none';
+                } else if (href.includes('pending-receipts')) {
+                    badge.textContent = data.pending_confirmations || '0';
+                    badge.style.display = data.pending_confirmations > 0 ? 'inline-block' : 'none';
+                }
+            });
+        })
+        .catch(err => console.log('Badge update failed:', err));
+}
+
+// Update badges every 30 seconds
+setInterval(updateUrgentBadges, 30000);
+</script>
+
 {% endblock %}

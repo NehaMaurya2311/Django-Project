@@ -18,46 +18,115 @@
         padding: 25px;
         text-align: center;
         transition: transform 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .stat-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent);
+        transition: left 0.5s;
+    }
+    .stat-card:hover::before {
+        left: 100%;
     }
     .stat-card:hover {
         transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
     }
     .stat-icon {
         font-size: 2.5rem;
         margin-bottom: 15px;
-        opacity: 0.8;
+        opacity: 0.9;
     }
     .stat-number {
         font-size: 2rem;
         font-weight: 700;
         margin-bottom: 5px;
+        position: relative;
+        z-index: 1;
     }
     .stat-label {
         font-size: 0.9rem;
         opacity: 0.9;
+        position: relative;
+        z-index: 1;
     }
+    
+    /* Status badges */
     .status-badge {
         padding: 6px 12px;
         border-radius: 20px;
         font-size: 0.8rem;
         font-weight: 600;
+        display: inline-block;
     }
-    .status-pending {
-        background: #ffc107;
-        color: #000;
-    }
-    .status-approved {
-        background: #28a745;
+    .status-pending { background: #ffc107; color: #000; }
+    .status-approved { background: #28a745; color: white; }
+    .status-rejected { background: #dc3545; color: white; }
+    .status-processed { background: #17a2b8; color: white; }
+    .status-scheduled { background: #6f42c1; color: white; }
+    .status-confirmed { background: #20c997; color: white; }
+    .status-pickup_assigned { background: #fd7e14; color: white; }
+    .status-collected { background: #6610f2; color: white; }
+    .status-in_transit { background: #007bff; color: white; }
+    .status-arrived { background: #28a745; color: white; }
+    .status-completed { background: #198754; color: white; }
+    
+    /* Priority alerts */
+    .urgent-action-section {
+        background: linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%);
         color: white;
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+        position: relative;
+        overflow: hidden;
     }
-    .status-rejected {
-        background: #dc3545;
-        color: white;
+    .urgent-action-section::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background: repeating-linear-gradient(
+            45deg,
+            transparent,
+            transparent 10px,
+            rgba(255,255,255,0.05) 10px,
+            rgba(255,255,255,0.05) 20px
+        );
+        animation: slide 20s linear infinite;
     }
-    .status-suspended {
-        background: #6c757d;
-        color: white;
+    @keyframes slide {
+        0% { transform: translate(-50%, -50%) rotate(0deg); }
+        100% { transform: translate(-50%, -50%) rotate(360deg); }
     }
+    .urgent-content {
+        position: relative;
+        z-index: 1;
+    }
+    .urgent-title {
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .urgent-title i {
+        animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.1); }
+    }
+    
     .welcome-section {
         background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
         border: 1px solid rgba(102, 126, 234, 0.2);
@@ -66,24 +135,16 @@
         margin-bottom: 30px;
         text-align: center;
     }
-    .welcome-title {
-        color: #667eea;
-        font-size: 2rem;
-        font-weight: 700;
-        margin-bottom: 10px;
-    }
-    .welcome-text {
-        color: #666;
-        font-size: 1.1rem;
-    }
+    
+    /* Action buttons */
     .quick-actions {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
         gap: 15px;
-        margin: 30px 0;
+        margin: 20px 0;
     }
     .action-btn {
-        background: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.9);
         border: 2px solid #667eea;
         border-radius: 12px;
         padding: 15px 20px;
@@ -94,62 +155,107 @@
         display: flex;
         align-items: center;
         justify-content: center;
+        position: relative;
+        overflow: hidden;
+    }
+    .action-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.1), transparent);
+        transition: left 0.5s;
+    }
+    .action-btn:hover::before {
+        left: 100%;
     }
     .action-btn:hover {
         background: #667eea;
         color: white;
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        transform: translateY(-3px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
     }
-    .action-btn i {
-        margin-right: 8px;
-        font-size: 1.2rem;
+    .action-btn.urgent {
+        background: #ff6b6b;
+        border-color: #ee5a24;
+        color: white;
+        animation: glow 2s ease-in-out infinite alternate;
     }
+    @keyframes glow {
+        from { box-shadow: 0 0 10px #ff6b6b; }
+        to { box-shadow: 0 0 20px #ee5a24; }
+    }
+    
+    /* Sections */
     .recent-section {
-        background: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.95);
         border-radius: 15px;
         padding: 25px;
         margin-bottom: 25px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
     }
+    .recent-section:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0,0,0,0.12);
+    }
+    
     .section-header {
         display: flex;
-        justify-content: between;
+        justify-content: space-between;
         align-items: center;
         margin-bottom: 20px;
-        padding-bottom: 10px;
+        padding-bottom: 15px;
         border-bottom: 2px solid rgba(102, 126, 234, 0.1);
     }
+    
     .section-title {
         color: #667eea;
         font-size: 1.4rem;
         font-weight: 700;
         margin: 0;
+        display: flex;
+        align-items: center;
+        gap: 8px;
     }
-    .view-all-link {
-        color: #667eea;
-        text-decoration: none;
-        font-weight: 500;
-        font-size: 0.9rem;
-    }
-    .view-all-link:hover {
-        color: #764ba2;
-    }
-    .offer-item, .ticket-item {
-        background: rgba(255, 255, 255, 0.6);
-        border-radius: 10px;
-        padding: 15px;
-        margin-bottom: 10px;
+    
+    /* Item cards */
+    .offer-item, .delivery-item, .notification-item {
+        background: linear-gradient(135deg, rgba(255, 255, 255, 0.8) 0%, rgba(240, 240, 255, 0.8) 100%);
+        border-radius: 12px;
+        padding: 18px;
+        margin-bottom: 15px;
         border-left: 4px solid #667eea;
         transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
     }
-    .offer-item:hover, .ticket-item:hover {
-        background: rgba(255, 255, 255, 0.9);
-        transform: translateX(5px);
+    .offer-item::before, .delivery-item::before, .notification-item::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(102, 126, 234, 0.05), transparent);
+        transition: left 0.5s;
     }
+    .offer-item:hover::before, .delivery-item:hover::before, .notification-item:hover::before {
+        left: 100%;
+    }
+    .offer-item:hover, .delivery-item:hover, .notification-item:hover {
+        background: rgba(255, 255, 255, 0.95);
+        transform: translateX(8px);
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.15);
+    }
+    
     .item-title {
         font-weight: 600;
         color: #333;
-        margin-bottom: 8px;
+        margin-bottom: 10px;
+        font-size: 1.1rem;
     }
     .item-meta {
         color: #666;
@@ -157,7 +263,18 @@
         display: flex;
         justify-content: space-between;
         align-items: center;
+        flex-wrap: wrap;
+        gap: 10px;
     }
+    .item-details {
+        color: #555;
+        font-size: 0.85rem;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(102, 126, 234, 0.1);
+    }
+    
+    /* Empty states */
     .empty-state {
         text-align: center;
         padding: 40px 20px;
@@ -169,28 +286,45 @@
         color: #667eea;
         opacity: 0.5;
     }
-    .empty-state h5 {
-        color: #666;
-        margin-bottom: 10px;
+    
+    /* Delivery tracking styles */
+    .delivery-status {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
     }
-    .profile-status-alert {
-        background: linear-gradient(135deg, #ffc107 0%, #ff8f00 100%);
-        color: white;
-        border: none;
-        border-radius: 12px;
-        padding: 20px;
-        margin-bottom: 25px;
+    .status-icon {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        display: inline-block;
     }
-    .profile-status-alert h6 {
-        margin-bottom: 10px;
-        font-weight: 700;
+    .status-icon.scheduled { background: #6f42c1; }
+    .status-icon.confirmed { background: #20c997; }
+    .status-icon.pickup_assigned { background: #fd7e14; }
+    .status-icon.collected { background: #6610f2; }
+    .status-icon.in_transit { background: #007bff; }
+    .status-icon.arrived { background: #28a745; }
+    .status-icon.completed { background: #198754; }
+    
+    /* Notification styles */
+    .notification-item.unread {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 235, 59, 0.1) 100%);
+        border-left-color: #ffc107;
     }
+    
+    /* Responsive design */
     @media (max-width: 768px) {
         .dashboard-stats {
             grid-template-columns: repeat(2, 1fr);
         }
         .quick-actions {
             grid-template-columns: 1fr;
+        }
+        .item-meta {
+            flex-direction: column;
+            align-items: flex-start;
         }
     }
 </style>
@@ -199,7 +333,7 @@
 {% block content %}
 <!-- Profile Status Alert -->
 {% if vendor_profile.status != 'approved' %}
-    <div class="alert profile-status-alert">
+    <div class="alert alert-warning profile-status-alert">
         <h6><i class="fas fa-exclamation-triangle me-2"></i>Profile Status: {{ vendor_profile.get_status_display }}</h6>
         {% if vendor_profile.status == 'pending' %}
             <p class="mb-0">Your vendor profile is under review. We'll notify you once it's approved. This usually takes 2-3 business days.</p>
@@ -211,12 +345,43 @@
     </div>
 {% endif %}
 
+<!-- Urgent Actions Section -->
+{% if approved_offers > 0 or active_deliveries > 0 %}
+    <div class="urgent-action-section">
+        <div class="urgent-content">
+            <h3 class="urgent-title">
+                <i class="fas fa-exclamation-triangle"></i>
+                Action Required!
+            </h3>
+            {% if approved_offers > 0 %}
+                <p><strong>{{ approved_offers }} approved offer{{ approved_offers|pluralize }}</strong> need{{ approved_offers|pluralize:"s," }} delivery scheduling.</p>
+            {% endif %}
+            {% if active_deliveries > 0 %}
+                <p><strong>{{ active_deliveries }} delivery{{ active_deliveries|pluralize:"ies,y" }}</strong> {{ active_deliveries|pluralize:"are,is" }} in progress.</p>
+            {% endif %}
+            
+            <div class="quick-actions">
+                {% if approved_offers > 0 %}
+                    <a href="{% url 'vendors:offers_awaiting_delivery' %}" class="action-btn urgent">
+                        <i class="fas fa-truck me-2"></i>Schedule Deliveries
+                    </a>
+                {% endif %}
+                {% if active_deliveries > 0 %}
+                    <a href="{% url 'vendors:delivery_history' %}" class="action-btn urgent">
+                        <i class="fas fa-map-marker-alt me-2"></i>Track Deliveries
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+{% endif %}
+
 <!-- Welcome Section -->
 <div class="welcome-section">
     <h1 class="welcome-title">
         <i class="fas fa-store me-2"></i>Welcome, {{ vendor_profile.business_name }}!
     </h1>
-    <p class="welcome-text">Manage your stock offers, track performance, and grow your business.</p>
+    <p class="welcome-text">Manage your stock offers, track deliveries, and grow your business.</p>
     
     <!-- Quick Actions -->
     <div class="quick-actions">
@@ -228,11 +393,16 @@
         <a href="{% url 'vendors:stock_offers' %}" class="action-btn">
             <i class="fas fa-tags"></i>View All Offers
         </a>
-        <a href="{% url 'vendors:tickets' %}" class="action-btn">
-            <i class="fas fa-headset"></i>Support Center
+        <a href="{% url 'vendors:delivery_history' %}" class="action-btn">
+            <i class="fas fa-shipping-fast"></i>Delivery Status
         </a>
-        <a href="{% url 'accounts:profile' %}" class="action-btn">
-            <i class="fas fa-user-edit"></i>Edit Profile
+        <a href="{% url 'vendors:notifications' %}" class="action-btn{% if unread_notifications > 0 %} urgent{% endif %}">
+            <i class="fas fa-bell"></i>
+            {% if unread_notifications > 0 %}
+                Notifications ({{ unread_notifications }})
+            {% else %}
+                Notifications
+            {% endif %}
         </a>
     </div>
 </div>
@@ -260,25 +430,25 @@
             <i class="fas fa-check-circle"></i>
         </div>
         <div class="stat-number">{{ approved_offers }}</div>
-        <div class="stat-label">Approved Offers</div>
+        <div class="stat-label">Need Delivery Setup</div>
     </div>
     
     <div class="stat-card">
         <div class="stat-icon">
-            <i class="fas fa-headset"></i>
+            <i class="fas fa-truck"></i>
         </div>
-        <div class="stat-number">{{ open_tickets }}</div>
-        <div class="stat-label">Open Tickets</div>
+        <div class="stat-number">{{ active_deliveries }}</div>
+        <div class="stat-label">Active Deliveries</div>
     </div>
 </div>
 
 <div class="row">
-    <div class="col-md-8">
+    <div class="col-lg-8">
         <!-- Recent Offers -->
         <div class="recent-section">
             <div class="section-header">
                 <h3 class="section-title">
-                    <i class="fas fa-tags me-2"></i>Recent Stock Offers
+                    <i class="fas fa-tags"></i>Recent Stock Offers
                 </h3>
                 <a href="{% url 'vendors:stock_offers' %}" class="view-all-link">
                     View All <i class="fas fa-arrow-right ms-1"></i>
@@ -294,11 +464,28 @@
                                 <i class="fas fa-cubes me-1"></i>{{ offer.quantity }} units
                                 <span class="mx-2">•</span>
                                 <i class="fas fa-rupee-sign me-1"></i>{{ offer.unit_price }} each
+                                <span class="mx-2">•</span>
+                                <strong>₹{{ offer.total_amount }}</strong>
                             </span>
                             <span class="status-badge status-{{ offer.status }}">
                                 {{ offer.get_status_display }}
                             </span>
                         </div>
+                        {% if offer.status == 'approved' %}
+                            <div class="item-details">
+                                <i class="fas fa-exclamation-circle text-warning me-1"></i>
+                                <strong>Action Required:</strong> Schedule delivery for this approved offer
+                                <a href="{% url 'vendors:schedule_delivery' offer.id %}" class="btn btn-sm btn-warning ms-2">
+                                    <i class="fas fa-truck me-1"></i>Schedule Now
+                                </a>
+                            </div>
+                        {% elif offer.status == 'processed' and offer.is_delivered %}
+                            <div class="item-details">
+                                <i class="fas fa-check-circle text-success me-1"></i>
+                                Delivered on {{ offer.delivered_at|date:"M d, Y" }} 
+                                ({{ offer.delivered_quantity }}/{{ offer.quantity }} units)
+                            </div>
+                        {% endif %}
                     </div>
                 {% endfor %}
             {% else %}
@@ -314,14 +501,96 @@
                 </div>
             {% endif %}
         </div>
+
+        <!-- Active Deliveries Section -->
+        {% if recent_deliveries %}
+        <div class="recent-section">
+            <div class="section-header">
+                <h3 class="section-title">
+                    <i class="fas fa-shipping-fast"></i>Active Deliveries
+                </h3>
+                <a href="{% url 'vendors:delivery_history' %}" class="view-all-link">
+                    Track All <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+            
+            {% for delivery in recent_deliveries %}
+                <div class="delivery-item">
+                    <div class="item-title">{{ delivery.stock_offer.book.title }}</div>
+                    <div class="item-meta">
+                        <span>
+                            <i class="fas fa-calendar me-1"></i>{{ delivery.scheduled_delivery_date|date:"M d, Y H:i" }}
+                        </span>
+                        <span class="delivery-status">
+                            <span class="status-icon {{ delivery.status }}"></span>
+                            <span class="status-badge status-{{ delivery.status }}">
+                                {{ delivery.get_status_display }}
+                            </span>
+                        </span>
+                    </div>
+                    {% if delivery.assigned_partner %}
+                        <div class="item-details">
+                            <i class="fas fa-truck me-1"></i>
+                            <strong>Partner:</strong> {{ delivery.assigned_partner.name }}
+                            {% if delivery.assigned_partner.phone %}
+                                <span class="mx-2">•</span>
+                                <i class="fas fa-phone me-1"></i>{{ delivery.assigned_partner.phone }}
+                            {% endif %}
+                        </div>
+                    {% endif %}
+                    <div class="mt-2">
+                        <a href="{% url 'vendors:track_delivery' delivery.stock_offer.id %}" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-map-marker-alt me-1"></i>Track Delivery
+                        </a>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+        {% endif %}
     </div>
     
-    <div class="col-md-4">
+    <div class="col-lg-4">
+        <!-- Recent Notifications -->
+        <div class="recent-section">
+            <div class="section-header">
+                <h3 class="section-title">
+                    <i class="fas fa-bell"></i>Recent Updates
+                    {% if unread_notifications > 0 %}
+                        <span class="badge bg-warning text-dark ms-2">{{ unread_notifications }}</span>
+                    {% endif %}
+                </h3>
+                <a href="{% url 'vendors:notifications' %}" class="view-all-link">
+                    View All <i class="fas fa-arrow-right ms-1"></i>
+                </a>
+            </div>
+            
+            {% if recent_notifications %}
+                {% for notification in recent_notifications %}
+                    <div class="notification-item{% if not notification.is_read %} unread{% endif %}">
+                        <div class="item-title">{{ notification.get_status_display }}</div>
+                        <div class="item-meta">
+                            <span>{{ notification.stock_offer.book.title|truncatechars:25 }}</span>
+                            <small class="text-muted">{{ notification.created_at|timesince }} ago</small>
+                        </div>
+                        <div class="item-details">
+                            {{ notification.message|truncatechars:80 }}
+                        </div>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-bell"></i>
+                    <h6>No Notifications</h6>
+                    <p>Updates will appear here.</p>
+                </div>
+            {% endif %}
+        </div>
+
         <!-- Profile Summary -->
         <div class="recent-section">
             <div class="section-header">
                 <h3 class="section-title">
-                    <i class="fas fa-user-circle me-2"></i>Profile Summary
+                    <i class="fas fa-user-circle"></i>Profile Summary
                 </h3>
             </div>
             
@@ -343,64 +612,43 @@
             </div>
             
             <div class="mb-3">
-                <strong>Member Since:</strong><br>
-                <span class="text-muted">{{ vendor_profile.created_at|date:"F Y" }}</span>
-            </div>
-            
-            {% if vendor_profile.rating > 0 %}
-                <div class="mb-3">
-                    <strong>Rating:</strong><br>
-                    <span class="text-warning">
-                        {% for i in "12345" %}
-                            {% if forloop.counter <= vendor_profile.rating %}
-                                <i class="fas fa-star"></i>
-                            {% else %}
-                                <i class="far fa-star"></i>
-                            {% endif %}
-                        {% endfor %}
-                        ({{ vendor_profile.rating }}/5)
-                    </span>
+                <strong>Performance:</strong><br>
+                <div class="row text-center">
+                    <div class="col-4">
+                        <div class="text-primary font-weight-bold">{{ processed_offers }}</div>
+                        <small class="text-muted">Completed</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-success font-weight-bold">{{ completed_deliveries }}</div>
+                        <small class="text-muted">Delivered</small>
+                    </div>
+                    <div class="col-4">
+                        <div class="text-warning font-weight-bold">{{ vendor_profile.rating }}/5</div>
+                        <small class="text-muted">Rating</small>
+                    </div>
                 </div>
-            {% endif %}
+            </div>
         </div>
-        
-        <!-- Support Tickets -->
+
+        <!-- Quick Support -->
         <div class="recent-section">
             <div class="section-header">
                 <h3 class="section-title">
-                    <i class="fas fa-headset me-2"></i>Recent Tickets
+                    <i class="fas fa-headset"></i>Need Help?
                 </h3>
-                <a href="{% url 'vendors:tickets' %}" class="view-all-link">
-                    View All <i class="fas fa-arrow-right ms-1"></i>
-                </a>
             </div>
             
-            {% if vendor_profile.tickets.all %}
-                {% for ticket in vendor_profile.tickets.all|slice:":3" %}
-                    <div class="ticket-item">
-                        <div class="item-title">
-                            <a href="{% url 'vendors:ticket_detail' ticket.ticket_id %}" class="text-decoration-none">
-                                #{{ ticket.ticket_id }}
-                            </a>
-                        </div>
-                        <div class="item-meta">
-                            <span>{{ ticket.subject|truncatechars:30 }}</span>
-                            <span class="status-badge status-{{ ticket.status }}">
-                                {{ ticket.get_status_display }}
-                            </span>
-                        </div>
-                    </div>
-                {% endfor %}
-            {% else %}
-                <div class="empty-state">
-                    <i class="fas fa-headset"></i>
-                    <h6>No Support Tickets</h6>
-                    <p>Need help? Create a support ticket.</p>
-                    <a href="{% url 'vendors:create_ticket' %}" class="btn btn-outline-primary btn-sm">
-                        <i class="fas fa-plus me-1"></i>New Ticket
-                    </a>
-                </div>
-            {% endif %}
+            <div class="d-grid gap-2">
+                <a href="{% url 'vendors:create_ticket' %}" class="btn btn-outline-primary">
+                    <i class="fas fa-plus me-2"></i>Create Support Ticket
+                </a>
+                <a href="{% url 'vendors:tickets' %}" class="btn btn-outline-secondary">
+                    <i class="fas fa-list me-2"></i>View My Tickets
+                    {% if open_tickets > 0 %}
+                        <span class="badge bg-warning ms-2">{{ open_tickets }}</span>
+                    {% endif %}
+                </a>
+            </div>
         </div>
     </div>
 </div>
@@ -409,42 +657,114 @@
 {% block extra_js %}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Animate stats cards
+    // Animate stats cards with staggered effect
     const statCards = document.querySelectorAll('.stat-card');
     statCards.forEach((card, index) => {
         card.style.opacity = '0';
         card.style.transform = 'translateY(30px)';
         
         setTimeout(() => {
-            card.style.transition = 'all 0.6s ease';
+            card.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
             card.style.opacity = '1';
             card.style.transform = 'translateY(0)';
-        }, index * 100);
+        }, index * 150);
     });
 
-    // Animate recent sections
+    // Animate sections with different directions
     const sections = document.querySelectorAll('.recent-section');
     sections.forEach((section, index) => {
         section.style.opacity = '0';
-        section.style.transform = 'translateX(20px)';
+        section.style.transform = index % 2 === 0 ? 'translateX(-20px)' : 'translateX(20px)';
         
         setTimeout(() => {
-            section.style.transition = 'all 0.5s ease';
+            section.style.transition = 'all 0.5s cubic-bezier(0.4, 0, 0.2, 1)';
             section.style.opacity = '1';
             section.style.transform = 'translateX(0)';
         }, (index + 1) * 200);
     });
 
-    // Welcome section animation
+    // Welcome section entrance
     const welcomeSection = document.querySelector('.welcome-section');
-    welcomeSection.style.opacity = '0';
-    welcomeSection.style.transform = 'translateY(-20px)';
-    
-    setTimeout(() => {
-        welcomeSection.style.transition = 'all 0.8s ease';
-        welcomeSection.style.opacity = '1';
-        welcomeSection.style.transform = 'translateY(0)';
-    }, 100);
+    if (welcomeSection) {
+        welcomeSection.style.opacity = '0';
+        welcomeSection.style.transform = 'scale(0.95)';
+        
+        setTimeout(() => {
+            welcomeSection.style.transition = 'all 0.8s cubic-bezier(0.4, 0, 0.2, 1)';
+            welcomeSection.style.opacity = '1';
+            welcomeSection.style.transform = 'scale(1)';
+        }, 100);
+    }
+
+    // Urgent section animation
+    const urgentSection = document.querySelector('.urgent-action-section');
+    if (urgentSection) {
+        urgentSection.style.opacity = '0';
+        urgentSection.style.transform = 'translateY(-20px)';
+        
+        setTimeout(() => {
+            urgentSection.style.transition = 'all 0.6s ease';
+            urgentSection.style.opacity = '1';
+            urgentSection.style.transform = 'translateY(0)';
+        }, 50);
+    }
+
+    // Auto-refresh notification badge every 30 seconds
+    let notificationCheck = setInterval(() => {
+        fetch('/vendors/notifications/count/')
+            .then(response => response.json())
+            .then(data => {
+                const badge = document.querySelector('.action-btn .badge, .section-title .badge');
+                if (badge && data.count > 0) {
+                    badge.textContent = data.count;
+                    badge.style.display = 'inline-block';
+                } else if (badge && data.count === 0) {
+                    badge.style.display = 'none';
+                }
+            })
+            .catch(err => console.log('Notification check failed:', err));
+    }, 30000);
+
+    // Cleanup on page unload
+    window.addEventListener('beforeunload', () => {
+        clearInterval(notificationCheck);
+    });
+
+    // Add smooth scrolling to urgent action buttons
+    document.querySelectorAll('.urgent-action-section .action-btn').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            this.style.transform = 'scale(0.95)';
+            setTimeout(() => {
+                this.style.transform = 'scale(1)';
+            }, 150);
+        });
+    });
+
+    // Interactive hover effects for delivery items
+    document.querySelectorAll('.delivery-item').forEach(item => {
+        item.addEventListener('mouseenter', function() {
+            const statusIcon = this.querySelector('.status-icon');
+            if (statusIcon) {
+                statusIcon.style.transform = 'scale(1.3)';
+                statusIcon.style.transition = 'transform 0.3s ease';
+            }
+        });
+        
+        item.addEventListener('mouseleave', function() {
+            const statusIcon = this.querySelector('.status-icon');
+            if (statusIcon) {
+                statusIcon.style.transform = 'scale(1)';
+            }
+        });
+    });
+
+    // Notification sound for urgent actions (optional)
+    const urgentBtns = document.querySelectorAll('.action-btn.urgent');
+    if (urgentBtns.length > 0 && !sessionStorage.getItem('urgentNotified')) {
+        // Play a subtle notification sound or show a toast
+        console.log(`You have ${urgentBtns.length} urgent action(s) requiring attention`);
+        sessionStorage.setItem('urgentNotified', 'true');
+    }
 });
 </script>
 {% endblock %}

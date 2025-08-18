@@ -3,7 +3,8 @@ from django.db import models
 from django.contrib.auth import get_user_model
 from django.urls import reverse
 from django.core.validators import MinValueValidator, MaxValueValidator
-
+from django.utils.text import slugify
+import uuid
 User = get_user_model()
 
 class Category(models.Model):
@@ -162,6 +163,9 @@ class Book(models.Model):
             models.Index(fields=['is_on_sale', 'status']),
             models.Index(fields=['google_books_id']),
         ]
+
+    class Media:
+        js = ('static/admin/js/book_admin.js',)
     
     def __str__(self):
         return self.title
@@ -191,6 +195,21 @@ class Book(models.Model):
                 })
     
     def save(self, *args, **kwargs):
+        # Auto-generate slug if it's empty
+        if not self.slug:
+            base_slug = slugify(self.title)
+            if not base_slug:  # In case title has no valid characters for slug
+                base_slug = f"book-{uuid.uuid4().hex[:8]}"
+            
+            # Ensure slug is unique
+            slug = base_slug
+            counter = 1
+            while Book.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            
+            self.slug = slug
+        
         self.full_clean()
         super().save(*args, **kwargs)
     
@@ -265,8 +284,92 @@ class Book(models.Model):
                 return f"In Stock ({stock.available_quantity} available)"
         except:
             return "No Stock Record"
-
-
+        
+    @property
+    def current_sale(self):
+        """Get the current active sale for this book"""
+        from coupons.models import BookSale, BookSaleItem
+        from django.utils import timezone
+        
+        current_time = timezone.now()
+        
+        try:
+            sale_item = BookSaleItem.objects.select_related('sale').get(
+                book=self,
+                sale__is_active=True,
+                sale__valid_from__lte=current_time,
+                sale__valid_to__gte=current_time
+            )
+            return sale_item
+        except BookSaleItem.DoesNotExist:
+            return None
+    
+    @property
+    def is_on_sale_now(self):
+        """Check if book is currently on sale"""
+        return self.current_sale is not None
+    
+    @property
+    def sale_price(self):
+        """Get current sale price if on sale, otherwise original price"""
+        current_sale = self.current_sale
+        if current_sale:
+            return current_sale.get_sale_price()
+        return self.price
+    
+    @property
+    def sale_discount_percentage(self):
+        """Get sale discount percentage"""
+        current_sale = self.current_sale
+        if current_sale:
+            return current_sale.get_discount_percentage()
+        return 0
+    
+    @property
+    def effective_price(self):
+        """Get the effective price (sale price if on sale, otherwise original)"""
+        return self.sale_price
+    
+    @property
+    def has_available_coupons(self):
+        """Check if there are any active coupons applicable to this book"""
+        from coupons.models import Coupon
+        from django.utils import timezone
+        
+        current_time = timezone.now()
+        
+        # Check for coupons that apply to this book specifically
+        specific_coupons = Coupon.objects.filter(
+            applicable_books=self,
+            is_active=True,
+            valid_from__lte=current_time,
+            valid_to__gte=current_time
+        )
+        
+        if specific_coupons.exists():
+            return True
+        
+        # Check for coupons that apply to this book's category
+        category_coupons = Coupon.objects.filter(
+            applicable_categories=self.category,
+            is_active=True,
+            valid_from__lte=current_time,
+            valid_to__gte=current_time
+        )
+        
+        if category_coupons.exists():
+            return True
+        
+        # Check for general coupons (no specific restrictions)
+        general_coupons = Coupon.objects.filter(
+            is_active=True,
+            valid_from__lte=current_time,
+            valid_to__gte=current_time,
+            applicable_books__isnull=True,
+            applicable_categories__isnull=True
+        )
+        
+        return general_coupons.exists()
 
 class Cart(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
@@ -281,8 +384,56 @@ class Cart(models.Model):
         return sum(item.quantity for item in self.items.all())
     
     @property
-    def total_price(self):
+    def subtotal(self):
+        """Subtotal with sales discounts applied"""
         return sum(item.total_price for item in self.items.all())
+    
+    @property
+    def original_subtotal(self):
+        """Subtotal without any discounts"""
+        return sum(item.original_total_price for item in self.items.all())
+    
+    @property
+    def total_savings_from_sales(self):
+        """Total savings from sales discounts"""
+        return self.original_subtotal - self.subtotal
+    
+    @property
+    def total_price(self):
+        """Final total price (after sales, before coupon)"""
+        return self.subtotal
+    
+    def apply_coupon(self, coupon):
+        """Calculate total after applying coupon"""
+        coupon_discount = coupon.calculate_discount(self.items.all())
+        return self.subtotal - coupon_discount
+    
+    def get_applicable_coupons(self, user):
+        """Get all coupons that can be applied to this cart"""
+        from coupons.models import Coupon
+        from django.utils import timezone
+        
+        current_time = timezone.now()
+        
+        # Get all active coupons
+        all_coupons = Coupon.objects.filter(
+            is_active=True,
+            valid_from__lte=current_time,
+            valid_to__gte=current_time
+        ).exclude(excluded_users=user)
+        
+        applicable_coupons = []
+        
+        for coupon in all_coupons:
+            can_use, message = coupon.can_use(user, self.subtotal, self.items.all())
+            applicable_coupons.append({
+                'coupon': coupon,
+                'can_use': can_use,
+                'message': message,
+                'discount_amount': coupon.calculate_discount(self.items.all()) if can_use else 0
+            })
+        
+        return applicable_coupons
 
 class CartItem(models.Model):
     cart = models.ForeignKey(Cart, on_delete=models.CASCADE, related_name='items')
@@ -296,6 +447,25 @@ class CartItem(models.Model):
     def __str__(self):
         return f"{self.quantity} x {self.book.title}"
     
+    def get_effective_price(self):
+        """Get effective price per item (includes sales discount)"""
+        return self.book.effective_price
+    
+    def get_original_price(self):
+        """Get original price per item"""
+        return self.book.price
+    
     @property
     def total_price(self):
-        return self.book.price * self.quantity
+        """Total price using effective price (includes sales discount)"""
+        return self.get_effective_price() * self.quantity
+    
+    @property
+    def original_total_price(self):
+        """Total price using original price (before any discounts)"""
+        return self.get_original_price() * self.quantity
+    
+    @property
+    def total_savings(self):
+        """Total savings from sales discount"""
+        return self.original_total_price - self.total_price

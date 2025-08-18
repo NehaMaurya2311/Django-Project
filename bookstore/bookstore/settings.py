@@ -52,6 +52,7 @@ INSTALLED_APPS = [
     'paypal_integration',
     'support',
     'admin_dashboard',
+    'mathfilters'
 ]
 
 MIDDLEWARE = [

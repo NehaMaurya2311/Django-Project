@@ -163,12 +163,14 @@ class SubCategoryAdmin(admin.ModelAdmin):
     book_count.short_description = 'Books'
     
     def subsubcategory_count(self, obj):
-        """Display number of sub-subcategories"""
-        count = obj.subsubcategories.count()
-        if count > 0:
-            url = reverse('admin:books_subsubcategory_changelist') + f'?subcategory__id__exact={obj.id}'
-            return format_html('<a href="{}">{} sub-subcategories</a>', url, count)
-        return '0 sub-subcategories'
+        """Show sub-subcategory count"""
+        if obj.pk:
+            count = obj.subsubcategories.count()
+            if count > 0:
+                url = reverse('admin:books_subsubcategory_changelist') + f'?subcategory__id__exact={obj.id}'
+                return format_html('<a href="{}" target="_blank">{} sub-subcategories</a>', url, count)
+            return '0 sub-subcategories'
+        return '—'
     subsubcategory_count.short_description = 'Sub-subcategories'
 
 @admin.register(SubSubCategory)
@@ -225,53 +227,48 @@ class BookAdminForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         
-        # If editing an existing book, filter subcategories and sub-subcategories
-        if self.instance and self.instance.pk:
-            if self.instance.category:
-                self.fields['subcategory'].queryset = SubCategory.objects.filter(
-                    category=self.instance.category,
-                    is_active=True
-                )
-                
-                if self.instance.subcategory:
-                    self.fields['subsubcategory'].queryset = SubSubCategory.objects.filter(
-                        subcategory=self.instance.subcategory,
-                        is_active=True
-                    )
-                else:
-                    self.fields['subsubcategory'].queryset = SubSubCategory.objects.none()
-            else:
-                self.fields['subcategory'].queryset = SubCategory.objects.none()
-                self.fields['subsubcategory'].queryset = SubSubCategory.objects.none()
-        else:
-            # For new books, show no subcategories initially
-            self.fields['subcategory'].queryset = SubCategory.objects.none()
-            self.fields['subsubcategory'].queryset = SubSubCategory.objects.none()
+        # Determine the initial category, subcategory, and sub-subcategory.
+        # This covers both initial load of an existing object and form re-rendering after a validation error.
+        instance_category = self.instance.category if self.instance else None
+        instance_subcategory = self.instance.subcategory if self.instance else None
         
-        # Add help text
-        self.fields['subcategory'].help_text = 'Select a category first'
-        self.fields['subsubcategory'].help_text = 'Select a subcategory first'
-        
-        # Make fields dependent on selections
+        # Override with form data if available (e.g., after a validation error)
         if 'category' in self.data:
             try:
                 category_id = int(self.data.get('category'))
-                self.fields['subcategory'].queryset = SubCategory.objects.filter(
-                    category_id=category_id,
-                    is_active=True
-                ).order_by('name')
-            except (ValueError, TypeError):
-                pass
+                instance_category = Category.objects.get(pk=category_id)
+            except (ValueError, TypeError, Category.DoesNotExist):
+                instance_category = None
         
         if 'subcategory' in self.data:
             try:
                 subcategory_id = int(self.data.get('subcategory'))
-                self.fields['subsubcategory'].queryset = SubSubCategory.objects.filter(
-                    subcategory_id=subcategory_id,
-                    is_active=True
-                ).order_by('name')
-            except (ValueError, TypeError):
-                pass
+                instance_subcategory = SubCategory.objects.get(pk=subcategory_id)
+            except (ValueError, TypeError, SubCategory.DoesNotExist):
+                instance_subcategory = None
+        
+        # Filter the subcategory queryset based on the determined category
+        if instance_category:
+            self.fields['subcategory'].queryset = SubCategory.objects.filter(
+                category=instance_category,
+                is_active=True
+            ).order_by('name')
+        else:
+            self.fields['subcategory'].queryset = SubCategory.objects.none()
+            
+        # Filter the sub-subcategory queryset based on the determined subcategory
+        if instance_subcategory:
+            self.fields['subsubcategory'].queryset = SubSubCategory.objects.filter(
+                subcategory=instance_subcategory,
+                is_active=True
+            ).order_by('name')
+        else:
+            self.fields['subsubcategory'].queryset = SubSubCategory.objects.none()
+            
+        # Set help text as the JS will handle the dynamic loading
+        self.fields['subcategory'].help_text = 'Select a category first'
+        self.fields['subsubcategory'].help_text = 'Select a subcategory first'
+
 
 @admin.register(Author)
 class AuthorAdmin(admin.ModelAdmin):
@@ -505,6 +502,28 @@ class BookAdmin(admin.ModelAdmin):
         except:
             return format_html('<span style="color: red;">NO STOCK RECORD</span>')
     
+    def get_list_display(self, request):
+        list_display = list(super().get_list_display(request))
+        # Add sale status to the list display
+        if 'sale_status' not in list_display:
+            list_display.insert(-1, 'sale_status')  # Insert before the last item
+        return list_display
+    
+    def sale_status(self, obj):
+        if obj.is_on_sale_now:
+            return format_html(
+                '<span style="color: red; font-weight: bold;">ON SALE ({}% OFF)</span>',
+                obj.sale_discount_percentage
+            )
+        return format_html('<span style="color: gray;">No Sale</span>')
+    sale_status.short_description = 'Sale Status'
+    
+    def get_readonly_fields(self, request, obj=None):
+        readonly_fields = list(super().get_readonly_fields(request, obj))
+        readonly_fields.extend(['sale_status'])
+        return readonly_fields
+
+
     warehouse_status_display.short_description = 'Warehouse Status'
     warehouse_status_display.admin_order_field = 'stock__quantity'
 

@@ -1,0 +1,1481 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Delivery #{{ delivery.id }} - Logistics Management{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="header-main">
+        <div class="header-left">
+            <h1 class="page-title">📦 Delivery #{{ delivery.id }}</h1>
+            <div class="delivery-status-badge status-{{ delivery.status }}">
+                <span class="status-icon">{{ delivery.get_status_display|slice:":1" }}</span>
+                {{ delivery.get_status_display }}
+            </div>
+        </div>
+        <div class="header-actions">
+            <a href="{% url 'logistics:delivery_list' %}" class="btn btn-secondary">
+                ← Back to Deliveries
+            </a>
+            {% if delivery.status == 'arrived' %}
+                <a href="{% url 'logistics:confirm_receipt' delivery.id %}" class="btn btn-danger">
+                    ✅ Confirm Stock Receipt
+                </a>
+            {% endif %}
+        </div>
+    </div>
+    <div class="delivery-meta">
+        <span>📅 Created {{ delivery.created_at|timesince }} ago</span>
+        <span>🏢 {{ delivery.vendor.business_name }}</span>
+        <span>📚 {{ delivery.stock_offer.book.title|truncatechars:40 }}</span>
+    </div>
+</div>
+
+<!-- Status Progress Bar -->
+<div class="card progress-card">
+    <div class="status-timeline">
+        <div class="timeline-step {% if delivery.status != 'scheduled' %}completed{% else %}active{% endif %}">
+            <div class="step-icon">📋</div>
+            <div class="step-label">Scheduled</div>
+            <div class="step-time">{{ delivery.created_at|date:"M d, H:i" }}</div>
+        </div>
+        
+        <div class="timeline-step {% if delivery.status in 'confirmed,pickup_assigned,collected,in_transit,arrived,verified,completed' %}completed{% elif delivery.status == 'confirmed' %}active{% endif %}">
+            <div class="step-icon">✅</div>
+            <div class="step-label">Confirmed</div>
+            <div class="step-time">
+                {% if delivery.confirmed_at %}{{ delivery.confirmed_at|date:"M d, H:i" }}{% else %}-{% endif %}
+            </div>
+        </div>
+        
+        <div class="timeline-step {% if delivery.status in 'pickup_assigned,collected,in_transit,arrived,verified,completed' %}completed{% elif delivery.status == 'pickup_assigned' %}active{% endif %}">
+            <div class="step-icon">👤</div>
+            <div class="step-label">Partner Assigned</div>
+            <div class="step-time">
+                {% if delivery.assigned_partner %}-{% else %}-{% endif %}
+            </div>
+        </div>
+        
+        <div class="timeline-step {% if delivery.status in 'collected,in_transit,arrived,verified,completed' %}completed{% elif delivery.status == 'collected' %}active{% endif %}">
+            <div class="step-icon">📦</div>
+            <div class="step-label">Collected</div>
+            <div class="step-time">
+                {% if delivery.actual_pickup_time %}{{ delivery.actual_pickup_time|date:"M d, H:i" }}{% else %}-{% endif %}
+            </div>
+        </div>
+        
+        <div class="timeline-step {% if delivery.status in 'in_transit,arrived,verified,completed' %}completed{% elif delivery.status == 'in_transit' %}active{% endif %}">
+            <div class="step-icon">🚚</div>
+            <div class="step-label">In Transit</div>
+            <div class="step-time">-</div>
+        </div>
+        
+        <div class="timeline-step {% if delivery.status in 'arrived,verified,completed' %}completed{% elif delivery.status == 'arrived' %}active{% endif %}">
+            <div class="step-icon">🏢</div>
+            <div class="step-label">Arrived</div>
+            <div class="step-time">
+                {% if delivery.actual_delivery_time %}{{ delivery.actual_delivery_time|date:"M d, H:i" }}{% else %}-{% endif %}
+            </div>
+        </div>
+        
+        <div class="timeline-step {% if delivery.status in 'verified,completed' %}completed{% elif delivery.status == 'verified' %}active{% endif %}">
+            <div class="step-icon">🔍</div>
+            <div class="step-label">Verified</div>
+            <div class="step-time">
+                {% if delivery.status in 'verified,completed' %}-{% else %}-{% endif %}
+            </div>
+        </div>
+        
+        <div class="timeline-step {% if delivery.status == 'completed' %}completed{% endif %}">
+            <div class="step-icon">✨</div>
+            <div class="step-label">Completed</div>
+            <div class="step-time">
+                {% if delivery.completed_at %}{{ delivery.completed_at|date:"M d, H:i" }}{% else %}-{% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Main Delivery Information -->
+    <div class="col-md-8">
+        <!-- Delivery Details Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>📋 Delivery Information</h3>
+            </div>
+            <div class="card-body">
+                <div class="info-grid">
+                    <div class="info-section">
+                        <h4>📚 Book Details</h4>
+                        <div class="detail-row">
+                            <strong>Title:</strong> {{ delivery.stock_offer.book.title }}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Authors:</strong>
+                            {% for author in delivery.stock_offer.book.authors.all %}
+                                {{ author.name }}{% if not forloop.last %}, {% endif %}
+                            {% endfor %}
+                        </div>
+                        <div class="detail-row">
+                            <strong>ISBN:</strong> {{ delivery.stock_offer.book.isbn|default:"Not specified" }}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Quantity:</strong> 
+                            <span class="quantity-badge">{{ delivery.stock_offer.quantity }} books</span>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Condition:</strong> {{ delivery.stock_offer.condition|capfirst }}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Total Value:</strong> 
+                            <span class="value-badge">₹{{ delivery.stock_offer.total_amount }}</span>
+                        </div>
+                    </div>
+
+                    <div class="info-section">
+                        <h4>🏢 Vendor Information</h4>
+                        <div class="detail-row">
+                            <strong>Business:</strong> {{ delivery.vendor.business_name }}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Contact Person:</strong> {{ delivery.contact_person }}
+                        </div>
+                        <div class="detail-row">
+                            <strong>Phone:</strong> 
+                            <a href="tel:{{ delivery.contact_phone }}" class="phone-link">
+                                📞 {{ delivery.contact_phone }}
+                            </a>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Email:</strong> 
+                            <a href="mailto:{{ delivery.vendor.email }}" class="email-link">
+                                ✉️ {{ delivery.vendor.email }}
+                            </a>
+                        </div>
+                    </div>
+
+                    <div class="info-section">
+                        <h4>📍 Pickup Location</h4>
+                        <div class="location-card">
+                            <div class="location-name">{{ delivery.vendor_location.name }}</div>
+                            <div class="location-address">
+                                {{ delivery.vendor_location.address }}<br>
+                                {{ delivery.vendor_location.city }}, {{ delivery.vendor_location.state }} {{ delivery.vendor_location.pincode }}
+                            </div>
+                            {% if delivery.vendor_location.latitude and delivery.vendor_location.longitude %}
+                                <div class="location-coords">
+                                    📍 {{ delivery.vendor_location.latitude }}, {{ delivery.vendor_location.longitude }}
+                                    <a href="https://maps.google.com/?q={{ delivery.vendor_location.latitude }},{{ delivery.vendor_location.longitude }}" 
+                                       target="_blank" class="maps-link">View on Maps</a>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="info-section">
+                        <h4>🗓️ Schedule Information</h4>
+                        <div class="detail-row">
+                            <strong>Requested Date:</strong> 
+                            <span class="date-badge">{{ delivery.scheduled_delivery_date|date:"F d, Y" }}</span>
+                        </div>
+                        <div class="detail-row">
+                            <strong>Requested Time:</strong> 
+                            <span class="time-badge">{{ delivery.scheduled_delivery_date|time:"H:i" }}</span>
+                        </div>
+                        {% if delivery.estimated_pickup_time %}
+                        <div class="detail-row">
+                            <strong>Estimated Pickup:</strong> {{ delivery.estimated_pickup_time|date:"M d, Y H:i" }}
+                        </div>
+                        {% endif %}
+                        {% if delivery.actual_pickup_time %}
+                        <div class="detail-row">
+                            <strong>Actual Pickup:</strong> {{ delivery.actual_pickup_time|date:"M d, Y H:i" }}
+                        </div>
+                        {% endif %}
+                        {% if delivery.actual_delivery_time %}
+                        <div class="detail-row">
+                            <strong>Delivered At:</strong> {{ delivery.actual_delivery_time|date:"M d, Y H:i" }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                {% if delivery.special_instructions %}
+                <div class="special-instructions">
+                    <h4>📝 Special Instructions</h4>
+                    <div class="instructions-text">{{ delivery.special_instructions }}</div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Tracking Updates -->
+        <div class="card">
+            <div class="card-header">
+                <h3>📍 Tracking Updates</h3>
+                <button class="btn btn-primary btn-sm" data-bs-toggle="modal" data-bs-target="#updateStatusModal">
+                    ➕ Add Update
+                </button>
+            </div>
+            <div class="card-body">
+                {% if tracking_updates %}
+                <div class="tracking-timeline">
+                    {% for update in tracking_updates %}
+                    <div class="tracking-item">
+                        <div class="tracking-time">
+                            <div class="time-date">{{ update.timestamp|date:"M d" }}</div>
+                            <div class="time-hour">{{ update.timestamp|time:"H:i" }}</div>
+                        </div>
+                        <div class="tracking-dot status-{{ update.status }}"></div>
+                        <div class="tracking-content">
+                            <div class="tracking-status">
+                                <span class="status-badge status-{{ update.status }}">
+                                    {{ update.get_status_display }}
+                                </span>
+                                <span class="tracking-user">by {{ update.updated_by.get_full_name|default:update.updated_by.username }}</span>
+                            </div>
+                            {% if update.location %}
+                            <div class="tracking-location">📍 {{ update.location }}</div>
+                            {% endif %}
+                            {% if update.notes %}
+                            <div class="tracking-notes">{{ update.notes }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="no-tracking">
+                    <div class="no-tracking-icon">📍</div>
+                    <div class="no-tracking-text">No tracking updates yet</div>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#updateStatusModal">
+                        Add First Update
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <div class="col-md-4">
+        <!-- Logistics Partner Card -->
+        <div class="card">
+            <div class="card-header">
+                <h3>🚚 Logistics Partner</h3>
+            </div>
+            <div class="card-body">
+                {% if delivery.assigned_partner %}
+                <div class="partner-info">
+                    <div class="partner-name">{{ delivery.assigned_partner.name }}</div>
+                    <div class="partner-details">
+                        <div class="partner-detail">
+                            <strong>Contact:</strong> {{ delivery.assigned_partner.contact_person }}
+                        </div>
+                        <div class="partner-detail">
+                            <strong>Phone:</strong> 
+                            <a href="tel:{{ delivery.assigned_partner.phone }}" class="phone-link">
+                                {{ delivery.assigned_partner.phone }}
+                            </a>
+                        </div>
+                        <div class="partner-detail">
+                            <strong>Vehicle:</strong> {{ delivery.assigned_partner.get_vehicle_type_display }} ({{ delivery.assigned_partner.vehicle_number }})
+                        </div>
+                        <div class="partner-detail">
+                            <strong>Rating:</strong> 
+                            <span class="rating">⭐ {{ delivery.assigned_partner.rating }}/5.0</span>
+                        </div>
+                    </div>
+                    <button class="btn btn-warning btn-sm" data-bs-toggle="modal" data-bs-target="#assignPartnerModal">
+                        🔄 Reassign Partner
+                    </button>
+                </div>
+                {% else %}
+                <div class="no-partner">
+                    <div class="no-partner-icon">👤</div>
+                    <div class="no-partner-text">No partner assigned</div>
+                    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#assignPartnerModal">
+                        🎯 Assign Partner
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="card">
+            <div class="card-header">
+                <h3>⚡ Quick Actions</h3>
+            </div>
+            <div class="card-body">
+                <div class="quick-actions">
+                    {% if delivery.status == 'scheduled' and not delivery.assigned_partner %}
+                        <button class="action-btn primary" data-bs-toggle="modal" data-bs-target="#assignPartnerModal">
+                            <span class="action-icon">🎯</span>
+                            <span class="action-text">Assign Partner</span>
+                        </button>
+                    {% endif %}
+
+                    {% if delivery.status in 'scheduled,confirmed,pickup_assigned' %}
+                        <form method="post" action="{% url 'logistics:update_status' delivery.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="confirmed">
+                            <button type="submit" class="action-btn success">
+                                <span class="action-icon">✅</span>
+                                <span class="action-text">Mark Confirmed</span>
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    {% if delivery.status in 'pickup_assigned,confirmed' %}
+                        <form method="post" action="{% url 'logistics:update_status' delivery.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="collected">
+                            <button type="submit" class="action-btn warning">
+                                <span class="action-icon">📦</span>
+                                <span class="action-text">Mark Collected</span>
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    {% if delivery.status == 'collected' %}
+                        <form method="post" action="{% url 'logistics:update_status' delivery.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="in_transit">
+                            <button type="submit" class="action-btn info">
+                                <span class="action-icon">🚚</span>
+                                <span class="action-text">Mark In Transit</span>
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    {% if delivery.status == 'in_transit' %}
+                        <form method="post" action="{% url 'logistics:update_status' delivery.id %}" style="display: inline;">
+                            {% csrf_token %}
+                            <input type="hidden" name="status" value="arrived">
+                            <button type="submit" class="action-btn arrived">
+                                <span class="action-icon">🏢</span>
+                                <span class="action-text">Mark Arrived</span>
+                            </button>
+                        </form>
+                    {% endif %}
+
+                    {% if delivery.status == 'arrived' %}
+                        <a href="{% url 'logistics:confirm_receipt' delivery.id %}" class="action-btn danger">
+                            <span class="action-icon">✅</span>
+                            <span class="action-text">Confirm Receipt</span>
+                        </a>
+                    {% endif %}
+
+                    <button class="action-btn secondary" data-bs-toggle="modal" data-bs-target="#updateStatusModal">
+                        <span class="action-icon">📝</span>
+                        <span class="action-text">Add Update</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Stats -->
+        <div class="card">
+            <div class="card-header">
+                <h3>📊 Summary</h3>
+            </div>
+            <div class="card-body">
+                <div class="summary-stats">
+                    <div class="summary-stat">
+                        <div class="stat-value">{{ delivery.stock_offer.quantity }}</div>
+                        <div class="stat-label">Books to Deliver</div>
+                    </div>
+                    <div class="summary-stat">
+                        <div class="stat-value">₹{{ delivery.stock_offer.total_amount }}</div>
+                        <div class="stat-label">Total Value</div>
+                    </div>
+                    <div class="summary-stat">
+                        <div class="stat-value">{{ tracking_updates|length }}</div>
+                        <div class="stat-label">Tracking Updates</div>
+                    </div>
+                    {% if delivery.created_at %}
+                    <div class="summary-stat">
+                        <div class="stat-value">{{ delivery.created_at|timesince }}</div>
+                        <div class="stat-label">Days Since Created</div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Assign Partner Modal -->
+<div class="modal fade" id="assignPartnerModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">🎯 Assign Logistics Partner</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'logistics:assign_partner' delivery.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="partner_id" class="form-label">Select Partner</label>
+                        <select class="form-select" id="partner_id" name="partner_id" required>
+                            <option value="">Choose a logistics partner...</option>
+                            {% for partner in available_partners %}
+                            <option value="{{ partner.id }}" {% if partner.id == delivery.assigned_partner.id %}selected{% endif %}>
+                                {{ partner.name }} - {{ partner.get_vehicle_type_display }} ({{ partner.vehicle_number }})
+                                {% if partner.rating %}- ⭐ {{ partner.rating }}{% endif %}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Notes for Partner</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                  placeholder="Any special instructions for the logistics partner..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">
+                        {% if delivery.assigned_partner %}🔄 Reassign Partner{% else %}🎯 Assign Partner{% endif %}
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Update Status Modal -->
+<div class="modal fade" id="updateStatusModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">📝 Add Status Update</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="post" action="{% url 'logistics:update_status' delivery.id %}">
+                {% csrf_token %}
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="status" class="form-label">Status</label>
+                        <select class="form-select" id="status" name="status" required>
+                            <option value="">Select status...</option>
+                            {% for status_code, status_name in delivery.DELIVERY_STATUS %}
+                            <option value="{{ status_code }}" {% if status_code == delivery.status %}selected{% endif %}>
+                                {{ status_name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="location" class="form-label">Current Location (Optional)</label>
+                        <input type="text" class="form-control" id="location" name="location" 
+                               placeholder="e.g., Mumbai Central, En route to warehouse">
+                    </div>
+                    <div class="mb-3">
+                        <label for="notes" class="form-label">Update Notes</label>
+                        <textarea class="form-control" id="notes" name="notes" rows="3" 
+                                  placeholder="Describe what happened, any issues, or additional details..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">📝 Add Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Delivery Detail Styles */
+.page-header {
+    background: linear-gradient(135deg, var(--primary-cream) 0%, var(--neutral-white) 100%);
+    border-radius: 12px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    border-left: 5px solid var(--primary-coral);
+}
+
+.header-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 1rem;
+}
+
+.header-left {
+    flex: 1;
+}
+
+.page-title {
+    color: var(--secondary-burgundy);
+    margin: 0 0 1rem 0;
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.delivery-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.delivery-status-badge.status-scheduled {
+    background: rgba(255, 193, 7, 0.2);
+    color: var(--warning);
+    border: 2px solid var(--warning);
+}
+
+.delivery-status-badge.status-confirmed {
+    background: rgba(0, 123, 255, 0.2);
+    color: var(--info);
+    border: 2px solid var(--info);
+}
+
+.delivery-status-badge.status-pickup_assigned {
+    background: rgba(102, 126, 234, 0.2);
+    color: var(--primary);
+    border: 2px solid var(--primary);
+}
+
+.delivery-status-badge.status-collected {
+    background: rgba(255, 159, 67, 0.2);
+    color: var(--primary-orange);
+    border: 2px solid var(--primary-orange);
+}
+
+.delivery-status-badge.status-in_transit {
+    background: rgba(74, 144, 226, 0.2);
+    color: #4a90e2;
+    border: 2px solid #4a90e2;
+}
+
+.delivery-status-badge.status-arrived {
+    background: rgba(156, 39, 176, 0.2);
+    color: #9c27b0;
+    border: 2px solid #9c27b0;
+}
+
+.delivery-status-badge.status-verified {
+    background: rgba(76, 175, 80, 0.2);
+    color: var(--success);
+    border: 2px solid var(--success);
+}
+
+.delivery-status-badge.status-completed {
+    background: rgba(40, 167, 69, 0.2);
+    color: var(--success);
+    border: 2px solid var(--success);
+}
+
+.header-actions {
+    display: flex;
+    gap: 1rem;
+}
+
+.delivery-meta {
+    display: flex;
+    gap: 2rem;
+    color: var(--neutral-medium-gray);
+    font-size: 0.9rem;
+    flex-wrap: wrap;
+}
+
+/* Progress Timeline */
+.progress-card {
+    margin-bottom: 2rem;
+}
+
+.status-timeline {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    padding: 2rem 0;
+    overflow-x: auto;
+}
+
+.status-timeline::before {
+    content: '';
+    position: absolute;
+    top: 3rem;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--neutral-light-gray);
+    z-index: 1;
+}
+
+.timeline-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    min-width: 100px;
+    z-index: 2;
+}
+
+.timeline-step.completed .step-icon {
+    background: var(--success);
+    color: white;
+    border-color: var(--success);
+}
+
+.timeline-step.active .step-icon {
+    background: var(--primary-coral);
+    color: white;
+    border-color: var(--primary-coral);
+    animation: pulse 2s infinite;
+}
+
+.step-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: var(--neutral-light-gray);
+    border: 3px solid var(--neutral-medium-gray);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.step-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-align: center;
+    margin-bottom: 0.25rem;
+    color: var(--secondary-burgundy);
+}
+
+.step-time {
+    font-size: 0.75rem;
+    color: var(--neutral-medium-gray);
+    text-align: center;
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(255, 111, 97, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(255, 111, 97, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 111, 97, 0); }
+}
+
+/* Info Grid */
+.info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+}
+
+.info-section {
+    background: var(--primary-cream);
+    padding: 1.5rem;
+    border-radius: 10px;
+    border-left: 4px solid var(--primary-coral);
+}
+
+.info-section h4 {
+    color: var(--secondary-burgundy);
+    margin: 0 0 1rem 0;
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.detail-row {
+    display: flex;
+    margin-bottom: 0.75rem;
+    align-items: flex-start;
+}
+
+.detail-row strong {
+    min-width: 120px;
+    color: var(--neutral-dark-gray);
+    font-weight: 600;
+}
+
+.quantity-badge, .value-badge {
+    background: var(--primary-coral);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.date-badge, .time-badge {
+    background: var(--info);
+    color: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.phone-link, .email-link {
+    color: var(--primary-coral);
+    text-decoration: none;
+}
+
+.phone-link:hover, .email-link:hover {
+    text-decoration: underline;
+}
+
+.location-card {
+    background: var(--neutral-white);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--neutral-light-gray);
+}
+
+.location-name {
+    font-weight: 600;
+    color: var(--secondary-burgundy);
+    margin-bottom: 0.5rem;
+}
+
+.location-address {
+    color: var(--neutral-dark-gray);
+    line-height: 1.4;
+    margin-bottom: 0.5rem;
+}
+
+.location-coords {
+    font-size: 0.85rem;
+    color: var(--neutral-medium-gray);
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.maps-link {
+    color: var(--primary-coral);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.maps-link:hover {
+    text-decoration: underline;
+}
+
+.special-instructions {
+    margin-top: 2rem;
+    padding-top: 2rem;
+    border-top: 2px solid var(--primary-light-peach);
+}
+
+.special-instructions h4 {
+    color: var(--secondary-burgundy);
+    margin-bottom: 1rem;
+}
+
+.instructions-text {
+    background: rgba(255, 193, 7, 0.1);
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 4px solid var(--warning);
+    line-height: 1.5;
+}
+
+/* Tracking Timeline */
+.tracking-timeline {
+    position: relative;
+    padding-left: 2rem;
+}
+
+.tracking-timeline::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: var(--primary-light-peach);
+}
+
+.tracking-item {
+    position: relative;
+    display: flex;
+    margin-bottom: 2rem;
+    align-items: flex-start;
+}
+
+.tracking-time {
+    position: absolute;
+    left: -2rem;
+    width: 60px;
+    text-align: center;
+    font-size: 0.75rem;
+    color: var(--neutral-medium-gray);
+}
+
+.time-date {
+    font-weight: 600;
+    color: var(--secondary-burgundy);
+}
+
+.tracking-dot {
+    position: absolute;
+    left: -8px;
+    top: 5px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 3px solid var(--neutral-white);
+    background: var(--neutral-medium-gray);
+    z-index: 2;
+}
+
+.tracking-dot.status-scheduled { background: var(--warning); }
+.tracking-dot.status-confirmed { background: var(--info); }
+.tracking-dot.status-pickup_assigned { background: var(--primary); }
+.tracking-dot.status-collected { background: var(--primary-orange); }
+.tracking-dot.status-in_transit { background: #4a90e2; }
+.tracking-dot.status-arrived { background: #9c27b0; }
+.tracking-dot.status-verified { background: var(--success); }
+.tracking-dot.status-completed { background: var(--success); }
+
+.tracking-content {
+    flex: 1;
+    background: var(--neutral-white);
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid var(--neutral-light-gray);
+    margin-left: 1rem;
+}
+
+.tracking-status {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.status-badge {
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.status-badge.status-scheduled { background: rgba(255, 193, 7, 0.2); color: var(--warning); }
+.status-badge.status-confirmed { background: rgba(0, 123, 255, 0.2); color: var(--info); }
+.status-badge.status-pickup_assigned { background: rgba(102, 126, 234, 0.2); color: var(--primary); }
+.status-badge.status-collected { background: rgba(255, 159, 67, 0.2); color: var(--primary-orange); }
+.status-badge.status-in_transit { background: rgba(74, 144, 226, 0.2); color: #4a90e2; }
+.status-badge.status-arrived { background: rgba(156, 39, 176, 0.2); color: #9c27b0; }
+.status-badge.status-verified { background: rgba(76, 175, 80, 0.2); color: var(--success); }
+.status-badge.status-completed { background: rgba(40, 167, 69, 0.2); color: var(--success); }
+
+.tracking-user {
+    font-size: 0.85rem;
+    color: var(--neutral-medium-gray);
+}
+
+.tracking-location {
+    font-size: 0.9rem;
+    color: var(--primary-coral);
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.tracking-notes {
+    color: var(--neutral-dark-gray);
+    line-height: 1.4;
+}
+
+.no-tracking {
+    text-align: center;
+    padding: 3rem 2rem;
+    color: var(--neutral-medium-gray);
+}
+
+.no-tracking-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.no-tracking-text {
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Partner Info */
+.partner-info {
+    text-align: center;
+}
+
+.partner-name {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--secondary-burgundy);
+    margin-bottom: 1rem;
+}
+
+.partner-details {
+    text-align: left;
+    margin-bottom: 1.5rem;
+}
+
+.partner-detail {
+    display: flex;
+    margin-bottom: 0.5rem;
+    align-items: flex-start;
+}
+
+.partner-detail strong {
+    min-width: 80px;
+    color: var(--neutral-dark-gray);
+}
+
+.rating {
+    color: var(--warning);
+    font-weight: 600;
+}
+
+.no-partner {
+    text-align: center;
+    padding: 2rem;
+    color: var(--neutral-medium-gray);
+}
+
+.no-partner-icon {
+    font-size: 3rem;
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.no-partner-text {
+    font-size: 1.1rem;
+    margin-bottom: 1.5rem;
+}
+
+/* Quick Actions */
+.quick-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.action-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    border: 2px solid;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    background: none;
+    cursor: pointer;
+    width: 100%;
+}
+
+.action-btn.primary {
+    color: var(--primary);
+    border-color: var(--primary);
+    background: rgba(102, 126, 234, 0.1);
+}
+
+.action-btn.primary:hover {
+    background: var(--primary);
+    color: white;
+}
+
+.action-btn.success {
+    color: var(--success);
+    border-color: var(--success);
+    background: rgba(40, 167, 69, 0.1);
+}
+
+.action-btn.success:hover {
+    background: var(--success);
+    color: white;
+}
+
+.action-btn.warning {
+    color: var(--warning);
+    border-color: var(--warning);
+    background: rgba(255, 193, 7, 0.1);
+}
+
+.action-btn.warning:hover {
+    background: var(--warning);
+    color: white;
+}
+
+.action-btn.info {
+    color: var(--info);
+    border-color: var(--info);
+    background: rgba(0, 123, 255, 0.1);
+}
+
+.action-btn.info:hover {
+    background: var(--info);
+    color: white;
+}
+
+.action-btn.arrived {
+    color: #9c27b0;
+    border-color: #9c27b0;
+    background: rgba(156, 39, 176, 0.1);
+}
+
+.action-btn.arrived:hover {
+    background: #9c27b0;
+    color: white;
+}
+
+.action-btn.danger {
+    color: var(--danger);
+    border-color: var(--danger);
+    background: rgba(220, 53, 69, 0.1);
+}
+
+.action-btn.danger:hover {
+    background: var(--danger);
+    color: white;
+}
+
+.action-btn.secondary {
+    color: var(--neutral-medium-gray);
+    border-color: var(--neutral-medium-gray);
+    background: rgba(108, 117, 125, 0.1);
+}
+
+.action-btn.secondary:hover {
+    background: var(--neutral-medium-gray);
+    color: white;
+}
+
+.action-icon {
+    font-size: 1.1rem;
+}
+
+.action-text {
+    flex: 1;
+    text-align: left;
+}
+
+/* Summary Stats */
+.summary-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 1rem;
+}
+
+.summary-stat {
+    text-align: center;
+    padding: 1rem;
+    background: var(--primary-cream);
+    border-radius: 8px;
+    border-left: 3px solid var(--primary-coral);
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--secondary-burgundy);
+    margin-bottom: 0.25rem;
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--neutral-medium-gray);
+    font-weight: 500;
+}
+
+/* Card Styling */
+.card {
+    background: var(--neutral-white);
+    border: 1px solid var(--neutral-light-gray);
+    border-radius: 10px;
+    margin-bottom: 2rem;
+    overflow: hidden;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    transition: all 0.3s ease;
+}
+
+.card:hover {
+    box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+}
+
+.card-header {
+    background: var(--primary-light-peach);
+    padding: 1.5rem;
+    border-bottom: 1px solid var(--neutral-light-gray);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.card-header h3 {
+    margin: 0;
+    color: var(--secondary-burgundy);
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+
+.card-body {
+    padding: 1.5rem;
+}
+
+/* Modal Styling */
+.modal-content {
+    border: none;
+    border-radius: 12px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+}
+
+.modal-header {
+    background: var(--primary-light-peach);
+    border-bottom: 1px solid var(--neutral-light-gray);
+    border-radius: 12px 12px 0 0;
+}
+
+.modal-title {
+    color: var(--secondary-burgundy);
+    font-weight: 600;
+}
+
+.modal-body {
+    padding: 2rem;
+}
+
+.modal-footer {
+    border-top: 1px solid var(--neutral-light-gray);
+    padding: 1rem 2rem;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .header-main {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .delivery-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .status-timeline {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .status-timeline::before {
+        display: none;
+    }
+    
+    .timeline-step {
+        flex-direction: row;
+        align-items: center;
+        gap: 1rem;
+        min-width: auto;
+    }
+    
+    .info-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .summary-stats {
+        grid-template-columns: 1fr;
+    }
+    
+    .tracking-timeline {
+        padding-left: 1rem;
+    }
+    
+    .tracking-timeline::before {
+        left: 8px;
+    }
+    
+    .tracking-time {
+        position: static;
+        width: auto;
+        text-align: left;
+        margin-bottom: 0.5rem;
+    }
+    
+    .tracking-dot {
+        left: -4px;
+    }
+    
+    .tracking-content {
+        margin-left: 0.5rem;
+    }
+}
+
+/* Print Styles */
+@media print {
+    .header-actions,
+    .quick-actions,
+    .card-header .btn,
+    .modal {
+        display: none !important;
+    }
+    
+    .card {
+        box-shadow: none;
+        border: 1px solid #ddd;
+        break-inside: avoid;
+    }
+    
+    .page-header {
+        background: none !important;
+        border: 1px solid #ddd;
+    }
+}
+
+/* Animation for new tracking updates */
+@keyframes slideInFromRight {
+    from {
+        opacity: 0;
+        transform: translateX(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+.tracking-item:first-child {
+    animation: slideInFromRight 0.5s ease-out;
+}
+
+/* Status-specific styling */
+.delivery-urgent {
+    border-left-color: var(--danger) !important;
+    background: rgba(220, 53, 69, 0.05);
+}
+
+.delivery-warning {
+    border-left-color: var(--warning) !important;
+    background: rgba(255, 193, 7, 0.05);
+}
+
+.delivery-success {
+    border-left-color: var(--success) !important;
+    background: rgba(40, 167, 69, 0.05);
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Auto-refresh tracking updates every 30 seconds
+    let refreshInterval = setInterval(function() {
+        if (document.visibilityState === 'visible') {
+            fetch(window.location.href + '?ajax=1')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.new_updates) {
+                        // Reload page if there are new updates
+                        window.location.reload();
+                    }
+                })
+                .catch(err => console.log('Auto-refresh failed:', err));
+        }
+    }, 30000);
+
+    // Stop auto-refresh when page is hidden
+    document.addEventListener('visibilitychange', function() {
+        if (document.visibilityState === 'hidden') {
+            clearInterval(refreshInterval);
+        } else {
+            // Restart when page becomes visible again
+            refreshInterval = setInterval(function() {
+                if (document.visibilityState === 'visible') {
+                    fetch(window.location.href + '?ajax=1')
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.new_updates) {
+                                window.location.reload();
+                            }
+                        })
+                        .catch(err => console.log('Auto-refresh failed:', err));
+                }
+            }, 30000);
+        }
+    });
+
+    // Cleanup interval on page unload
+    window.addEventListener('beforeunload', function() {
+        clearInterval(refreshInterval);
+    });
+
+    // Form validation for status updates
+    const statusForm = document.querySelector('#updateStatusModal form');
+    if (statusForm) {
+        statusForm.addEventListener('submit', function(e) {
+            const statusSelect = document.getElementById('status');
+            const notesTextarea = document.getElementById('notes');
+            
+            if (!statusSelect.value) {
+                e.preventDefault();
+                alert('Please select a status.');
+                statusSelect.focus();
+                return;
+            }
+            
+            if (statusSelect.value === 'cancelled' && !notesTextarea.value.trim()) {
+                e.preventDefault();
+                alert('Please provide a reason for cancellation.');
+                notesTextarea.focus();
+                return;
+            }
+        });
+    }
+
+    // Partner assignment form validation
+    const partnerForm = document.querySelector('#assignPartnerModal form');
+    if (partnerForm) {
+        partnerForm.addEventListener('submit', function(e) {
+            const partnerSelect = document.getElementById('partner_id');
+            
+            if (!partnerSelect.value) {
+                e.preventDefault();
+                alert('Please select a logistics partner.');
+                partnerSelect.focus();
+                return;
+            }
+        });
+    }
+
+    // Quick action confirmations
+    document.querySelectorAll('.action-btn[type="submit"]').forEach(button => {
+        button.addEventListener('click', function(e) {
+            const action = this.querySelector('.action-text').textContent;
+            if (!confirm(`Are you sure you want to ${action.toLowerCase()}?`)) {
+                e.preventDefault();
+            }
+        });
+    });
+
+    // Smooth scroll to tracking updates when new ones are added
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('tracking_added') === '1') {
+        setTimeout(() => {
+            document.querySelector('.tracking-timeline').scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }, 500);
+    }
+
+    // Copy delivery details to clipboard
+    function copyDeliveryDetails() {
+        const deliveryId = '{{ delivery.id }}';
+        const vendorName = '{{ delivery.vendor.business_name|escapejs }}';
+        const bookTitle = '{{ delivery.stock_offer.book.title|escapejs }}';
+        const status = '{{ delivery.get_status_display|escapejs }}';
+        const contact = '{{ delivery.contact_phone }}';
+        
+        const details = `Delivery #${deliveryId}
+Vendor: ${vendorName}
+Book: ${bookTitle}
+Status: ${status}
+Contact: ${contact}
+URL: ${window.location.href}`;
+        
+        navigator.clipboard.writeText(details).then(() => {
+            // Show temporary success message
+            const toast = document.createElement('div');
+            toast.className = 'alert alert-success';
+            toast.style.cssText = 'position: fixed; top: 20px; right: 20px; z-index: 9999; opacity: 0; transition: opacity 0.3s ease;';
+            toast.textContent = '📋 Delivery details copied to clipboard!';
+            document.body.appendChild(toast);
+            
+            setTimeout(() => toast.style.opacity = '1', 100);
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                setTimeout(() => document.body.removeChild(toast), 300);
+            }, 3000);
+        }).catch(err => {
+            console.error('Failed to copy details:', err);
+        });
+    }
+
+    // Add copy button to header actions
+    const copyButton = document.createElement('button');
+    copyButton.className = 'btn btn-outline-secondary';
+    copyButton.innerHTML = '📋 Copy Details';
+    copyButton.onclick = copyDeliveryDetails;
+    
+    const headerActions = document.querySelector('.header-actions');
+    if (headerActions) {
+        headerActions.insertBefore(copyButton, headerActions.firstChild);
+    }
+
+    // Highlight urgent deliveries
+    const deliveryStatus = '{{ delivery.status }}';
+    const scheduledDate = new Date('{{ delivery.scheduled_delivery_date|date:"c" }}');
+    const now = new Date();
+    const timeDiff = scheduledDate - now;
+    const hoursDiff = timeDiff / (1000 * 60 * 60);
+
+    // Add visual indicators for urgent deliveries
+    if (deliveryStatus === 'scheduled' && hoursDiff < 24 && hoursDiff > 0) {
+        document.querySelector('.page-header').classList.add('delivery-warning');
+    } else if (deliveryStatus === 'scheduled' && hoursDiff < 0) {
+        document.querySelector('.page-header').classList.add('delivery-urgent');
+    } else if (deliveryStatus === 'completed') {
+        document.querySelector('.page-header').classList.add('delivery-success');
+    }
+
+    // Add keyboard shortcuts
+    document.addEventListener('keydown', function(e) {
+        // Ctrl+U: Update status
+        if (e.ctrlKey && e.key === 'u') {
+            e.preventDefault();
+            const modal = document.getElementById('updateStatusModal');
+            if (modal) {
+                new bootstrap.Modal(modal).show();
+            }
+        }
+        
+        // Ctrl+P: Assign partner
+        if (e.ctrlKey && e.key === 'p') {
+            e.preventDefault();
+            const modal = document.getElementById('assignPartnerModal');
+            if (modal) {
+                new bootstrap.Modal(modal).show();
+            }
+        }
+        
+        // Esc: Close any open modals
+        if (e.key === 'Escape') {
+            document.querySelectorAll('.modal.show').forEach(modal => {
+                bootstrap.Modal.getInstance(modal)?.hide();
+            });
+        }
+    });
+
+    // Show keyboard shortcuts hint
+    const shortcutHint = document.createElement('div');
+    shortcutHint.style.cssText = 'position: fixed; bottom: 20px; right: 20px; background: rgba(0,0,0,0.8); color: white; padding: 0.5rem; border-radius: 5px; font-size: 0.8rem; z-index: 1000; opacity: 0; transition: opacity 0.3s ease;';
+    shortcutHint.innerHTML = 'Shortcuts: Ctrl+U (Update), Ctrl+P (Partner), Esc (Close)';
+    document.body.appendChild(shortcutHint);
+
+    // Show hint on first visit
+    setTimeout(() => {
+        if (!localStorage.getItem('delivery_shortcuts_shown')) {
+            shortcutHint.style.opacity = '1';
+            setTimeout(() => {
+                shortcutHint.style.opacity = '0';
+                localStorage.setItem('delivery_shortcuts_shown', 'true');
+            }, 5000);
+        }
+    }, 2000);
+});
+</script>
+
+{% endblock %}

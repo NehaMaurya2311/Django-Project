@@ -1,0 +1,280 @@
+/*
+ * books/static/css/pages/books.css
+ * This file contains unified styles for the All Books, Category, Subcategory,
+ * and Sub-subcategory pages to ensure a consistent and modern design.
+ */
+
+/* General Page Layout */
+.page-container {
+    padding-top: 50px;
+    padding-bottom: 50px;
+}
+
+.breadcrumb {
+    background: transparent;
+    padding: 0;
+    margin-bottom: 30px;
+}
+
+.breadcrumb-item a {
+    color: #ff6b6b;
+    text-decoration: none;
+    transition: color 0.3s ease;
+}
+
+.breadcrumb-item a:hover {
+    color: #ff5252;
+}
+
+.page-header {
+    margin-bottom: 40px;
+}
+
+.page-header h1 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    color: #333;
+}
+
+.page-header p.lead {
+    font-size: 1.1rem;
+    color: #666;
+}
+
+/* Sidebar Filters */
+.filters-sidebar .card {
+    border: none;
+    border-radius: 15px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+}
+
+.filters-sidebar .card-header {
+    background: #ff6b6b;
+    color: white;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+    padding: 15px 20px;
+}
+
+.filters-sidebar .card-body {
+    padding: 20px;
+}
+
+.filters-sidebar .form-label {
+    font-weight: 600;
+    color: #333;
+    font-size: 0.95rem;
+}
+
+.filters-sidebar .form-control,
+.filters-sidebar .form-select {
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    box-shadow: none;
+    font-size: 0.9rem;
+    padding: 10px 15px;
+    transition: border-color 0.3s ease;
+}
+
+.filters-sidebar .form-control:focus,
+.filters-sidebar .form-select:focus {
+    border-color: #ff6b6b;
+    box-shadow: 0 0 0 0.25rem rgba(255, 107, 107, 0.25);
+}
+
+.filters-sidebar .btn-primary {
+    background: #ff6b6b;
+    border-color: #ff6b6b;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.filters-sidebar .btn-primary:hover {
+    background: #ff5252;
+    border-color: #ff5252;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+}
+
+.filters-sidebar .btn-outline-secondary {
+    border-radius: 8px;
+    font-weight: 600;
+    color: #6c757d;
+    border-color: #6c757d;
+    transition: all 0.3s ease;
+}
+
+.filters-sidebar .btn-outline-secondary:hover {
+    color: white;
+    background: #6c757d;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(108, 117, 125, 0.2);
+}
+
+/* Book Grid Layout */
+.book-grid-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 30px;
+}
+
+/* Individual Book Card (Reusing styles from home.css) */
+.book-card {
+    background: white;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    position: relative;
+    cursor: pointer;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+}
+
+.book-card:hover {
+    transform: translateY(-10px);
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
+}
+.book-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+.book-card img {
+    height: 250px;
+    object-fit: cover;
+    transition: transform 0.3s ease;
+    border-top-left-radius: 15px;
+    border-top-right-radius: 15px;
+}
+
+.book-card:hover img {
+    transform: scale(1.05);
+}
+
+.book-card .card-body {
+    padding: 25px;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.book-card .card-title a {
+    color: #333;
+    font-weight: 600;
+    font-size: 1.2rem;
+    transition: color 0.3s ease;
+}
+
+.book-card .card-title a:hover {
+    color: #ff6b6b;
+}
+
+.book-card .text-muted.small {
+    font-size: 0.9rem;
+    color: #666 !important;
+    margin-bottom: 10px;
+}
+
+.book-card .price-section {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: auto;
+    margin-bottom: 15px;
+}
+
+.book-card .price {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: #28a745;
+}
+
+.book-card .price-old {
+    font-size: 0.9rem;
+    color: #999;
+    text-decoration: line-through;
+    margin-left: 8px;
+}
+
+.book-card .badge.bg-danger {
+    background-color: #ff6b6b !important;
+    color: white;
+    padding: 3px 8px;
+    border-radius: 10px;
+    font-size: 0.75rem;
+    font-weight: 600;
+}
+
+.book-card .btn-primary {
+    background: #ff6b6b;
+    border-color: #ff6b6b;
+    border-radius: 8px;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.book-card .btn-primary:hover {
+    background: #ff5252;
+    border-color: #ff5252;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(255, 107, 107, 0.3);
+}
+
+/* Pagination */
+.pagination .page-item .page-link {
+    color: #ff6b6b;
+    border-color: #ddd;
+    border-radius: 8px;
+    margin: 0 5px;
+    transition: all 0.3s ease;
+}
+
+.pagination .page-item .page-link:hover {
+    background-color: #ff6b6b;
+    color: white;
+    border-color: #ff6b6b;
+}
+
+.pagination .page-item.active .page-link {
+    background-color: #ff6b6b;
+    border-color: #ff6b6b;
+    color: white;
+}
+
+/* Empty State */
+.empty-section {
+    text-align: center;
+    padding: 60px 20px;
+    color: #666;
+}
+
+.empty-section i {
+    font-size: 4rem;
+    color: #ddd;
+    margin-bottom: 20px;
+}
+
+.empty-section h4 {
+    color: #999;
+    margin-bottom: 10px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 991.98px) {
+    .page-header h1 {
+        font-size: 2rem;
+    }
+}
+
+@media (max-width: 767.98px) {
+    .filters-sidebar {
+        margin-bottom: 30px;
+    }
+    .book-grid-container {
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 20px;
+    }
+}

@@ -1,5 +1,4 @@
-# books/views.py - Updated with Sub-subcategory support
-
+# books/views.py
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
@@ -18,56 +17,133 @@ from .models import Book, Category, Cart, CartItem, Author, Publisher, SubCatego
 from .forms import BookForm, BookFilterForm
 from warehouse.models import Stock
 from django.contrib.admin.views.decorators import staff_member_required
+from coupons.models import BookSale, BookSaleItem
+
 
 @staff_member_required
 def load_subcategories(request):
-    """AJAX view to load subcategories based on category selection"""
+    """AJAX view to load subcategories based on selected category"""
     category_id = request.GET.get('category_id')
     
     if not category_id:
-        return JsonResponse({'subcategories': []})
+        return JsonResponse({
+            'subcategories': [],
+            'category_name': '',
+            'error': 'No category ID provided'
+        })
     
     try:
-        category = Category.objects.get(pk=category_id)
-        subcategories = SubCategory.objects.filter(
-            category=category, 
-            is_active=True
-        ).values('id', 'name').order_by('name')
+        category = get_object_or_404(Category, id=category_id)
+        subcategories = list(category.subcategories.filter(is_active=True).values('id', 'name'))
         
         return JsonResponse({
+            'subcategories': subcategories,
             'category_name': category.name,
-            'subcategories': list(subcategories)
+            'success': True
         })
-    except Category.DoesNotExist:
-        return JsonResponse({'error': 'Category not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'subcategories': [],
+            'category_name': '',
+            'error': str(e)
+        })
 
 @staff_member_required
 def load_subsubcategories(request):
-    """AJAX view to load sub-subcategories based on subcategory selection"""
+    """AJAX view to load sub-subcategories based on selected subcategory"""
     subcategory_id = request.GET.get('subcategory_id')
     
     if not subcategory_id:
-        return JsonResponse({'subsubcategories': []})
+        return JsonResponse({
+            'subsubcategories': [],
+            'subcategory_name': '',
+            'error': 'No subcategory ID provided'
+        })
     
     try:
-        subcategory = SubCategory.objects.get(pk=subcategory_id)
-        subsubcategories = SubSubCategory.objects.filter(
-            subcategory=subcategory, 
-            is_active=True
-        ).values('id', 'name').order_by('name')
+        subcategory = get_object_or_404(Subcategory, id=subcategory_id)
+        subsubcategories = list(subcategory.subsubcategories.filter(is_active=True).values('id', 'name'))
         
         return JsonResponse({
+            'subsubcategories': subsubcategories,
             'subcategory_name': subcategory.name,
-            'subsubcategories': list(subsubcategories)
+            'success': True
         })
-    except SubCategory.DoesNotExist:
-        return JsonResponse({'error': 'Subcategory not found'}, status=404)
+    except Exception as e:
+        return JsonResponse({
+            'subsubcategories': [],
+            'subcategory_name': '',
+            'error': str(e)
+        })
 
 def home(request):
-    featured_books = Book.objects.filter(is_featured=True, status='available')[:8]
-    bestseller_books = Book.objects.filter(is_bestseller=True, status='available')[:8]
-    sale_books = Book.objects.filter(is_on_sale=True, status='available')[:8]
-    categories = Category.objects.filter(is_active=True)[:8]
+    """Updated home view with sales-aware book displays"""
+    
+    # Get featured books with sale information
+    featured_books_qs = Book.objects.filter(is_featured=True, status='available').select_related('category')
+    featured_books = []
+    for book in featured_books_qs[:8]:
+        featured_books.append({
+            'book': book,
+            'is_on_sale': book.is_on_sale_now,
+            'original_price': book.price,
+            'sale_price': book.sale_price,
+            'discount_percentage': book.sale_discount_percentage,
+            'has_coupons': book.has_available_coupons
+        })
+    
+    # Get bestseller books with sale information
+    bestseller_books_qs = Book.objects.filter(is_bestseller=True, status='available').select_related('category')
+    bestseller_books = []
+    for book in bestseller_books_qs[:8]:
+        bestseller_books.append({
+            'book': book,
+            'is_on_sale': book.is_on_sale_now,
+            'original_price': book.price,
+            'sale_price': book.sale_price,
+            'discount_percentage': book.sale_discount_percentage,
+            'has_coupons': book.has_available_coupons
+        })
+    
+    # Get books that are currently on sale (for the sale section)
+    from django.utils import timezone
+    from coupons.models import BookSaleItem
+    
+    current_time = timezone.now()
+    
+    # Debug: Check if there are any active sales
+    active_sales = BookSale.objects.filter(
+        is_active=True,
+        valid_from__lte=current_time,
+        valid_to__gte=current_time
+    )
+    print(f"Active sales: {active_sales.count()}")
+    
+    sale_items = BookSaleItem.objects.select_related('book', 'sale').filter(
+        sale__is_active=True,
+        sale__valid_from__lte=current_time,
+        sale__valid_to__gte=current_time,
+        book__status='available'
+    )[:8]
+    
+    print(f"Sale items found: {sale_items.count()}")
+    
+    sale_books = []
+    for sale_item in sale_items:
+        sale_books.append({
+            'book': sale_item.book,
+            'is_on_sale': True,
+            'original_price': sale_item.book.price,
+            'sale_price': sale_item.get_sale_price(),
+            'discount_percentage': sale_item.get_discount_percentage(),
+            'has_coupons': sale_item.book.has_available_coupons,
+            'sale_name': sale_item.sale.name
+        })
+    
+    # Get categories
+    categories = Category.objects.filter(is_active=True).annotate(
+        book_count=Count('books', filter=Q(books__status='available'))
+    )[:8]
     
     context = {
         'featured_books': featured_books,

@@ -18,7 +18,7 @@ from django.utils import timezone
 @login_required
 @csrf_exempt
 def create_from_cart(request):
-    """Create an order from the user's cart"""
+    """Create an order from the user's cart - FIXED VERSION"""
     if request.method != 'POST':
         return JsonResponse({'success': False, 'error': 'Invalid request method'})
     
@@ -43,33 +43,29 @@ def create_from_cart(request):
             })
         
         with transaction.atomic():
-            # Check stock availability and reserve items
+            # STEP 1: Check stock availability (but don't reserve yet during order creation)
             for cart_item in cart.items.all():
                 try:
                     stock = Stock.objects.select_for_update().get(book=cart_item.book)
                     
                     # Check if enough stock is available
-                    available_stock = stock.quantity - stock.reserved_quantity
+                    available_stock = stock.available_quantity  # This is quantity - reserved_quantity
                     if available_stock < cart_item.quantity:
                         return JsonResponse({
                             'success': False,
                             'error': f'Not enough stock for "{cart_item.book.title}". Available: {available_stock}, Requested: {cart_item.quantity}'
                         })
-                    
-                    # Reserve the stock
-                    stock.reserved_quantity += cart_item.quantity
-                    stock.save()
-                    
+                        
                 except Stock.DoesNotExist:
                     return JsonResponse({
                         'success': False,
                         'error': f'Stock record not found for "{cart_item.book.title}"'
                     })
             
-            # Create the order with proper field mapping
+            # STEP 2: Create the order (pending status)
             order = Order.objects.create(
                 user=request.user,
-                status='pending',
+                status='pending',  # Start as pending
                 payment_status='pending',
                 
                 # Billing information (use user profile data as fallback)
@@ -98,35 +94,107 @@ def create_from_cart(request):
                 total_amount=cart.total_price
             )
             
-            # Create order items from cart items
+            # STEP 3: Create order items and RESERVE stock (don't reduce actual stock yet)
             for cart_item in cart.items.all():
                 OrderItem.objects.create(
                     order=order,
                     book=cart_item.book,
                     quantity=cart_item.quantity,
                     price=cart_item.book.price,
-                    total=cart_item.total_price  # Use 'total' not 'total_price'
+                    total=cart_item.total_price
+                )
+                
+                # RESERVE stock (increase reserved_quantity, don't touch actual quantity)
+                stock = Stock.objects.select_for_update().get(book=cart_item.book)
+                stock.reserved_quantity += cart_item.quantity
+                stock.save()
+                
+                # Create stock movement for reservation
+                StockMovement.objects.create(
+                    stock=stock,
+                    movement_type='adjustment',  # Use adjustment for reservations
+                    quantity=0,  # No actual stock change yet, just reservation
+                    reference=f"Order-{order.order_id}-Reserved",
+                    reason=f"Stock reserved for order {order.order_id}",
+                    performed_by=request.user
                 )
             
-            # Create initial tracking
+            # STEP 4: Create initial tracking
             OrderTracking.objects.create(
                 order=order,
                 status='order_placed',
-                description='Order has been placed successfully.'
+                description='Order has been placed successfully. Stock reserved.'
             )
             
-            # Clear the cart after successful order creation
+            # STEP 5: Clear the cart after successful order creation
             cart.items.all().delete()
             
             return JsonResponse({
                 'success': True,
-                'order_id': str(order.order_id),  # Convert to string for JSON
+                'order_id': str(order.order_id),
                 'message': 'Order created successfully'
             })
     
     except Exception as e:
         import traceback
-        traceback.print_exc()  # For debugging
+        traceback.print_exc()
+        return JsonResponse({
+            'success': False,
+            'error': str(e)
+        })
+
+def confirm_order_payment(request, order_id):
+    """
+    NEW FUNCTION: Call this when payment is confirmed to actually reduce stock
+    """
+    try:
+        with transaction.atomic():
+            order = get_object_or_404(Order, order_id=order_id)
+            
+            if order.status != 'pending':
+                return JsonResponse({
+                    'success': False, 
+                    'error': 'Order is not in pending status'
+                })
+            
+            # Update order status
+            order.status = 'confirmed'
+            order.payment_status = 'paid'
+            order.save()
+            
+            # NOW reduce actual stock and clear reservations
+            for order_item in order.items.all():
+                stock = Stock.objects.select_for_update().get(book=order_item.book)
+                
+                # Reduce actual stock quantity
+                stock.quantity -= order_item.quantity
+                # Clear the reservation
+                stock.reserved_quantity -= order_item.quantity
+                stock.save()
+                
+                # Create stock movement for actual stock reduction
+                StockMovement.objects.create(
+                    stock=stock,
+                    movement_type='out',
+                    quantity=-order_item.quantity,  # Negative for stock out
+                    reference=f"Order-{order.order_id}",
+                    reason=f"Stock sold - Order {order.order_id}",
+                    performed_by=None  # System generated
+                )
+            
+            # Update tracking
+            OrderTracking.objects.create(
+                order=order,
+                status='order_confirmed',
+                description='Payment confirmed. Stock deducted from inventory.'
+            )
+            
+            return JsonResponse({
+                'success': True,
+                'message': 'Order confirmed and stock updated'
+            })
+            
+    except Exception as e:
         return JsonResponse({
             'success': False,
             'error': str(e)
@@ -281,25 +349,45 @@ def order_detail(request, order_id):
 
 @login_required
 def cancel_order(request, order_id):
+    """FIXED: Properly handle stock release when cancelling"""
     order = get_object_or_404(Order, order_id=order_id, user=request.user)
     
     if order.status in ['pending', 'confirmed']:
+        old_status = order.status
         order.status = 'cancelled'
         order.save()
         
         # Release reserved stock
         for item in order.items.all():
             try:
-                stock = Stock.objects.get(book=item.book)
-                stock.reserved_quantity = max(0, stock.reserved_quantity - item.quantity)
+                stock = Stock.objects.select_for_update().get(book=item.book)
+                
+                if old_status == 'pending':
+                    # Order was only reserved, release reservation
+                    stock.reserved_quantity = max(0, stock.reserved_quantity - item.quantity)
+                elif old_status == 'confirmed':
+                    # Order was confirmed (stock was deducted), add back to actual stock
+                    stock.quantity += item.quantity
+                
                 stock.save()
+                
+                # Create stock movement
+                StockMovement.objects.create(
+                    stock=stock,
+                    movement_type='returned',
+                    quantity=item.quantity,
+                    reference=f"Order-{order.order_id}-Cancelled",
+                    reason=f"Order cancelled - stock returned",
+                    performed_by=request.user
+                )
+                
             except Stock.DoesNotExist:
                 pass
         
         OrderTracking.objects.create(
             order=order,
             status='cancelled',
-            description='Order cancelled by customer.'
+            description='Order cancelled by customer. Stock returned to inventory.'
         )
         
         messages.success(request, f'Order #{order.order_id} has been cancelled.')

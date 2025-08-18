@@ -1,0 +1,1315 @@
+<!-- vendors/templates/vendors/schedule_delivery.html -->
+{% extends 'vendors/base.html' %}
+
+{% block title %}Schedule Delivery - {% if request.GET.bulk %}Bulk Delivery{% else %}{{ offer.book.title }}{% endif %} - BookStore{% endblock %}
+
+{% block extra_css %}
+<style>
+    .offer-summary {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+    }
+    .offer-title {
+        color: #667eea;
+        font-size: 1.5rem;
+        font-weight: 700;
+        margin-bottom: 10px;
+    }
+    .offer-details {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 15px;
+        margin-top: 15px;
+    }
+    .detail-item {
+        text-align: center;
+        padding: 10px;
+        background: rgba(255, 255, 255, 0.6);
+        border-radius: 8px;
+    }
+    .detail-value {
+        font-size: 1.2rem;
+        font-weight: 600;
+        color: #667eea;
+    }
+    .detail-label {
+        font-size: 0.85rem;
+        color: #666;
+        margin-top: 5px;
+    }
+    
+    .form-section {
+        background: rgba(255, 255, 255, 0.9);
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 25px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+    .section-title {
+        color: #667eea;
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .form-group {
+        margin-bottom: 20px;
+    }
+    .form-label {
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 8px;
+        display: block;
+    }
+    .form-control {
+        border-radius: 8px;
+        border: 2px solid #e9ecef;
+        padding: 12px 15px;
+        transition: all 0.3s ease;
+        width: 100%;
+    }
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        outline: none;
+    }
+    
+    .location-selector {
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        padding: 15px;
+        margin-bottom: 15px;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    .location-selector:hover {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.02);
+    }
+    .location-selector.selected {
+        border-color: #667eea;
+        background: rgba(102, 126, 234, 0.1);
+    }
+    
+    .new-location-form {
+        background: rgba(248, 249, 250, 0.8);
+        border: 2px dashed #dee2e6;
+        border-radius: 10px;
+        padding: 20px;
+        margin-top: 20px;
+    }
+    .new-location-toggle {
+        background: none;
+        border: 2px solid #667eea;
+        color: #667eea;
+        border-radius: 8px;
+        padding: 10px 20px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        cursor: pointer;
+    }
+    .new-location-toggle:hover {
+        background: #667eea;
+        color: white;
+    }
+    
+    .btn-schedule {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: white;
+        padding: 15px 40px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        position: relative;
+        overflow: hidden;
+    }
+    .btn-schedule::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+        transition: left 0.5s;
+    }
+    .btn-schedule:hover::before {
+        left: 100%;
+    }
+    .btn-schedule:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+    }
+    
+    .btn-bulk-schedule {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        border: none;
+        color: white;
+        padding: 15px 40px;
+        border-radius: 10px;
+        font-weight: 700;
+        font-size: 1.1rem;
+        transition: all 0.3s ease;
+        margin-right: 10px;
+    }
+    .btn-bulk-schedule:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+        color: white;
+    }
+    
+    .alert-info {
+        background: rgba(23, 162, 184, 0.1);
+        border: 1px solid rgba(23, 162, 184, 0.2);
+        border-radius: 10px;
+        padding: 15px 20px;
+        margin-bottom: 20px;
+    }
+    
+    .quick-schedule-section {
+        background: rgba(40, 167, 69, 0.1);
+        border: 1px solid rgba(40, 167, 69, 0.2);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+    }
+    
+    .quick-schedule-title {
+        color: #28a745;
+        font-size: 1.3rem;
+        font-weight: 700;
+        margin-bottom: 15px;
+    }
+    
+    .location-option {
+        padding: 12px;
+        border: 1px solid #dee2e6;
+        border-radius: 8px;
+        margin-bottom: 10px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+    }
+    .location-option:hover {
+        background: rgba(102, 126, 234, 0.05);
+        border-color: #667eea;
+    }
+    .location-option.selected {
+        background: rgba(102, 126, 234, 0.1);
+        border-color: #667eea;
+    }
+
+    /* Bulk scheduling specific styles */
+    .bulk-summary {
+        background: linear-gradient(135deg, rgba(40, 167, 69, 0.1) 0%, rgba(32, 201, 151, 0.1) 100%);
+        border: 1px solid rgba(40, 167, 69, 0.2);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+    }
+
+    .bulk-title {
+        color: #28a745;
+        font-size: 1.8rem;
+        font-weight: 700;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+
+    .bulk-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+        gap: 15px;
+        margin-top: 20px;
+    }
+
+    .bulk-stat-item {
+        text-align: center;
+        padding: 15px;
+        background: rgba(255, 255, 255, 0.7);
+        border-radius: 10px;
+    }
+
+    .bulk-stat-value {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: #28a745;
+        margin-bottom: 5px;
+    }
+
+    .bulk-stat-label {
+        font-size: 0.85rem;
+        color: #666;
+    }
+
+    .selected-offers-preview {
+        background: rgba(248, 249, 250, 0.9);
+        border: 1px solid #dee2e6;
+        border-radius: 10px;
+        padding: 20px;
+        margin-bottom: 20px;
+        max-height: 300px;
+        overflow-y: auto;
+    }
+
+    .offer-item {
+        padding: 10px;
+        border-bottom: 1px solid #dee2e6;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .offer-item:last-child {
+        border-bottom: none;
+    }
+
+    .offer-info {
+        flex: 1;
+    }
+
+    .offer-value-small {
+        font-weight: 600;
+        color: #28a745;
+    }
+
+    .text-danger {
+        color: #dc3545 !important;
+    }
+
+    .text-muted {
+        color: #6c757d !important;
+    }
+
+    .cursor-pointer {
+        cursor: pointer;
+    }
+
+    .w-100 {
+        width: 100%;
+    }
+
+    .mb-0 {
+        margin-bottom: 0;
+    }
+
+    .mb-1 {
+        margin-bottom: 0.25rem;
+    }
+
+    .mb-3 {
+        margin-bottom: 1rem;
+    }
+
+    .me-1, .me-2 {
+        margin-right: 0.5rem;
+    }
+
+    .ms-3 {
+        margin-left: 1rem;
+    }
+
+    .d-flex {
+        display: flex;
+    }
+
+    .justify-content-between {
+        justify-content: space-between;
+    }
+
+    .align-items-start {
+        align-items: flex-start;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    .mt-3 {
+        margin-top: 1rem;
+    }
+
+    .row {
+        display: flex;
+        flex-wrap: wrap;
+        margin-left: -0.75rem;
+        margin-right: -0.75rem;
+    }
+
+    .col-md-4, .col-md-6 {
+        flex: 0 0 auto;
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+
+    .col-md-4 {
+        width: 33.333333%;
+    }
+
+    .col-md-6 {
+        width: 50%;
+    }
+
+    .badge {
+        display: inline-block;
+        padding: 0.35em 0.65em;
+        font-size: 0.75em;
+        font-weight: 700;
+        line-height: 1;
+        color: #fff;
+        text-align: center;
+        white-space: nowrap;
+        vertical-align: baseline;
+        border-radius: 0.25rem;
+    }
+
+    .bg-primary {
+        background-color: #0d6efd;
+    }
+
+    .form-check {
+        display: block;
+        min-height: 1.5rem;
+        padding-left: 1.5em;
+        margin-bottom: 0.125rem;
+    }
+
+    .form-check-input {
+        width: 1em;
+        height: 1em;
+        margin-top: 0.25em;
+        vertical-align: top;
+        background-color: #fff;
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: contain;
+        border: 1px solid rgba(0, 0, 0, 0.25);
+        appearance: none;
+        color-adjust: exact;
+        margin-left: -1.5em;
+        border-radius: 0.25em;
+    }
+
+    .form-check-label {
+        color: #212529;
+    }
+
+    .btn {
+        display: inline-block;
+        font-weight: 400;
+        line-height: 1.5;
+        color: #212529;
+        text-align: center;
+        text-decoration: none;
+        vertical-align: middle;
+        cursor: pointer;
+        border: 1px solid transparent;
+        padding: 0.375rem 0.75rem;
+        font-size: 1rem;
+        border-radius: 0.25rem;
+        transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out, border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+    }
+
+    .btn-outline-secondary {
+        color: #6c757d;
+        border-color: #6c757d;
+        background: transparent;
+    }
+
+    .btn-outline-secondary:hover {
+        color: #fff;
+        background-color: #6c757d;
+        border-color: #6c757d;
+    }
+
+    .btn-outline-primary {
+        color: #0d6efd;
+        border-color: #0d6efd;
+        background: transparent;
+    }
+
+    .btn-outline-primary:hover {
+        color: #fff;
+        background-color: #0d6efd;
+        border-color: #0d6efd;
+    }
+
+    @media (max-width: 768px) {
+        .offer-details, .bulk-stats {
+            grid-template-columns: 1fr 1fr;
+        }
+        .form-section {
+            padding: 20px;
+        }
+        .quick-schedule-section, .bulk-summary {
+            padding: 20px;
+        }
+        .col-md-4, .col-md-6 {
+            width: 100%;
+        }
+        .row {
+            flex-direction: column;
+        }
+    }
+        /* Additional CSS to prevent auto-complete issues */
+    .form-control[autocomplete="off"] {
+        background-color: white !important;
+    }
+
+    .form-control:focus {
+        border-color: #667eea;
+        box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        outline: none;
+    }
+
+    .form-control.is-invalid {
+        border-color: #dc3545;
+        box-shadow: 0 0 0 0.2rem rgba(220, 53, 69, 0.25);
+    }
+
+    .form-control.is-valid {
+        border-color: #28a745;
+        box-shadow: 0 0 0 0.2rem rgba(40, 167, 69, 0.25);
+    }
+
+    /* Prevent browser auto-suggestions from creating addresses */
+    input[name="contact_person"], 
+    input[name="contact_phone"] {
+        -webkit-autocomplete: off;
+        -moz-autocomplete: off;
+        autocomplete: off;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" style="margin-bottom: 20px;">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'vendors:dashboard' %}">Dashboard</a></li>
+            {% if request.GET.bulk %}
+                <li class="breadcrumb-item"><a href="{% url 'vendors:offers_awaiting_delivery' %}">Pending Offers</a></li>
+                <li class="breadcrumb-item active">Bulk Schedule Delivery</li>
+            {% else %}
+                <li class="breadcrumb-item"><a href="{% url 'vendors:stock_offers' %}">Stock Offers</a></li>
+                <li class="breadcrumb-item active">Schedule Delivery</li>
+            {% endif %}
+        </ol>
+    </nav>
+
+    {% if request.GET.bulk %}
+    <!-- Bulk Scheduling Mode -->
+    <div class="bulk-summary" id="bulkSummary">
+        <div class="bulk-title">
+            <i class="fas fa-shipping-fast"></i>
+            Bulk Delivery Scheduling
+        </div>
+        <p class="mb-3">Schedule delivery for multiple approved offers with the same pickup details.</p>
+        
+        <div class="alert alert-info">
+            <i class="fas fa-info-circle me-2"></i>
+            <span id="bulkStatusText">Loading selected offers...</span>
+        </div>
+
+        <div class="bulk-stats" id="bulkStats" style="display: none;">
+            <div class="bulk-stat-item">
+                <div class="bulk-stat-value" id="selectedOffersCount">0</div>
+                <div class="bulk-stat-label">Selected Offers</div>
+            </div>
+            <div class="bulk-stat-item">
+                <div class="bulk-stat-value" id="totalBooks">0</div>
+                <div class="bulk-stat-label">Total Books</div>
+            </div>
+            <div class="bulk-stat-item">
+                <div class="bulk-stat-value" id="totalValue">₹0</div>
+                <div class="bulk-stat-label">Total Value</div>
+            </div>
+            <div class="bulk-stat-item">
+                <div class="bulk-stat-value">Same Day</div>
+                <div class="bulk-stat-label">Pickup Schedule</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Selected Offers Preview -->
+    <div class="form-section" id="offersPreview" style="display: none;">
+        <h3 class="section-title">
+            <i class="fas fa-list"></i>Selected Offers for Bulk Scheduling
+        </h3>
+        <div class="selected-offers-preview" id="offersContainer">
+            <!-- Will be populated by JavaScript -->
+        </div>
+        <div class="text-center">
+            <button type="button" class="btn btn-outline-secondary" onclick="editSelection()">
+                <i class="fas fa-edit me-2"></i>Edit Selection
+            </button>
+        </div>
+    </div>
+
+    {% else %}
+    <!-- Single Offer Summary -->
+    <div class="offer-summary">
+        <div class="offer-title">
+            <i class="fas fa-book me-2"></i>{{ offer.book.title }}
+        </div>
+        <p class="mb-2"><strong>Author:</strong> 
+            {% for author in offer.book.authors.all %}
+                {{ author.name }}{% if not forloop.last %}, {% endif %}
+            {% empty %}
+                Unknown Author
+            {% endfor %}
+        </p>
+        <p class="mb-3"><strong>ISBN:</strong> {{ offer.book.isbn }}</p>
+        
+        <div class="offer-details">
+            <div class="detail-item">
+                <div class="detail-value">{{ offer.quantity }}</div>
+                <div class="detail-label">Quantity</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-value">₹{{ offer.unit_price }}</div>
+                <div class="detail-label">Unit Price</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-value">₹{{ offer.total_amount }}</div>
+                <div class="detail-label">Total Value</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-value">{{ offer.get_status_display }}</div>
+                <div class="detail-label">Status</div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Delivery Scheduling Form -->
+    <form method="post" id="deliveryForm">
+        {% csrf_token %}
+        
+        <!-- Hidden field for bulk mode -->
+        {% if request.GET.bulk %}
+            <input type="hidden" name="bulk_schedule" value="1">
+            <div id="selectedOffersHidden">
+                <!-- Hidden inputs for selected offers will be added here -->
+            </div>
+        {% endif %}
+        
+        <!-- Delivery Date & Time -->
+        <div class="form-section">
+            <h3 class="section-title">
+                <i class="fas fa-calendar"></i>Delivery Schedule
+            </h3>
+            
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Please schedule your delivery:</strong> 
+                {% if request.GET.bulk %}
+                    Choose a convenient time when you can have all selected books ready for pickup by our logistics partner.
+                {% else %}
+                    Choose a convenient time when you can have the books ready for pickup by our logistics partner.
+                {% endif %}
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.scheduled_delivery_date.id_for_label }}">
+                            <i class="fas fa-clock me-2"></i>Delivery Date & Time *
+                        </label>
+                        {{ form.scheduled_delivery_date }}
+                        {% if form.scheduled_delivery_date.help_text %}
+                            <small class="form-text text-muted">{{ form.scheduled_delivery_date.help_text }}</small>
+                        {% endif %}
+                        {% if form.scheduled_delivery_date.errors %}
+                            <div class="text-danger mt-1">{{ form.scheduled_delivery_date.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.special_instructions.id_for_label }}">
+                            <i class="fas fa-sticky-note me-2"></i>Special Instructions
+                        </label>
+                        {{ form.special_instructions }}
+                        {% if form.special_instructions.help_text %}
+                            <small class="form-text text-muted">{{ form.special_instructions.help_text }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Pickup Location -->
+        <div class="form-section">
+            <h3 class="section-title">
+                <i class="fas fa-map-marker-alt"></i>Pickup Location
+            </h3>
+            
+            {% if existing_locations %}
+                <p class="mb-3">Select an existing pickup location:</p>
+                {% for location in existing_locations %}
+                    <div class="location-selector" onclick="selectLocation({{ location.id }})">
+                        <input type="radio" name="vendor_location" value="{{ location.id }}" id="location_{{ location.id }}" 
+                               {% if form.vendor_location.value == location.id or location.is_primary %}checked{% endif %} style="display: none;">
+                        <label for="location_{{ location.id }}" class="w-100 cursor-pointer">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div>
+                                    <h6 class="mb-1"><i class="fas fa-building me-2"></i>{{ location.name }}</h6>
+                                    <p class="mb-1 text-muted">{{ location.address }}</p>
+                                    <p class="mb-1 text-muted">{{ location.city }}, {{ location.state }} - {{ location.pincode }}</p>
+                                    {% if location.contact_person %}
+                                        <p class="mb-0 text-muted">
+                                            <i class="fas fa-user me-1"></i>{{ location.contact_person }}
+                                            {% if location.phone %} - <i class="fas fa-phone me-1"></i>{{ location.phone }}{% endif %}
+                                        </p>
+                                    {% endif %}
+                                </div>
+                                {% if location.is_primary %}
+                                    <span class="badge bg-primary">Primary</span>
+                                {% endif %}
+                            </div>
+                        </label>
+                    </div>
+                {% endfor %}
+            {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    You don't have any pickup locations set up. Please add one below.
+                </div>
+            {% endif %}
+            
+            <!-- Add New Location Toggle -->
+            <div class="text-center mt-3">
+                <button type="button" class="new-location-toggle" onclick="toggleNewLocationForm()">
+                    <i class="fas fa-plus me-2"></i>Add New Pickup Location
+                </button>
+            </div>
+            
+            <!-- New Location Form -->
+            <div class="new-location-form" id="newLocationForm" style="display: none;">
+                <h6 class="mb-3"><i class="fas fa-plus-circle me-2"></i>New Pickup Location</h6>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Location Name *</label>
+                            {{ location_form.name }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label class="form-label">Contact Person</label>
+                            {{ location_form.contact_person }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Address *</label>
+                    {{ location_form.address }}
+                </div>
+                
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label">City *</label>
+                            {{ location_form.city }}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label">State *</label>
+                            {{ location_form.state }}
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="form-group">
+                            <label class="form-label">Pincode *</label>
+                            {{ location_form.pincode }}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Phone Number</label>
+                    {{ location_form.phone }}
+                </div>
+                
+                <div class="form-group">
+                    <div class="form-check">
+                        <input type="checkbox" class="form-check-input" name="set_as_primary" id="set_as_primary">
+                        <label class="form-check-label" for="set_as_primary">
+                            Set as primary pickup location
+                        </label>
+                    </div>
+                </div>
+                
+                <button type="submit" name="create_location" class="btn btn-outline-primary">
+                    <i class="fas fa-save me-2"></i>Save Location & Continue
+                </button>
+            </div>
+        </div>
+
+        <!-- Contact Information -->
+        <div class="form-section">
+            <h3 class="section-title">
+                <i class="fas fa-user"></i>Contact Information
+            </h3>
+            
+            <div class="alert alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Important:</strong> This contact information will be used by our logistics partner to coordinate the pickup. Please ensure the details are accurate and the contact person will be available.
+            </div>
+            
+            <div class="row">
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.contact_person.id_for_label }}">
+                            <i class="fas fa-user me-2"></i>Contact Person *
+                        </label>
+                        <input type="text" 
+                               name="contact_person" 
+                               id="{{ form.contact_person.id_for_label }}"
+                               class="form-control" 
+                               value="{{ form.contact_person.value|default:'' }}"
+                               placeholder="Enter contact person name"
+                               required
+                               autocomplete="off">
+                        <small class="form-text text-muted">Person who will be available during pickup</small>
+                        {% if form.contact_person.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.contact_person.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                <div class="col-md-6">
+                    <div class="form-group">
+                        <label class="form-label" for="{{ form.contact_phone.id_for_label }}">
+                            <i class="fas fa-phone me-2"></i>Contact Phone *
+                        </label>
+                        <input type="tel" 
+                               name="contact_phone" 
+                               id="{{ form.contact_phone.id_for_label }}"
+                               class="form-control" 
+                               value="{{ form.contact_phone.value|default:'' }}"
+                               placeholder="Enter contact phone number"
+                               required
+                               autocomplete="off"
+                               pattern="[+]?[\d\s\-\(\)]{10,}">
+                        <small class="form-text text-muted">Valid phone number for pickup coordination</small>
+                        {% if form.contact_phone.errors %}
+                            <div class="text-danger mt-1">
+                                {% for error in form.contact_phone.errors %}
+                                    {{ error }}
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Additional Contact Notes -->
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="fas fa-clock me-2"></i>Best Time to Contact
+                </label>
+                <select class="form-control" name="best_contact_time">
+                    <option value="">Select preferred time (optional)</option>
+                    <option value="morning">Morning (9 AM - 12 PM)</option>
+                    <option value="afternoon">Afternoon (12 PM - 5 PM)</option>
+                    <option value="evening">Evening (5 PM - 8 PM)</option>
+                    <option value="anytime">Anytime during business hours</option>
+                </select>
+                <small class="form-text text-muted">Help our logistics partner contact you at the best time</small>
+            </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="text-center">
+            {% if request.GET.bulk %}
+                <button type="button" class="btn-bulk-schedule" onclick="submitBulkSchedule()">
+                    <i class="fas fa-truck me-2"></i>Schedule All Deliveries
+                </button>
+            {% else %}
+                <button type="submit" class="btn-schedule">
+                    <i class="fas fa-truck me-2"></i>Schedule Delivery
+                </button>
+            {% endif %}
+            <a href="{% if request.GET.bulk %}{% url 'vendors:offers_awaiting_delivery' %}{% else %}{% url 'vendors:dashboard' %}{% endif %}" class="btn btn-outline-secondary ms-3">
+                <i class="fas fa-arrow-left me-2"></i>Back
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- FIXED JavaScript section for schedule_delivery.html -->
+<script>
+// Global variables
+let selectedOffers = [];
+let bulkMode = {{ request.GET.bulk|yesno:"true,false" }};
+
+// FIXED: Get selected offers from URL parameters and persist them
+function getSelectedOffersFromURL() {
+    const urlParams = new URLSearchParams(window.location.search);
+    const offersParam = urlParams.get('offers');
+    
+    if (offersParam) {
+        try {
+            selectedOffers = offersParam.split(',').filter(id => id.trim() !== '');
+            console.log('Selected offers from URL:', selectedOffers);
+            
+            // Store in sessionStorage to persist across page refreshes
+            sessionStorage.setItem('bulkSelectedOffers', JSON.stringify(selectedOffers));
+            return true;
+        } catch (e) {
+            console.error('Error parsing offers from URL:', e);
+        }
+    }
+    return false;
+}
+
+// FIXED: Load selected offers with better persistence
+function loadSelectedOffers() {
+    console.log('Loading selected offers...');
+    
+    // First try to get from URL parameters
+    if (getSelectedOffersFromURL()) {
+        console.log('Loaded from URL parameters:', selectedOffers);
+        updateBulkUI();
+        return;
+    }
+    
+    // Then try sessionStorage
+    const storedOffers = sessionStorage.getItem('bulkSelectedOffers');
+    if (storedOffers) {
+        try {
+            selectedOffers = JSON.parse(storedOffers);
+            console.log('Loaded from sessionStorage:', selectedOffers);
+            if (selectedOffers.length > 0) {
+                updateBulkUI();
+                return;
+            }
+        } catch (e) {
+            console.error('Error parsing stored offers:', e);
+            sessionStorage.removeItem('bulkSelectedOffers');
+        }
+    }
+    
+    // If no stored offers and we're in bulk mode, show error
+    if (bulkMode) {
+        showAlert('No offers selected for bulk scheduling. Please select offers from the pending offers page.', 'warning');
+        setTimeout(() => {
+            window.location.href = '{% url "vendors:offers_awaiting_delivery" %}';
+        }, 3000);
+    }
+}
+
+function selectLocation(locationId) {
+    // Remove selected class from all location selectors
+    document.querySelectorAll('.location-selector').forEach(el => {
+        el.classList.remove('selected');
+    });
+    
+    // Add selected class to clicked location
+    const selectedLocation = document.querySelector(`#location_${locationId}`).closest('.location-selector');
+    if (selectedLocation) {
+        selectedLocation.classList.add('selected');
+    }
+    
+    // Check the radio button
+    const radioButton = document.querySelector(`#location_${locationId}`);
+    if (radioButton) {
+        radioButton.checked = true;
+    }
+    
+    // Hide new location form if location is selected
+    const newLocationForm = document.getElementById('newLocationForm');
+    if (newLocationForm && newLocationForm.style.display !== 'none') {
+        toggleNewLocationForm();
+    }
+}
+
+function toggleNewLocationForm() {
+    const form = document.getElementById('newLocationForm');
+    const toggle = document.querySelector('.new-location-toggle');
+    
+    if (!form || !toggle) return;
+    
+    if (form.style.display === 'none' || form.style.display === '') {
+        form.style.display = 'block';
+        toggle.innerHTML = '<i class="fas fa-minus me-2"></i>Cancel New Location';
+        toggle.style.background = '#dc3545';
+        toggle.style.borderColor = '#dc3545';
+        toggle.style.color = 'white';
+        
+        // Clear existing location selection
+        document.querySelectorAll('.location-selector').forEach(el => {
+            el.classList.remove('selected');
+        });
+        document.querySelectorAll('input[name="vendor_location"]').forEach(radio => {
+            radio.checked = false;
+        });
+        
+        // Scroll to form
+        form.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    } else {
+        form.style.display = 'none';
+        toggle.innerHTML = '<i class="fas fa-plus me-2"></i>Add New Pickup Location';
+        toggle.style.background = 'none';
+        toggle.style.borderColor = '#667eea';
+        toggle.style.color = '#667eea';
+    }
+}
+
+function editSelection() {
+    // Clear stored selection and redirect back
+    sessionStorage.removeItem('bulkSelectedOffers');
+    window.location.href = '{% url "vendors:offers_awaiting_delivery" %}';
+}
+
+// FIXED: submitBulkSchedule function with better error handling
+function submitBulkSchedule() {
+    console.log('submitBulkSchedule called, selectedOffers:', selectedOffers);
+    
+    if (selectedOffers.length === 0) {
+        showAlert('No offers selected for bulk scheduling.', 'danger');
+        return;
+    }
+
+    const form = document.getElementById('deliveryForm');
+    if (!form) {
+        showAlert('Form not found.', 'danger');
+        return;
+    }
+
+    // FIXED: Validate required fields
+    const deliveryDate = document.querySelector('input[name="scheduled_delivery_date"]');
+    const contactPerson = document.querySelector('input[name="contact_person"]');
+    const contactPhone = document.querySelector('input[name="contact_phone"]');
+    
+    if (!deliveryDate || !deliveryDate.value.trim()) {
+        showAlert('Please select a delivery date and time.', 'danger');
+        deliveryDate?.focus();
+        return;
+    }
+    
+    if (!contactPerson || !contactPerson.value.trim()) {
+        showAlert('Please enter a contact person name.', 'danger');
+        contactPerson?.focus();
+        return;
+    }
+    
+    if (!contactPhone || !contactPhone.value.trim()) {
+        showAlert('Please enter a contact phone number.', 'danger');
+        contactPhone?.focus();
+        return;
+    }
+
+    // FIXED: Check if location is selected (either existing or new)
+    const locationSelected = document.querySelector('input[name="vendor_location"]:checked');
+    const newLocationForm = document.getElementById('newLocationForm');
+    const isCreatingNewLocation = newLocationForm && newLocationForm.style.display !== 'none';
+    
+    if (!locationSelected && !isCreatingNewLocation) {
+        showAlert('Please select a pickup location or add a new one.', 'danger');
+        return;
+    }
+
+    // FIXED: Prepare form data
+    const formData = new FormData();
+    
+    // Add CSRF token
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (csrfToken) {
+        formData.append('csrfmiddlewaretoken', csrfToken.value);
+    }
+    
+    // Add selected offers
+    selectedOffers.forEach(offerId => {
+        formData.append('selected_offers[]', offerId);
+    });
+    
+    // Add form fields
+    formData.append('scheduled_delivery_date', deliveryDate.value);
+    formData.append('contact_person', contactPerson.value);
+    formData.append('contact_phone', contactPhone.value);
+    
+    const specialInstructions = document.querySelector('textarea[name="special_instructions"]');
+    if (specialInstructions) {
+        formData.append('special_instructions', specialInstructions.value);
+    }
+    
+    if (locationSelected) {
+        formData.append('vendor_location', locationSelected.value);
+    }
+
+    // Show loading state
+    const submitBtn = document.querySelector('.btn-bulk-schedule');
+    if (submitBtn) {
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Scheduling...';
+        submitBtn.disabled = true;
+
+        // Submit to bulk schedule endpoint
+        fetch('{% url "vendors:bulk_schedule_delivery" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Bulk schedule response:', data);
+            if (data.success) {
+                showAlert(data.message, 'success');
+                // Clear stored selection
+                sessionStorage.removeItem('bulkSelectedOffers');
+                // Redirect to delivery history after success
+                setTimeout(() => {
+                    window.location.href = '{% url "vendors:delivery_history" %}';
+                }, 2000);
+            } else {
+                showAlert(data.message || 'An error occurred while scheduling deliveries.', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            showAlert('Network error occurred. Please try again.', 'danger');
+        })
+        .finally(() => {
+            // Restore button state
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        });
+    }
+}
+
+// FIXED: updateBulkUI function with better display
+function updateBulkUI() {
+    console.log('Updating bulk UI for offers:', selectedOffers);
+    
+    const bulkStatusText = document.getElementById('bulkStatusText');
+    const bulkStats = document.getElementById('bulkStats');
+    const offersPreview = document.getElementById('offersPreview');
+    const offersContainer = document.getElementById('offersContainer');
+    const selectedOffersHidden = document.getElementById('selectedOffersHidden');
+    
+    if (bulkStatusText) {
+        bulkStatusText.innerHTML = `<strong>${selectedOffers.length}</strong> offer${selectedOffers.length > 1 ? 's' : ''} selected for bulk scheduling.`;
+    }
+    
+    // Show bulk stats
+    const selectedOffersCount = document.getElementById('selectedOffersCount');
+    if (selectedOffersCount) {
+        selectedOffersCount.textContent = selectedOffers.length;
+    }
+    
+    if (bulkStats) {
+        bulkStats.style.display = 'grid';
+    }
+    
+    // Add hidden inputs for selected offers
+    if (selectedOffersHidden) {
+        selectedOffersHidden.innerHTML = ''; // Clear existing
+        selectedOffers.forEach(offerId => {
+            const hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'selected_offers[]';
+            hiddenInput.value = offerId;
+            selectedOffersHidden.appendChild(hiddenInput);
+        });
+    }
+    
+    // Show offers preview
+    if (selectedOffers.length > 0 && offersContainer) {
+        offersContainer.innerHTML = `
+            <div class="text-center p-4">
+                <i class="fas fa-boxes fa-3x text-muted mb-3"></i>
+                <h5>${selectedOffers.length} Offer${selectedOffers.length > 1 ? 's' : ''} Selected</h5>
+                <p class="text-muted">All selected offers will be scheduled for delivery at the same time and location.</p>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="h4 text-success">${selectedOffers.length}</div>
+                            <small class="text-muted">Total Offers</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="h4 text-primary">Same Day</div>
+                            <small class="text-muted">Pickup Date</small>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <div class="h4 text-info">One Location</div>
+                            <small class="text-muted">Pickup Address</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <small class="text-muted">Offer IDs: ${selectedOffers.join(', ')}</small>
+                </div>
+            </div>
+        `;
+        if (offersPreview) {
+            offersPreview.style.display = 'block';
+        }
+    }
+}
+
+function showAlert(message, type = 'info') {
+    // Remove any existing alerts
+    document.querySelectorAll('.alert-dismissible').forEach(alert => alert.remove());
+    
+    // Create new alert
+    const alert = document.createElement('div');
+    alert.className = `alert alert-${type} alert-dismissible fade show`;
+    alert.style.position = 'fixed';
+    alert.style.top = '20px';
+    alert.style.right = '20px';
+    alert.style.zIndex = '1050';
+    alert.style.minWidth = '300px';
+    alert.innerHTML = `
+        <strong>${type === 'success' ? 'Success!' : type === 'danger' ? 'Error!' : 'Notice:'}</strong>
+        ${message}
+        <button type="button" class="btn-close" onclick="this.parentElement.remove()"></button>
+    `;
+    
+    // Add to page
+    document.body.appendChild(alert);
+    
+    // Auto-remove after 5 seconds
+    setTimeout(() => {
+        if (alert.parentNode) {
+            alert.remove();
+        }
+    }, 5000);
+}
+
+// FIXED: Form validation for single delivery
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('deliveryForm');
+    
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            if (!bulkMode) {
+                const isCreatingLocation = e.submitter && e.submitter.name === 'create_location';
+                
+                if (!isCreatingLocation) {
+                    const locationSelected = document.querySelector('input[name="vendor_location"]:checked');
+                    const newLocationForm = document.getElementById('newLocationForm');
+                    const isCreatingNewLocation = newLocationForm && newLocationForm.style.display !== 'none';
+                    
+                    if (!locationSelected && !isCreatingNewLocation) {
+                        e.preventDefault();
+                        showAlert('Please select a pickup location or add a new one.', 'danger');
+                        return false;
+                    }
+                    
+                    // Animate submit button
+                    const submitBtn = document.querySelector('.btn-schedule');
+                    if (submitBtn) {
+                        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Scheduling...';
+                        submitBtn.disabled = true;
+                    }
+                }
+            }
+        });
+    }
+    
+    // Initialize selected location styling
+    const checkedLocation = document.querySelector('input[name="vendor_location"]:checked');
+    if (checkedLocation) {
+        const locationSelector = checkedLocation.closest('.location-selector');
+        if (locationSelector) {
+            locationSelector.classList.add('selected');
+        }
+    }
+    
+    // Set minimum date/time to current
+    const dateInput = document.querySelector('input[type="datetime-local"]');
+    if (dateInput) {
+        const now = new Date();
+        now.setMinutes(now.getMinutes() - now.getTimezoneOffset());
+        dateInput.min = now.toISOString().slice(0, 16);
+        
+        // Set default to tomorrow 10 AM if not already set
+        if (!dateInput.value) {
+            const tomorrow = new Date(now);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            tomorrow.setHours(10, 0, 0, 0);
+            tomorrow.setMinutes(tomorrow.getMinutes() - tomorrow.getTimezoneOffset());
+            dateInput.value = tomorrow.toISOString().slice(0, 16);
+        }
+    }
+
+    // Load selected offers for bulk mode
+    if (bulkMode) {
+        loadSelectedOffers();
+    }
+    
+    // FIXED: Prevent auto-creation of addresses on contact person input
+    const contactPersonInput = document.querySelector('input[name="contact_person"]');
+    const contactPhoneInput = document.querySelector('input[name="contact_phone"]');
+    
+    if (contactPersonInput) {
+        // Remove any existing event listeners that might auto-create addresses
+        const newContactPersonInput = contactPersonInput.cloneNode(true);
+        contactPersonInput.parentNode.replaceChild(newContactPersonInput, contactPersonInput);
+        
+        // Add only the necessary validation
+        newContactPersonInput.addEventListener('blur', function() {
+            if (this.value.trim() === '') {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+    
+    if (contactPhoneInput) {
+        // Remove any existing event listeners that might auto-create addresses
+        const newContactPhoneInput = contactPhoneInput.cloneNode(true);
+        contactPhoneInput.parentNode.replaceChild(newContactPhoneInput, contactPhoneInput);
+        
+        // Add only phone validation
+        newContactPhoneInput.addEventListener('blur', function() {
+            const phonePattern = /^[+]?[\d\s\-\(\)]{10,}$/;
+            if (this.value.trim() === '' || !phonePattern.test(this.value.trim())) {
+                this.classList.add('is-invalid');
+            } else {
+                this.classList.remove('is-invalid');
+            }
+        });
+    }
+    
+    console.log('Page initialized. Bulk mode:', bulkMode);
+});
+
+// FIXED: Handle page unload to preserve selection
+window.addEventListener('beforeunload', function() {
+    if (bulkMode && selectedOffers.length > 0) {
+        sessionStorage.setItem('bulkSelectedOffers', JSON.stringify(selectedOffers));
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,15 @@
+{% extends "logistics/base.html" %}
+{% block content %}
+<h2>Logistics Partners</h2>
+<a href="{% url 'logistics:partner_create' %}">+ Add Partner</a>
+<ul>
+  {% for partner in partners %}
+    <li>
+      {{ partner.name }} ({{ partner.status }})
+      <a href="{% url 'logistics:partner_edit' partner.id %}">Edit</a>
+    </li>
+  {% empty %}
+    <li>No partners found.</li>
+  {% endfor %}
+</ul>
+{% endblock %}

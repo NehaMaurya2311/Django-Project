@@ -58,6 +58,14 @@
                             <i class="fas fa-cog"></i> Admin
                         </a>
                     </li>
+                    <li>
+                        <form method="post" action="{% url 'accounts:logout' %}" class="d-inline w-100">
+                            {% csrf_token %}
+                            <button type="submit" class="dropdown-item text-danger w-100 text-start">
+                                <i class="fas fa-sign-out-alt me-2"></i> Logout
+                            </button>
+                        </form>
+                    <li>
                 </ul>
             </div>
         </div>

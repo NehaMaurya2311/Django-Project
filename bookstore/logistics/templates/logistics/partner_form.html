@@ -1,0 +1,9 @@
+{% extends "base.html" %}
+{% block content %}
+<h2>{% if partner %}Edit{% else %}Create{% endif %} Logistics Partner</h2>
+<form method="post">
+  {% csrf_token %}
+  {{ form.as_p }}
+  <button type="submit">Save</button>
+</form>
+{% endblock %}

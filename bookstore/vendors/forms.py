@@ -5,6 +5,8 @@ from django.contrib.auth import get_user_model
 from .models import VendorProfile, StockOffer, VendorTicket
 from logistics.models import VendorLocation, DeliverySchedule
 from books.models import Book, Category
+from django.utils import timezone
+
 
 User = get_user_model()
 
@@ -250,45 +252,6 @@ class VendorLocationForm(forms.ModelForm):
             }),
         }
 
-class DeliveryScheduleForm(forms.ModelForm):
-    """Form for vendors to schedule deliveries"""
-    
-    class Meta:
-        model = DeliverySchedule
-        fields = [
-            'scheduled_delivery_date', 'vendor_location', 'contact_person',
-            'contact_phone', 'special_instructions'
-        ]
-        widgets = {
-            'scheduled_delivery_date': forms.DateTimeInput(attrs={
-                'class': 'form-control', 
-                'type': 'datetime-local'
-            }),
-            'vendor_location': forms.Select(attrs={'class': 'form-select'}),
-            'contact_person': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Person available at pickup location'
-            }),
-            'contact_phone': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': '+91-9876543210'
-            }),
-            'special_instructions': forms.Textarea(attrs={
-                'class': 'form-control', 
-                'rows': 4,
-                'placeholder': 'Any special handling instructions, access directions, preferred time slots, etc.'
-            }),
-        }
-
-    def __init__(self, *args, **kwargs):
-        vendor = kwargs.pop('vendor', None)
-        super().__init__(*args, **kwargs)
-        
-        if vendor:
-            # Filter locations for the specific vendor
-            self.fields['vendor_location'].queryset = VendorLocation.objects.filter(
-                vendor=vendor, is_active=True
-            )
 
 class VendorProfileUpdateForm(forms.ModelForm):
     """Form for vendors to update their profile"""
@@ -473,3 +436,100 @@ class CategoryBulkOfferForm(forms.Form):
                 )
         
         return cleaned_data
+    
+
+
+
+class DeliveryScheduleForm(forms.ModelForm):
+    class Meta:
+        model = DeliverySchedule
+        fields = [
+            'scheduled_delivery_date',
+            'vendor_location', 
+            'contact_person',
+            'contact_phone',
+            'special_instructions'
+        ]
+        widgets = {
+            'scheduled_delivery_date': forms.DateTimeInput(
+                attrs={
+                    'type': 'datetime-local',
+                    'class': 'form-control',
+                    'min': timezone.now().strftime('%Y-%m-%dT%H:%M')
+                }
+            ),
+            'vendor_location': forms.Select(attrs={'class': 'form-control'}),
+            'contact_person': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Contact person name'
+            }),
+            'contact_phone': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': '+91 9876543210'
+            }),
+            'special_instructions': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Any special instructions for pickup (optional)'
+            })
+        }
+    
+    def __init__(self, *args, vendor=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+        if vendor:
+            # Filter locations for this vendor only
+            self.fields['vendor_location'].queryset = VendorLocation.objects.filter(
+                vendor=vendor, 
+                is_active=True
+            )
+            
+            # If vendor has locations, make it required
+            if self.fields['vendor_location'].queryset.exists():
+                self.fields['vendor_location'].required = True
+            else:
+                self.fields['vendor_location'].required = False
+                self.fields['vendor_location'].help_text = "No pickup locations found. Please add one below."
+        
+        # Set minimum datetime to current time
+        self.fields['scheduled_delivery_date'].widget.attrs['min'] = timezone.now().strftime('%Y-%m-%dT%H:%M')
+    
+    def clean_scheduled_delivery_date(self):
+        delivery_date = self.cleaned_data['scheduled_delivery_date']
+        
+        if delivery_date <= timezone.now():
+            raise forms.ValidationError("Delivery date must be in the future.")
+        
+        # Don't allow scheduling too far in advance (30 days)
+        max_date = timezone.now() + timezone.timedelta(days=30)
+        if delivery_date > max_date:
+            raise forms.ValidationError("Delivery date cannot be more than 30 days in the future.")
+        
+        return delivery_date
+    
+    def clean_contact_phone(self):
+        phone = self.cleaned_data['contact_phone']
+        
+        # Basic phone validation
+        import re
+        if not re.match(r'^[\+]?[1-9][\d\s\-\(\)]{8,15}$', phone):
+            raise forms.ValidationError("Please enter a valid phone number.")
+        
+        return phone
+
+
+
+# Add this form for quick location creation
+class QuickVendorLocationForm(forms.ModelForm):
+    class Meta:
+        model = VendorLocation
+        fields = ['name', 'address', 'city', 'state', 'pincode', 'contact_person', 'phone']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'e.g., Main Office'}),
+            'address': forms.Textarea(attrs={'class': 'form-control', 'rows': 2}),
+            'city': forms.TextInput(attrs={'class': 'form-control'}),
+            'state': forms.TextInput(attrs={'class': 'form-control'}),
+            'pincode': forms.TextInput(attrs={'class': 'form-control'}),
+            'contact_person': forms.TextInput(attrs={'class': 'form-control'}),
+            'phone': forms.TextInput(attrs={'class': 'form-control'}),
+        }

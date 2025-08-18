@@ -31,7 +31,7 @@ urlpatterns = [
     path('remove-from-cart/<int:item_id>/', views.remove_from_cart, name='remove_from_cart'),
     
     # AJAX endpoints
-    path('ajax/load-subcategories/', views.load_subcategories, name='load_subcategories'),
-    path('ajax/load-subsubcategories/', views.load_subsubcategories, name='load_subsubcategories'),
-    path('ajax/check-book-exists/', views.check_book_exists, name='check_book_exists'),
+    path('ajax/load-subcategories/', views.load_subcategories, name='ajax_load_subcategories'),
+    path('ajax/load-subsubcategories/', views.load_subsubcategories, name='ajax_load_subsubcategories'),
+    path('ajax/check-book-exists/', views.check_book_exists, name='ajax_check_book_exists'),
 ]

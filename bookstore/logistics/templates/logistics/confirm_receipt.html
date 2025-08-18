@@ -1,0 +1,288 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Confirm Stock Receipt - {{ delivery.stock_offer.book.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+    .receipt-card {
+        background: white;
+        border-radius: 10px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        padding: 2rem;
+        margin-bottom: 2rem;
+    }
+    .delivery-info {
+        background: #f8f9fa;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+    }
+    .form-group {
+        margin-bottom: 1.5rem;
+    }
+    .form-control {
+        border-radius: 6px;
+        border: 1px solid #ddd;
+        padding: 0.75rem;
+    }
+    .btn-confirm {
+        background: #28a745;
+        color: white;
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 6px;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    .btn-confirm:hover {
+        background: #218838;
+        transform: translateY(-1px);
+    }
+    .btn-cancel {
+        background: #6c757d;
+        color: white;
+        border: none;
+        padding: 0.75rem 2rem;
+        border-radius: 6px;
+        margin-right: 1rem;
+    }
+    .quantity-input {
+        max-width: 120px;
+    }
+    .status-badge {
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        font-size: 0.875rem;
+        font-weight: 500;
+    }
+    .status-arrived {
+        background: #fff3cd;
+        color: #856404;
+    }
+    .alert-info {
+        background: #e7f3ff;
+        border: 1px solid #b3d9ff;
+        color: #0c5460;
+        border-radius: 6px;
+        padding: 1rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-4">
+    <div class="row">
+        <div class="col-12">
+            <!-- Header -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h1 class="h3 mb-1">Confirm Stock Receipt</h1>
+                    <p class="text-muted">Delivery #{{ delivery.id }} - {{ delivery.vendor.business_name }}</p>
+                </div>
+                <div>
+                    <span class="status-badge status-arrived">{{ delivery.get_status_display }}</span>
+                </div>
+            </div>
+
+            <!-- Alert Info -->
+            <div class="alert-info">
+                <i class="fas fa-info-circle me-2"></i>
+                <strong>Important:</strong> Please verify the quantity and condition of books received before confirming. 
+                This action will automatically update inventory levels.
+            </div>
+
+            <div class="row">
+                <!-- Delivery Information -->
+                <div class="col-lg-6">
+                    <div class="receipt-card">
+                        <h5 class="mb-3">
+                            <i class="fas fa-truck me-2"></i>
+                            Delivery Information
+                        </h5>
+                        
+                        <div class="delivery-info">
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>Book:</strong></div>
+                                <div class="col-sm-8">{{ delivery.stock_offer.book.title }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>Author(s):</strong></div>
+                                <div class="col-sm-8">
+                                    {% for author in delivery.stock_offer.book.authors.all %}
+                                        {{ author.name }}{% if not forloop.last %}, {% endif %}
+                                    {% endfor %}
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>ISBN:</strong></div>
+                                <div class="col-sm-8">{{ delivery.stock_offer.book.isbn }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>Vendor:</strong></div>
+                                <div class="col-sm-8">{{ delivery.vendor.business_name }}</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>Expected Qty:</strong></div>
+                                <div class="col-sm-8">{{ delivery.stock_offer.quantity }} books</div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-sm-4"><strong>Logistics Partner:</strong></div>
+                                <div class="col-sm-8">
+                                    {% if delivery.assigned_partner %}
+                                        {{ delivery.assigned_partner.name }}
+                                    {% else %}
+                                        <span class="text-muted">Not assigned</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            <div class="row mb-0">
+                                <div class="col-sm-4"><strong>Delivered At:</strong></div>
+                                <div class="col-sm-8">
+                                    {% if delivery.actual_delivery_time %}
+                                        {{ delivery.actual_delivery_time|date:"M d, Y g:i A" }}
+                                    {% else %}
+                                        <span class="text-muted">Not recorded</span>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Receipt Confirmation Form -->
+                <div class="col-lg-6">
+                    <div class="receipt-card">
+                        <h5 class="mb-3">
+                            <i class="fas fa-clipboard-check me-2"></i>
+                            Receipt Confirmation
+                        </h5>
+
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            
+                            <!-- Quantity Fields -->
+                            <div class="form-group">
+                                <label for="{{ form.books_received.id_for_label }}" class="form-label">
+                                    <strong>Books Actually Received</strong>
+                                </label>
+                                {{ form.books_received }}
+                                {% if form.books_received.errors %}
+                                    <div class="text-danger small mt-1">{{ form.books_received.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                <label for="{{ form.books_accepted.id_for_label }}" class="form-label">
+                                    <strong>Books Accepted (Good Condition)</strong>
+                                </label>
+                                {{ form.books_accepted }}
+                                {% if form.books_accepted.errors %}
+                                    <div class="text-danger small mt-1">{{ form.books_accepted.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <div class="form-group">
+                                <label for="{{ form.books_rejected.id_for_label }}" class="form-label">
+                                    <strong>Books Rejected</strong>
+                                </label>
+                                {{ form.books_rejected }}
+                                {% if form.books_rejected.errors %}
+                                    <div class="text-danger small mt-1">{{ form.books_rejected.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Condition Rating -->
+                            <div class="form-group">
+                                <label for="{{ form.condition_rating.id_for_label }}" class="form-label">
+                                    <strong>Overall Condition Rating</strong>
+                                </label>
+                                {{ form.condition_rating }}
+                                {% if form.condition_rating.errors %}
+                                    <div class="text-danger small mt-1">{{ form.condition_rating.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Rejection Reason -->
+                            <div class="form-group">
+                                <label for="{{ form.rejection_reason.id_for_label }}" class="form-label">
+                                    Rejection Reason (if any)
+                                </label>
+                                {{ form.rejection_reason }}
+                                {% if form.rejection_reason.errors %}
+                                    <div class="text-danger small mt-1">{{ form.rejection_reason.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Quality Notes -->
+                            <div class="form-group">
+                                <label for="{{ form.quality_notes.id_for_label }}" class="form-label">
+                                    Quality Notes
+                                </label>
+                                {{ form.quality_notes }}
+                                {% if form.quality_notes.errors %}
+                                    <div class="text-danger small mt-1">{{ form.quality_notes.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Photos -->
+                            <div class="form-group">
+                                <label for="{{ form.photos.id_for_label }}" class="form-label">
+                                    Photos (Optional)
+                                </label>
+                                {{ form.photos }}
+                                <small class="form-text text-muted">Upload photos of received books if needed</small>
+                                {% if form.photos.errors %}
+                                    <div class="text-danger small mt-1">{{ form.photos.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="form-group mt-4">
+                                <a href="{% url 'logistics:pending_receipts' %}" class="btn btn-cancel">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </a>
+                                <button type="submit" class="btn btn-confirm">
+                                    <i class="fas fa-check me-2"></i>Confirm Receipt & Update Stock
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const receivedInput = document.getElementById('{{ form.books_received.id_for_label }}');
+    const acceptedInput = document.getElementById('{{ form.books_accepted.id_for_label }}');
+    const rejectedInput = document.getElementById('{{ form.books_rejected.id_for_label }}');
+    
+    // Auto-calculate rejected books when received or accepted changes
+    function updateRejected() {
+        const received = parseInt(receivedInput.value) || 0;
+        const accepted = parseInt(acceptedInput.value) || 0;
+        const rejected = Math.max(0, received - accepted);
+        rejectedInput.value = rejected;
+    }
+    
+    receivedInput.addEventListener('input', updateRejected);
+    acceptedInput.addEventListener('input', updateRejected);
+    
+    // Validation
+    acceptedInput.addEventListener('input', function() {
+        const received = parseInt(receivedInput.value) || 0;
+        const accepted = parseInt(this.value) || 0;
+        
+        if (accepted > received) {
+            this.setCustomValidity('Accepted books cannot exceed received books');
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+});
+</script>
+{% endblock %}

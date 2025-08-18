@@ -4,6 +4,10 @@
 
 {% block title %}All Books - {{ block.super }}{% endblock %}
 
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/pages/books.css' %}?v=1.0">
+{% endblock %}
+
 {% block content %}
 <div class="container my-5">
     <div class="row">
@@ -98,7 +102,7 @@
                         <div class="card h-100 book-card">
                             <a href="{% url 'books:book_detail' book.slug %}">
                                 {% if book.get_cover_image_url %}
-                                    <img src="{{ book.get_cover_image_url }}" class="card-img-top" style="height: 250px; object-fit: cover;" alt="{{ book.title }}">
+                                    <img src="{{ book.get_cover_image_url }}" class="card-img-top" style="  object-fit: contain;" alt="{{ book.title }}">
                                 {% else %}
                                     <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 250px;">
                                         <i class="fas fa-book fa-3x text-muted"></i>
@@ -210,25 +214,6 @@
 
 {% endblock %}
 
-{% block extra_css %}
-<style>
-    .book-card {
-        transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .book-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-    }
-    .sticky-top {
-        position: sticky;
-        top: 20px;
-    }
-    .btn:disabled {
-        opacity: 0.6;
-        cursor: not-allowed;
-    }
-</style>
-{% endblock %}
 
 {% block extra_js %}
 <script>

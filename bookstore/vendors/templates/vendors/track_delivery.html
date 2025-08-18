@@ -1,0 +1,753 @@
+<!-- vendors/templates/vendors/track_delivery.html -->
+{% extends 'vendors/base.html' %}
+
+{% block title %}Track Delivery - {{ offer.book.title }} - BookStore{% endblock %}
+
+{% block extra_css %}
+<style>
+    .delivery-header {
+        background: linear-gradient(135deg, rgba(102, 126, 234, 0.1) 0%, rgba(118, 75, 162, 0.1) 100%);
+        border: 1px solid rgba(102, 126, 234, 0.2);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 30px;
+    }
+    
+    .progress-container {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 30px;
+        margin-bottom: 25px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+    
+    .delivery-progress {
+        position: relative;
+        margin: 40px 0;
+    }
+    
+    .progress-bar-custom {
+        height: 8px;
+        background: #e9ecef;
+        border-radius: 4px;
+        overflow: hidden;
+        position: relative;
+    }
+    
+    .progress-fill {
+        height: 100%;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 4px;
+        transition: width 1.5s ease-in-out;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .progress-fill::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -100%;
+        width: 100%;
+        height: 100%;
+        background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+        animation: shimmer 2s infinite;
+    }
+    
+    @keyframes shimmer {
+        0% { left: -100%; }
+        100% { left: 100%; }
+    }
+    
+    .status-steps {
+        display: flex;
+        justify-content: space-between;
+        position: relative;
+        margin-top: 30px;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+    
+    .status-step {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+        flex: 1;
+        min-width: 120px;
+        position: relative;
+    }
+    
+    .step-icon {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+        margin-bottom: 10px;
+        transition: all 0.3s ease;
+        position: relative;
+        z-index: 2;
+    }
+    
+    .step-icon.completed {
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        animation: pulse-success 2s infinite;
+    }
+    
+    .step-icon.active {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        animation: pulse-active 2s infinite;
+        box-shadow: 0 0 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .step-icon.pending {
+        background: #f8f9fa;
+        border: 2px solid #dee2e6;
+        color: #6c757d;
+    }
+    
+    @keyframes pulse-success {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 10px rgba(40, 167, 69, 0.3); }
+        50% { transform: scale(1.05); box-shadow: 0 0 20px rgba(40, 167, 69, 0.5); }
+    }
+    
+    @keyframes pulse-active {
+        0%, 100% { transform: scale(1); box-shadow: 0 0 10px rgba(102, 126, 234, 0.4); }
+        50% { transform: scale(1.05); box-shadow: 0 0 25px rgba(102, 126, 234, 0.6); }
+    }
+    
+    .step-label {
+        font-size: 0.8rem;
+        font-weight: 600;
+        color: #333;
+        margin-bottom: 5px;
+    }
+    
+    .step-time {
+        font-size: 0.7rem;
+        color: #666;
+    }
+    
+    .delivery-details {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 25px;
+        margin-bottom: 25px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+    
+    .detail-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .detail-row:last-child {
+        border-bottom: none;
+    }
+    
+    .detail-label {
+        font-weight: 600;
+        color: #333;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .detail-value {
+        color: #667eea;
+        font-weight: 500;
+    }
+    
+    .tracking-timeline {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 15px;
+        padding: 25px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+    }
+    
+    .timeline-item {
+        position: relative;
+        padding-left: 40px;
+        padding-bottom: 25px;
+    }
+    
+    .timeline-item:last-child {
+        padding-bottom: 0;
+    }
+    
+    .timeline-item::before {
+        content: '';
+        position: absolute;
+        left: 15px;
+        top: 0;
+        bottom: -25px;
+        width: 2px;
+        background: linear-gradient(to bottom, #667eea, rgba(102, 126, 234, 0.3));
+    }
+    
+    .timeline-item:last-child::before {
+        display: none;
+    }
+    
+    .timeline-icon {
+        position: absolute;
+        left: 0;
+        top: 5px;
+        width: 30px;
+        height: 30px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-size: 0.8rem;
+        z-index: 2;
+    }
+    
+    .timeline-content {
+        background: rgba(248, 249, 250, 0.8);
+        border-radius: 10px;
+        padding: 15px;
+        border-left: 3px solid #667eea;
+    }
+    
+    .timeline-status {
+        font-weight: 600;
+        color: #667eea;
+        margin-bottom: 5px;
+    }
+    
+    .timeline-description {
+        color: #666;
+        font-size: 0.9rem;
+        margin-bottom: 5px;
+    }
+    
+    .timeline-time {
+        font-size: 0.8rem;
+        color: #999;
+        display: flex;
+        align-items: center;
+        gap: 5px;
+    }
+    
+    .partner-info {
+        background: linear-gradient(135deg, rgba(255, 193, 7, 0.1) 0%, rgba(255, 235, 59, 0.1) 100%);
+        border: 1px solid rgba(255, 193, 7, 0.3);
+        border-radius: 10px;
+        padding: 20px;
+        margin: 20px 0;
+    }
+    
+    .refresh-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        color: white;
+        border: none;
+        border-radius: 50%;
+        width: 60px;
+        height: 60px;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 5px 15px rgba(102, 126, 234, 0.3);
+        z-index: 1000;
+    }
+    
+    .refresh-btn:hover {
+        transform: scale(1.1);
+        box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+    }
+    
+    .refresh-btn.spinning {
+        animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+    }
+    
+    @media (max-width: 768px) {
+        .status-steps {
+            flex-direction: column;
+            gap: 20px;
+        }
+        
+        .status-step {
+            flex-direction: row;
+            text-align: left;
+            justify-content: flex-start;
+        }
+        
+        .step-icon {
+            margin-right: 15px;
+            margin-bottom: 0;
+        }
+        
+        .detail-row {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 5px;
+        }
+        
+        .refresh-btn {
+            bottom: 20px;
+            right: 20px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" style="margin-bottom: 20px;">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'vendors:dashboard' %}">Dashboard</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'vendors:delivery_history' %}">Deliveries</a></li>
+            <li class="breadcrumb-item active">Track Delivery</li>
+        </ol>
+    </nav>
+
+    <!-- Delivery Header -->
+    <div class="delivery-header">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="mb-2">
+                    <i class="fas fa-truck me-2"></i>Tracking Delivery
+                </h1>
+                <h3 class="text-primary mb-0">{{ offer.book.title }}</h3>
+                <p class="mb-0 mt-2">
+                    <strong>Quantity:</strong> {{ offer.quantity }} books • 
+                    <strong>Value:</strong> ₹{{ offer.total_amount }}
+                </p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="badge bg-{{ delivery.status }} fs-6 p-3">
+                    {{ delivery.get_status_display }}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Progress Bar -->
+    <div class="progress-container">
+        <h4 class="mb-4">
+            <i class="fas fa-route me-2"></i>Delivery Progress
+            <span class="badge bg-primary ms-2">{{ progress_percentage }}%</span>
+        </h4>
+        
+        <div class="delivery-progress">
+            <div class="progress-bar-custom">
+                <div class="progress-fill" style="width: {{ progress_percentage }}%"></div>
+            </div>
+            
+            <!-- Status Steps -->
+            <div class="status-steps">
+                <div class="status-step">
+                    <div class="step-icon {% if progress_percentage >= 10 %}completed{% else %}pending{% endif %}">
+                        <i class="fas fa-calendar"></i>
+                    </div>
+                    <div class="step-label">Scheduled</div>
+                    <div class="step-time">
+                        {{ delivery.scheduled_delivery_date|date:"M d, H:i" }}
+                    </div>
+                </div>
+                
+                <div class="status-step">
+                    <div class="step-icon {% if progress_percentage >= 40 %}completed{% elif progress_percentage >= 20 %}active{% else %}pending{% endif %}">
+                        <i class="fas fa-user-check"></i>
+                    </div>
+                    <div class="step-label">Partner Assigned</div>
+                    <div class="step-time">
+                        {% if delivery.assigned_partner %}
+                            Assigned
+                        {% else %}
+                            Pending
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="status-step">
+                    <div class="step-icon {% if progress_percentage >= 60 %}completed{% elif progress_percentage >= 40 %}active{% else %}pending{% endif %}">
+                        <i class="fas fa-box"></i>
+                    </div>
+                    <div class="step-label">Collected</div>
+                    <div class="step-time">
+                        {% if delivery.actual_pickup_time %}
+                            {{ delivery.actual_pickup_time|date:"M d, H:i" }}
+                        {% else %}
+                            Pending
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="status-step">
+                    <div class="step-icon {% if progress_percentage >= 80 %}completed{% elif progress_percentage >= 60 %}active{% else %}pending{% endif %}">
+                        <i class="fas fa-shipping-fast"></i>
+                    </div>
+                    <div class="step-label">In Transit</div>
+                    <div class="step-time">
+                        {% if delivery.status == 'in_transit' %}
+                            In Progress
+                        {% else %}
+                            Pending
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <div class="status-step">
+                    <div class="step-icon {% if progress_percentage >= 100 %}completed{% elif progress_percentage >= 90 %}active{% else %}pending{% endif %}">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="step-label">Delivered</div>
+                    <div class="step-time">
+                        {% if delivery.actual_delivery_time %}
+                            {{ delivery.actual_delivery_time|date:"M d, H:i" }}
+                        {% else %}
+                            Pending
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-6">
+            <!-- Delivery Details -->
+            <div class="delivery-details">
+                <h4 class="mb-4">
+                    <i class="fas fa-info-circle me-2"></i>Delivery Details
+                </h4>
+                
+                <div class="detail-row">
+                    <div class="detail-label">
+                        <i class="fas fa-hashtag"></i>Delivery ID
+                    </div>
+                    <div class="detail-value">#{{ delivery.id }}</div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">
+                        <i class="fas fa-calendar"></i>Scheduled Date
+                    </div>
+                    <div class="detail-value">{{ delivery.scheduled_delivery_date|date:"F d, Y - g:i A" }}</div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">
+                        <i class="fas fa-map-marker-alt"></i>Pickup Location
+                    </div>
+                    <div class="detail-value">{{ delivery.vendor_location.name }}</div>
+                </div>
+                
+                <div class="detail-row">
+                    <div class="detail-label">
+                        <i class="fas fa-user"></i>Contact Person
+                    </div>
+                    <div class="detail-value">
+                        {{ delivery.contact_person }}
+                        {% if delivery.contact_phone %}
+                            <br><small class="text-muted">{{ delivery.contact_phone }}</small>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                {% if delivery.special_instructions %}
+                <div class="detail-row">
+                    <div class="detail-label">
+                        <i class="fas fa-sticky-note"></i>Instructions
+                    </div>
+                    <div class="detail-value">{{ delivery.special_instructions }}</div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Logistics Partner Info -->
+            {% if delivery.assigned_partner %}
+            <div class="partner-info">
+                <h5 class="mb-3">
+                    <i class="fas fa-truck me-2"></i>Logistics Partner
+                </h5>
+                <div class="row">
+                    <div class="col-6">
+                        <strong>{{ delivery.assigned_partner.name }}</strong>
+                        <br><small class="text-muted">{{ delivery.assigned_partner.vehicle_type|title }}</small>
+                    </div>
+                    <div class="col-6">
+                        {% if delivery.assigned_partner.phone %}
+                            <i class="fas fa-phone me-1"></i>{{ delivery.assigned_partner.phone }}
+                        {% endif %}
+                        <br>
+                        {% if delivery.assigned_partner.rating %}
+                            <span class="text-warning">
+                                ⭐ {{ delivery.assigned_partner.rating }}/5.0
+                            </span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+        
+        <div class="col-lg-6">
+            <!-- Tracking Timeline -->
+            <div class="tracking-timeline">
+                <h4 class="mb-4">
+                    <i class="fas fa-history me-2"></i>Tracking History
+                </h4>
+                
+                {% if tracking_updates %}
+                    {% for update in tracking_updates %}
+                        <div class="timeline-item">
+                            <div class="timeline-icon">
+                                {% if update.status == 'scheduled' %}<i class="fas fa-calendar"></i>
+                                {% elif update.status == 'confirmed' %}<i class="fas fa-check"></i>
+                                {% elif update.status == 'pickup_assigned' %}<i class="fas fa-user-plus"></i>
+                                {% elif update.status == 'collected' %}<i class="fas fa-box"></i>
+                                {% elif update.status == 'in_transit' %}<i class="fas fa-truck"></i>
+                                {% elif update.status == 'arrived' %}<i class="fas fa-warehouse"></i>
+                                {% elif update.status == 'completed' %}<i class="fas fa-check-circle"></i>
+                                {% else %}<i class="fas fa-info"></i>{% endif %}
+                            </div>
+                            <div class="timeline-content">
+                                <div class="timeline-status">
+                                    {{ update.get_status_display }}
+                                </div>
+                                <div class="timeline-description">
+                                    {{ update.notes }}
+                                </div>
+                                {% if update.location %}
+                                    <div class="timeline-description">
+                                        <i class="fas fa-map-marker-alt me-1"></i>{{ update.location }}
+                                    </div>
+                                {% endif %}
+                                <div class="timeline-time">
+                                    <i class="fas fa-clock me-1"></i>
+                                    {{ update.timestamp|date:"F d, Y - g:i A" }}
+                                </div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-clock fa-2x mb-3"></i>
+                        <h6>No tracking updates yet</h6>
+                        <p>Updates will appear here as your delivery progresses.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="text-center mt-4">
+        <a href="{% url 'vendors:delivery_history' %}" class="btn btn-outline-primary me-3">
+            <i class="fas fa-list me-2"></i>All Deliveries
+        </a>
+        <a href="{% url 'vendors:dashboard' %}" class="btn btn-outline-secondary">
+            <i class="fas fa-home me-2"></i>Dashboard
+        </a>
+    </div>
+
+    <!-- Floating Refresh Button -->
+    <button class="refresh-btn" onclick="refreshTracking()" title="Refresh tracking">
+        <i class="fas fa-sync-alt"></i>
+    </button>
+</div>
+
+<script>
+// Auto-refresh tracking every 30 seconds
+let refreshInterval;
+
+function startAutoRefresh() {
+    refreshInterval = setInterval(refreshTracking, 30000);
+}
+
+function stopAutoRefresh() {
+    if (refreshInterval) {
+        clearInterval(refreshInterval);
+    }
+}
+
+function refreshTracking() {
+    const refreshBtn = document.querySelector('.refresh-btn');
+    refreshBtn.classList.add('spinning');
+    
+    // Simulate refresh - in real app, this would fetch new data
+    setTimeout(() => {
+        refreshBtn.classList.remove('spinning');
+        // In production, you'd reload the page or fetch new data via AJAX
+        location.reload();
+    }, 1000);
+}
+
+// Progress bar animation
+function animateProgressBar() {
+    const progressFill = document.querySelector('.progress-fill');
+    const targetWidth = {{ progress_percentage }};
+    
+    // Start from 0 and animate to target
+    progressFill.style.width = '0%';
+    
+    setTimeout(() => {
+        progressFill.style.width = targetWidth + '%';
+    }, 500);
+}
+
+// Initialize animations
+document.addEventListener('DOMContentLoaded', function() {
+    animateProgressBar();
+    startAutoRefresh();
+    
+    // Animate timeline items
+    const timelineItems = document.querySelectorAll('.timeline-item');
+    timelineItems.forEach((item, index) => {
+        item.style.opacity = '0';
+        item.style.transform = 'translateX(-20px)';
+        
+        setTimeout(() => {
+            item.style.transition = 'all 0.5s ease';
+            item.style.opacity = '1';
+            item.style.transform = 'translateX(0)';
+        }, index * 200);
+    });
+    
+    // Animate status steps
+    const statusSteps = document.querySelectorAll('.status-step');
+    statusSteps.forEach((step, index) => {
+        step.style.opacity = '0';
+        step.style.transform = 'translateY(20px)';
+        
+        setTimeout(() => {
+            step.style.transition = 'all 0.6s ease';
+            step.style.opacity = '1';
+            step.style.transform = 'translateY(0)';
+        }, index * 150);
+    });
+});
+
+// Cleanup on page unload
+window.addEventListener('beforeunload', stopAutoRefresh);
+
+// Pause auto-refresh when page is not visible
+document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'hidden') {
+        stopAutoRefresh();
+    } else {
+        startAutoRefresh();
+    }
+});
+
+// Show notification if delivery status changed
+{% if messages %}
+    {% for message in messages %}
+        // You can add notification toasts here
+        console.log('{{ message }}');
+    {% endfor %}
+{% endif %}
+
+// Add click handlers for interactive elements
+document.querySelectorAll('.timeline-item').forEach(item => {
+    item.addEventListener('mouseenter', function() {
+        this.style.transform = 'translateX(5px)';
+        this.style.transition = 'transform 0.3s ease';
+    });
+    
+    item.addEventListener('mouseleave', function() {
+        this.style.transform = 'translateX(0)';
+    });
+});
+
+// Enhanced status step interactions
+document.querySelectorAll('.status-step').forEach(step => {
+    step.addEventListener('mouseenter', function() {
+        const icon = this.querySelector('.step-icon');
+        if (icon.classList.contains('completed') || icon.classList.contains('active')) {
+            icon.style.transform = 'scale(1.1)';
+            icon.style.transition = 'transform 0.3s ease';
+        }
+    });
+    
+    step.addEventListener('mouseleave', function() {
+        const icon = this.querySelector('.step-icon');
+        icon.style.transform = 'scale(1)';
+    });
+});
+
+// Delivery status updates (WebSocket simulation)
+function simulateRealTimeUpdates() {
+    const currentStatus = '{{ delivery.status }}';
+    const statusOrder = ['scheduled', 'confirmed', 'pickup_assigned', 'collected', 'in_transit', 'arrived', 'completed'];
+    
+    // This would be replaced with actual WebSocket connection in production
+    // For demo purposes, we'll just show how it would work
+    
+    setInterval(() => {
+        // Check for status updates via API
+        fetch(`/vendors/api/delivery-status/{{ delivery.id }}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status !== currentStatus) {
+                    // Show notification and refresh
+                    showStatusChangeNotification(data.status);
+                    setTimeout(() => location.reload(), 2000);
+                }
+            })
+            .catch(err => console.log('Status check failed:', err));
+    }, 60000); // Check every minute
+}
+
+function showStatusChangeNotification(newStatus) {
+    // Create a simple notification
+    const notification = document.createElement('div');
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 10px;
+        z-index: 1001;
+        font-weight: 600;
+        box-shadow: 0 5px 15px rgba(40, 167, 69, 0.3);
+        transform: translateX(100%);
+        transition: transform 0.3s ease;
+    `;
+    notification.innerHTML = `
+        <i class="fas fa-bell me-2"></i>
+        Delivery status updated to: ${newStatus}
+    `;
+    
+    document.body.appendChild(notification);
+    
+    // Animate in
+    setTimeout(() => {
+        notification.style.transform = 'translateX(0)';
+    }, 100);
+    
+    // Remove after 5 seconds
+    setTimeout(() => {
+        notification.style.transform = 'translateX(100%)';
+        setTimeout(() => notification.remove(), 300);
+    }, 5000);
+}
+
+// Initialize real-time updates (commented out for demo)
+// simulateRealTimeUpdates();
+</script>
+{% endblock %}

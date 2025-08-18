@@ -102,13 +102,15 @@ class StockMovement(models.Model):
     performed_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
-     # Add delivery tracking
+    # Add delivery tracking
     delivery_schedule = models.ForeignKey('logistics.DeliverySchedule', 
                                         on_delete=models.SET_NULL, null=True, blank=True)
     stock_offer = models.ForeignKey('vendors.StockOffer', 
                                    on_delete=models.SET_NULL, null=True, blank=True)
     auto_created_from_delivery = models.BooleanField(default=False)
-
+    
+    # NEW: Add flag to prevent automatic stock updates
+    auto_update_stock = models.BooleanField(default=True)
     
     class Meta:
         ordering = ['-created_at']
@@ -117,18 +119,24 @@ class StockMovement(models.Model):
         return f"{self.stock.book.title} - {self.movement_type} ({self.quantity})"
     
     def save(self, *args, **kwargs):
-        # Update stock quantity
-        if self.pk is None:  # New movement
-            if self.movement_type in ['in', 'returned', 'adjustment'] and self.quantity > 0:
+        # FIXED: Only update stock if this is a new movement AND auto_update_stock is True
+        is_new_movement = self.pk is None
+        
+        if is_new_movement and self.auto_update_stock:
+            # Update stock quantity based on movement type
+            if self.movement_type in ['in', 'returned'] and self.quantity > 0:
                 self.stock.quantity += abs(self.quantity)
             elif self.movement_type in ['out', 'damaged'] and self.quantity < 0:
                 self.stock.quantity += self.quantity  # Subtract (quantity is negative)
+            elif self.movement_type == 'adjustment':
+                # For adjustments, apply the quantity as-is (can be positive or negative)
+                if self.quantity != 0:  # Only update if there's an actual quantity change
+                    self.stock.quantity += self.quantity
             
             # Save stock and update book status
             self.stock.save()
         
         super().save(*args, **kwargs)
-
         
 class CategoryStock(models.Model):
     category = models.OneToOneField(Category, on_delete=models.CASCADE, related_name='category_stock')

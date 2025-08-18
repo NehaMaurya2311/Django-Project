@@ -30,7 +30,6 @@ class LogisticsPartner(models.Model):
     driver_license = models.CharField(max_length=50, blank=True)
     
     service_areas = models.JSONField(default=list, help_text="List of cities/areas they serve")
-    
     status = models.CharField(max_length=20, choices=PARTNER_STATUS, default='active')
     rating = models.DecimalField(max_digits=3, decimal_places=2, default=0.00)
     
@@ -147,6 +146,8 @@ class DeliverySchedule(models.Model):
     actual_pickup_time = models.DateTimeField(null=True, blank=True)
     estimated_delivery_time = models.DateTimeField(null=True, blank=True)
     actual_delivery_time = models.DateTimeField(null=True, blank=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    confirmed_at = models.DateTimeField(null=True, blank=True)
     
     # Stock verification
     delivered_quantity = models.PositiveIntegerField(null=True, blank=True)
@@ -158,13 +159,35 @@ class DeliverySchedule(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
 class DeliveryTracking(models.Model):
-    delivery = models.ForeignKey(DeliverySchedule, on_delete=models.CASCADE, related_name='tracking_updates')
-    status = models.CharField(max_length=20, choices=DeliverySchedule.DELIVERY_STATUS)
-    location = models.CharField(max_length=200, blank=True)
-    notes = models.TextField()
-    updated_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True)
-    photo_proof = models.ImageField(upload_to='delivery_photos/', blank=True)
+    """Track delivery status updates"""
+    delivery = models.ForeignKey(
+        'DeliverySchedule', 
+        on_delete=models.CASCADE,
+        related_name='tracking_updates'
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=DeliverySchedule.DELIVERY_STATUS  # Reference from DeliverySchedule
+    )
     timestamp = models.DateTimeField(auto_now_add=True)
+    location = models.CharField(max_length=255, blank=True)
+    notes = models.TextField(blank=True)
+    updated_by = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        related_name='delivery_updates',
+        default=1
+    )
+    
+    class Meta:
+        ordering = ['-timestamp']
+        verbose_name = "Delivery Tracking Update"
+        verbose_name_plural = "Delivery Tracking Updates"
+    
+    def __str__(self):
+        return f"Delivery #{self.delivery.id} - {self.get_status_display()} at {self.timestamp}"
+
+
 
 class StockReceiptConfirmation(models.Model):
     delivery_schedule = models.OneToOneField(DeliverySchedule, on_delete=models.CASCADE)

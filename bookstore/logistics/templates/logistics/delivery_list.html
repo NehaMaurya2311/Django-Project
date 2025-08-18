@@ -1,0 +1,1044 @@
+{% extends 'logistics/base.html' %}
+
+{% block title %}Delivery Schedule Management - Logistics{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">🚚 Delivery Schedule Management</h1>
+    <p class="page-subtitle">Manage vendor pickup schedules and assign logistics partners</p>
+</div>
+
+<!-- Filter and Search Bar -->
+<div class="filter-section">
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label for="statusFilter" class="form-label">Status:</label>
+            <select id="statusFilter" class="form-control" onchange="applyFilters()">
+                <option value="">All Statuses</option>
+                <option value="scheduled" {% if status_filter == 'scheduled' %}selected{% endif %}>⏰ Scheduled (Need Assignment)</option>
+                <option value="confirmed" {% if status_filter == 'confirmed' %}selected{% endif %}>✅ Confirmed</option>
+                <option value="pickup_assigned" {% if status_filter == 'pickup_assigned' %}selected{% endif %}>👤 Partner Assigned</option>
+                <option value="collected" {% if status_filter == 'collected' %}selected{% endif %}>📦 Collected</option>
+                <option value="in_transit" {% if status_filter == 'in_transit' %}selected{% endif %}>🚚 In Transit</option>
+                <option value="arrived" {% if status_filter == 'arrived' %}selected{% endif %}>🏢 Arrived</option>
+                <option value="completed" {% if status_filter == 'completed' %}selected{% endif %}>✅ Completed</option>
+            </select>
+        </div>
+        
+        <div class="filter-group">
+            <label for="partnerFilter" class="form-label">Partner:</label>
+            <select id="partnerFilter" class="form-control" onchange="applyFilters()">
+                <option value="">All Partners</option>
+                <option value="unassigned" {% if partner_filter == 'unassigned' %}selected{% endif %}>🔍 Unassigned</option>
+                <option value="assigned" {% if partner_filter == 'assigned' %}selected{% endif %}>👥 Assigned</option>
+            </select>
+        </div>
+        
+        <div class="search-group">
+            <input type="text" id="searchInput" class="form-control" placeholder="Search vendor, book title, contact..." 
+                   value="{{ search_query|default:'' }}" onkeypress="handleSearchKeyPress(event)">
+            <button onclick="applyFilters()" class="btn btn-primary">🔍 Search</button>
+        </div>
+        
+        <div class="action-group">
+            <button onclick="window.location.reload()" class="btn btn-secondary">🔄 Refresh</button>
+            <button onclick="bulkAssignMode()" class="btn btn-info" id="bulkAssignBtn">👥 Bulk Assign</button>
+        </div>
+    </div>
+</div>
+
+<!-- Statistics Summary -->
+<div class="stats-summary">
+    <div class="stat-item">
+        <div class="stat-number">{{ stats.total }}</div>
+        <div class="stat-label">Total Deliveries</div>
+    </div>
+    <div class="stat-item urgent">
+        <div class="stat-number">{{ stats.need_assignment }}</div>
+        <div class="stat-label">Need Assignment</div>
+    </div>
+    <div class="stat-item">
+        <div class="stat-number">{{ stats.in_progress }}</div>
+        <div class="stat-label">In Progress</div>
+    </div>
+    <div class="stat-item success">
+        <div class="stat-number">{{ stats.completed }}</div>
+        <div class="stat-label">Completed</div>
+    </div>
+</div>
+
+<!-- Bulk Assignment Panel (hidden by default) -->
+<div id="bulkAssignPanel" class="bulk-panel" style="display: none;">
+    <div class="bulk-header">
+        <h4>👥 Bulk Partner Assignment</h4>
+        <button onclick="cancelBulkAssign()" class="btn btn-secondary btn-sm">❌ Cancel</button>
+    </div>
+    <div class="bulk-controls">
+        <select id="bulkPartnerSelect" class="form-control">
+            <option value="">Select Logistics Partner...</option>
+            {% for partner in available_partners %}
+                <option value="{{ partner.id }}">{{ partner.name }} - {{ partner.vehicle_type|title }} ({{ partner.vehicle_number }})</option>
+            {% endfor %}
+        </select>
+        <button onclick="executeBulkAssign()" class="btn btn-success" id="bulkExecuteBtn" disabled>
+            ✅ Assign to Selected Deliveries
+        </button>
+    </div>
+    <div class="bulk-selection-count">
+        <span id="selectionCount">0</span> deliveries selected
+    </div>
+</div>
+
+<!-- Deliveries Table -->
+<div class="card">
+    {% if deliveries %}
+        <div class="table-responsive">
+            <table class="table delivery-table">
+                <thead>
+                    <tr>
+                        <th class="bulk-select-header" style="display: none;">
+                            <input type="checkbox" id="selectAll" onchange="toggleSelectAll()">
+                        </th>
+                        <th>Delivery Info</th>
+                        <th>Vendor Details</th>
+                        <th>Book Information</th>
+                        <th>Schedule & Location</th>
+                        <th>Logistics Partner</th>
+                        <th>Status</th>
+                        <th>Value</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for delivery in deliveries %}
+                    <tr class="delivery-row {% if delivery.status == 'scheduled' %}need-assignment{% endif %}" 
+                        data-delivery-id="{{ delivery.id }}" data-status="{{ delivery.status }}">
+                        
+                        <td class="bulk-select-cell" style="display: none;">
+                            {% if delivery.status == 'scheduled' %}
+                                <input type="checkbox" class="delivery-checkbox" value="{{ delivery.id }}">
+                            {% endif %}
+                        </td>
+                        
+                        <td class="delivery-info">
+                            <div class="delivery-id">
+                                <strong style="color: var(--primary-coral);">#{{ delivery.id }}</strong>
+                                {% if delivery.status == 'scheduled' %}
+                                    <span class="urgent-tag">🚨 NEEDS ASSIGNMENT</span>
+                                {% endif %}
+                            </div>
+                            <div class="delivery-meta">
+                                <small>Created: {{ delivery.created_at|date:"M d, H:i" }}</small>
+                            </div>
+                        </td>
+                        
+                        <td class="vendor-info">
+                            <div class="vendor-name">
+                                <strong>{{ delivery.vendor.business_name }}</strong>
+                            </div>
+                            <div class="vendor-contact">
+                                <div>👤 {{ delivery.contact_person }}</div>
+                                <div>📞 {{ delivery.contact_phone }}</div>
+                            </div>
+                            <div class="vendor-location">
+                                📍 {{ delivery.vendor.city|default:"Unknown" }}, {{ delivery.vendor.state|default:"" }}
+                            </div>
+                        </td>
+                        
+                        <td class="book-info">
+                            <div class="book-title">
+                                <strong>{{ delivery.stock_offer.book.title|truncatechars:35 }}</strong>
+                            </div>
+                            <div class="book-authors">
+                                {% for author in delivery.stock_offer.book.authors.all %}
+                                    {{ author.name }}{% if not forloop.last %}, {% endif %}
+                                {% empty %}
+                                    Unknown Author
+                                {% endfor %}
+                            </div>
+                            <div class="book-details">
+                                <span class="quantity-badge">📚 {{ delivery.stock_offer.quantity }} copies</span>
+                                <br><small>ISBN: {{ delivery.stock_offer.book.isbn }}</small>
+                            </div>
+                        </td>
+                        
+                        <td class="schedule-info">
+                            <div class="schedule-datetime">
+                                <div class="schedule-date">
+                                    📅 {{ delivery.scheduled_delivery_date|date:"M d, Y" }}
+                                </div>
+                                <div class="schedule-time">
+                                    🕐 {{ delivery.scheduled_delivery_date|time:"H:i" }}
+                                </div>
+                            </div>
+                            {% if delivery.vendor_location %}
+                                <div class="pickup-location">
+                                    <small>📍 {{ delivery.vendor_location.name }}</small>
+                                </div>
+                            {% endif %}
+                            {% if delivery.special_instructions %}
+                                <div class="special-instructions">
+                                    <small>💬 {{ delivery.special_instructions|truncatechars:50 }}</small>
+                                </div>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="partner-info">
+                            {% if delivery.assigned_partner %}
+                                <div class="partner-details">
+                                    <div class="partner-name">
+                                        <strong>{{ delivery.assigned_partner.name }}</strong>
+                                    </div>
+                                    <div class="partner-vehicle">
+                                        🚚 {{ delivery.assigned_partner.vehicle_type|title }}
+                                    </div>
+                                    <div class="partner-contact">
+                                        📞 {{ delivery.assigned_partner.phone }}
+                                    </div>
+                                    {% if delivery.assigned_partner.rating %}
+                                        <div class="partner-rating">
+                                            ⭐ {{ delivery.assigned_partner.rating }}/5.0
+                                        </div>
+                                    {% endif %}
+                                </div>
+                            {% else %}
+                                <div class="no-partner">
+                                    <span class="text-warning">👤 Not Assigned</span>
+                                    {% if delivery.status == 'scheduled' %}
+                                        <br>
+                                        <select class="form-control form-control-sm partner-select" 
+                                                data-delivery-id="{{ delivery.id }}" 
+                                                onchange="quickAssignPartner(this)">
+                                            <option value="">Select Partner...</option>
+                                            {% for partner in available_partners %}
+                                                <option value="{{ partner.id }}">
+                                                    {{ partner.name }} - {{ partner.vehicle_type|title }}
+                                                </option>
+                                            {% endfor %}
+                                        </select>
+                                    {% endif %}
+                                </div>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="status-cell">
+                            <span class="status-badge status-{{ delivery.status }}">
+                                {% if delivery.status == 'scheduled' %}⏰{% endif %}
+                                {% if delivery.status == 'confirmed' %}✅{% endif %}
+                                {% if delivery.status == 'pickup_assigned' %}👤{% endif %}
+                                {% if delivery.status == 'collected' %}📦{% endif %}
+                                {% if delivery.status == 'in_transit' %}🚚{% endif %}
+                                {% if delivery.status == 'arrived' %}🏢{% endif %}
+                                {% if delivery.status == 'completed' %}✅{% endif %}
+                                {{ delivery.get_status_display }}
+                            </span>
+                            
+                            {% if delivery.status == 'scheduled' %}
+                                <div class="status-actions">
+                                    <select class="form-control form-control-sm status-select" 
+                                            data-delivery-id="{{ delivery.id }}" 
+                                            onchange="quickUpdateStatus(this)">
+                                        <option value="">Update Status...</option>
+                                        <option value="confirmed">✅ Confirm</option>
+                                    </select>
+                                </div>
+                            {% elif delivery.status in 'pickup_assigned,confirmed,collected,in_transit' %}
+                                <div class="status-actions">
+                                    <select class="form-control form-control-sm status-select" 
+                                            data-delivery-id="{{ delivery.id }}" 
+                                            onchange="quickUpdateStatus(this)">
+                                        <option value="">Update Status...</option>
+                                        {% if delivery.status == 'pickup_assigned' %}
+                                            <option value="collected">📦 Mark as Collected</option>
+                                        {% elif delivery.status == 'collected' %}
+                                            <option value="in_transit">🚚 In Transit</option>
+                                        {% elif delivery.status == 'in_transit' %}
+                                            <option value="arrived">🏢 Arrived at Warehouse</option>
+                                        {% endif %}
+                                    </select>
+                                </div>
+                            {% endif %}
+                        </td>
+                        
+                        <td class="value-info">
+                            <div class="offer-value">
+                                <strong style="color: var(--success);">₹{{ delivery.stock_offer.total_amount }}</strong>
+                            </div>
+                            <div class="unit-price">
+                                <small>₹{{ delivery.stock_offer.unit_price }}/book</small>
+                            </div>
+                        </td>
+                        
+                        <td class="actions-cell">
+                            <div class="action-buttons">
+                                <a href="{% url 'logistics:delivery_detail' delivery.id %}" 
+                                   class="btn btn-sm btn-primary" title="View Details">
+                                    👁️
+                                </a>
+                                
+                                {% if delivery.status == 'scheduled' and not delivery.assigned_partner %}
+                                    <button onclick="showAssignPartnerModal({{ delivery.id }})" 
+                                            class="btn btn-sm btn-warning" title="Assign Partner">
+                                        👤
+                                    </button>
+                                {% endif %}
+                                
+                                {% if delivery.status == 'arrived' %}
+                                    <a href="{% url 'logistics:confirm_receipt' delivery.id %}" 
+                                       class="btn btn-sm btn-success" title="Confirm Stock Receipt">
+                                        ✅
+                                    </a>
+                                {% endif %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        {% if deliveries.has_other_pages %}
+            <div class="pagination-wrapper">
+                <div class="pagination">
+                    {% if deliveries.has_previous %}
+                        <a href="?page=1{{ request.GET.urlencode|default:'?' }}" class="page-link">&laquo; First</a>
+                        <a href="?page={{ deliveries.previous_page_number }}{{ request.GET.urlencode|default:'?' }}" class="page-link">&lsaquo; Previous</a>
+                    {% endif %}
+                    
+                    <span class="page-info">
+                        Page {{ deliveries.number }} of {{ deliveries.paginator.num_pages }}
+                        ({{ deliveries.paginator.count }} total)
+                    </span>
+                    
+                    {% if deliveries.has_next %}
+                        <a href="?page={{ deliveries.next_page_number }}{{ request.GET.urlencode|default:'?' }}" class="page-link">Next &rsaquo;</a>
+                        <a href="?page={{ deliveries.paginator.num_pages }}{{ request.GET.urlencode|default:'?' }}" class="page-link">Last &raquo;</a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+        
+    {% else %}
+        <!-- Empty State -->
+        <div class="empty-state">
+            <div class="empty-icon">📦</div>
+            <h3>No Deliveries Found</h3>
+            {% if status_filter or search_query %}
+                <p>No deliveries match your current filters.</p>
+                <button onclick="clearAllFilters()" class="btn btn-secondary">Clear All Filters</button>
+            {% else %}
+                <p>No vendor deliveries have been scheduled yet.</p>
+                <p>Deliveries will appear here when vendors schedule pickups for their approved offers.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+<!-- Partner Assignment Modal -->
+<div id="assignPartnerModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h4>👤 Assign Logistics Partner</h4>
+            <button onclick="closeAssignModal()" class="close-btn">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="modalDeliveryInfo"></div>
+            <form id="assignPartnerForm">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label>Select Logistics Partner:</label>
+                    <select id="modalPartnerSelect" class="form-control" required>
+                        <option value="">Choose a partner...</option>
+                        {% for partner in available_partners %}
+                            <option value="{{ partner.id }}">
+                                {{ partner.name }} - {{ partner.vehicle_type|title }} ({{ partner.vehicle_number }})
+                                {% if partner.rating %} - ⭐ {{ partner.rating }}/5{% endif %}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Assignment Notes (optional):</label>
+                    <textarea id="assignmentNotes" class="form-control" rows="3" 
+                              placeholder="Any special instructions for the logistics partner..."></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button onclick="closeAssignModal()" class="btn btn-secondary">Cancel</button>
+            <button onclick="executePartnerAssignment()" class="btn btn-primary">✅ Assign Partner</button>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Delivery List Specific Styles */
+.filter-section {
+    background: var(--neutral-white);
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+}
+
+.filter-bar {
+    display: flex;
+    gap: 1rem;
+    align-items: end;
+    flex-wrap: wrap;
+}
+
+.filter-group, .search-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 150px;
+}
+
+.search-group {
+    flex: 1;
+    max-width: 300px;
+}
+
+.action-group {
+    display: flex;
+    gap: 0.5rem;
+    align-items: end;
+}
+
+.stats-summary {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-item {
+    background: var(--neutral-white);
+    padding: 1rem;
+    border-radius: 8px;
+    text-align: center;
+    border-left: 4px solid var(--primary-coral);
+}
+
+.stat-item.urgent {
+    border-left-color: var(--danger);
+    background: rgba(255, 107, 107, 0.05);
+}
+
+.stat-item.success {
+    border-left-color: var(--success);
+    background: rgba(40, 167, 69, 0.05);
+}
+
+.stat-number {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--secondary-burgundy);
+}
+
+.stat-label {
+    font-size: 0.8rem;
+    color: var(--neutral-medium-gray);
+    margin-top: 0.25rem;
+}
+
+.bulk-panel {
+    background: linear-gradient(135deg, rgba(0, 123, 255, 0.05) 0%, rgba(255, 255, 255, 0.95) 100%);
+    border: 2px solid var(--info);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.bulk-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+}
+
+.bulk-controls {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.bulk-selection-count {
+    font-size: 0.9rem;
+    color: var(--info);
+    font-weight: 600;
+}
+
+.delivery-table {
+    font-size: 0.9rem;
+}
+
+.delivery-row.need-assignment {
+    background: rgba(255, 193, 7, 0.05);
+    border-left: 3px solid var(--warning);
+}
+
+.delivery-row:hover {
+    background: rgba(102, 126, 234, 0.05);
+}
+
+.urgent-tag {
+    background: var(--danger);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 10px;
+    font-size: 0.7rem;
+    font-weight: 600;
+    animation: pulse 2s infinite;
+}
+
+.vendor-info, .book-info, .schedule-info, .partner-info {
+    line-height: 1.3;
+}
+
+.vendor-name, .book-title {
+    margin-bottom: 0.25rem;
+}
+
+.vendor-contact, .book-authors, .book-details {
+    font-size: 0.8rem;
+    color: var(--neutral-medium-gray);
+    margin-bottom: 0.25rem;
+}
+
+.quantity-badge {
+    background: var(--primary-orange);
+    color: white;
+    padding: 2px 6px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 600;
+}
+
+.partner-details {
+    background: rgba(40, 167, 69, 0.1);
+    padding: 0.5rem;
+    border-radius: 6px;
+    border-left: 3px solid var(--success);
+}
+
+.no-partner {
+    text-align: center;
+    padding: 0.5rem;
+}
+
+.partner-select, .status-select {
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+}
+
+.status-badge {
+    font-size: 0.8rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 15px;
+    font-weight: 600;
+    display: inline-block;
+}
+
+.status-scheduled {
+    background: var(--warning);
+    color: var(--neutral-dark-gray);
+}
+
+.status-confirmed, .status-pickup_assigned {
+    background: var(--info);
+    color: white;
+}
+
+.status-collected, .status-in_transit {
+    background: var(--primary-orange);
+    color: white;
+}
+
+.status-arrived {
+    background: var(--secondary-burgundy);
+    color: white;
+}
+
+.status-completed {
+    background: var(--success);
+    color: white;
+}
+
+.action-buttons {
+    display: flex;
+    gap: 0.25rem;
+    flex-direction: column;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: var(--neutral-medium-gray);
+}
+
+.empty-icon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 10px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.modal-header, .modal-footer {
+    padding: 1rem 1.5rem;
+    border-bottom: 1px solid var(--neutral-light-gray);
+}
+
+.modal-footer {
+    border-top: 1px solid var(--neutral-light-gray);
+    border-bottom: none;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.modal-body {
+    padding: 1.5rem;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--neutral-medium-gray);
+}
+
+.bulk-select-header, .bulk-select-cell {
+    width: 40px;
+    text-align: center;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+@media (max-width: 768px) {
+    .filter-bar {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-group, .search-group {
+        min-width: auto;
+    }
+    
+    .stats-summary {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .delivery-table th,
+    .delivery-table td {
+        padding: 0.5rem 0.25rem;
+        font-size: 0.8rem;
+    }
+    
+    .action-buttons {
+        flex-direction: row;
+    }
+}
+</style>
+
+<script>
+let currentDeliveryId = null;
+let bulkMode = false;
+
+// Filter functions
+function applyFilters() {
+    const status = document.getElementById('statusFilter').value;
+    const partner = document.getElementById('partnerFilter').value;
+    const search = document.getElementById('searchInput').value;
+    
+    const url = new URL(window.location);
+    
+    // Clear existing params
+    url.searchParams.delete('page');
+    
+    // Set new params
+    if (status) url.searchParams.set('status', status);
+    else url.searchParams.delete('status');
+    
+    if (partner) url.searchParams.set('partner', partner);
+    else url.searchParams.delete('partner');
+    
+    if (search) url.searchParams.set('search', search);
+    else url.searchParams.delete('search');
+    
+    window.location = url;
+}
+
+function handleSearchKeyPress(event) {
+    if (event.key === 'Enter') {
+        applyFilters();
+    }
+}
+
+function clearAllFilters() {
+    window.location = '{% url "logistics:delivery_list" %}';
+}
+
+// Quick assignment functions
+function quickAssignPartner(selectElement) {
+    const partnerId = selectElement.value;
+    const deliveryId = selectElement.getAttribute('data-delivery-id');
+    
+    if (partnerId && deliveryId) {
+        if (confirm('Assign this partner to the delivery?')) {
+            assignPartnerToDelivery(deliveryId, partnerId);
+        }
+    }
+}
+
+function quickUpdateStatus(selectElement) {
+    const newStatus = selectElement.value;
+    const deliveryId = selectElement.getAttribute('data-delivery-id');
+    
+    if (newStatus && deliveryId) {
+        if (confirm(`Update delivery status to "${selectElement.options[selectElement.selectedIndex].text}"?`)) {
+            updateDeliveryStatus(deliveryId, newStatus);
+        }
+        selectElement.value = ''; // Reset select
+    }
+}
+
+// Partner assignment functions
+function showAssignPartnerModal(deliveryId) {
+    currentDeliveryId = deliveryId;
+    
+    // Get delivery info from the row
+    const row = document.querySelector(`[data-delivery-id="${deliveryId}"]`);
+    const vendorName = row.querySelector('.vendor-name strong').textContent;
+    const bookTitle = row.querySelector('.book-title strong').textContent;
+    
+    document.getElementById('modalDeliveryInfo').innerHTML = `
+        <div class="delivery-summary">
+            <h5>Delivery #${deliveryId}</h5>
+            <p><strong>Vendor:</strong> ${vendorName}</p>
+            <p><strong>Book:</strong> ${bookTitle}</p>
+        </div>
+    `;
+    
+    document.getElementById('assignPartnerModal').style.display = 'flex';
+}
+
+function closeAssignModal() {
+    document.getElementById('assignPartnerModal').style.display = 'none';
+    currentDeliveryId = null;
+    document.getElementById('assignPartnerForm').reset();
+}
+
+function executePartnerAssignment() {
+    const partnerId = document.getElementById('modalPartnerSelect').value;
+    const notes = document.getElementById('assignmentNotes').value;
+    
+    if (!partnerId) {
+        alert('Please select a logistics partner.');
+        return;
+    }
+    
+    if (currentDeliveryId) {
+        assignPartnerToDelivery(currentDeliveryId, partnerId, notes);
+        closeAssignModal();
+    }
+}
+
+// Bulk assignment functions
+function bulkAssignMode() {
+    bulkMode = !bulkMode;
+    const btn = document.getElementById('bulkAssignBtn');
+    const panel = document.getElementById('bulkAssignPanel');
+    const selectHeaders = document.querySelectorAll('.bulk-select-header');
+    const selectCells = document.querySelectorAll('.bulk-select-cell');
+    
+    if (bulkMode) {
+        btn.textContent = '❌ Cancel Bulk';
+        btn.className = 'btn btn-warning';
+        panel.style.display = 'block';
+        selectHeaders.forEach(h => h.style.display = 'table-cell');
+        selectCells.forEach(c => c.style.display = 'table-cell');
+    } else {
+        cancelBulkAssign();
+    }
+}
+
+function cancelBulkAssign() {
+    bulkMode = false;
+    const btn = document.getElementById('bulkAssignBtn');
+    const panel = document.getElementById('bulkAssignPanel');
+    const selectHeaders = document.querySelectorAll('.bulk-select-header');
+    const selectCells = document.querySelectorAll('.bulk-select-cell');
+    
+    btn.textContent = '👥 Bulk Assign';
+    btn.className = 'btn btn-info';
+    panel.style.display = 'none';
+    selectHeaders.forEach(h => h.style.display = 'none');
+    selectCells.forEach(c => c.style.display = 'none');
+    
+    // Clear all selections
+    document.querySelectorAll('.delivery-checkbox').forEach(cb => cb.checked = false);
+    document.getElementById('selectAll').checked = false;
+    updateSelectionCount();
+}
+
+function toggleSelectAll() {
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.delivery-checkbox');
+    
+    checkboxes.forEach(cb => {
+        cb.checked = selectAll.checked;
+    });
+    
+    updateSelectionCount();
+}
+
+function updateSelectionCount() {
+    const selected = document.querySelectorAll('.delivery-checkbox:checked').length;
+    const countElement = document.getElementById('selectionCount');
+    const executeBtn = document.getElementById('bulkExecuteBtn');
+    const partnerSelect = document.getElementById('bulkPartnerSelect');
+    
+    countElement.textContent = selected;
+    executeBtn.disabled = selected === 0 || !partnerSelect.value;
+}
+
+function executeBulkAssign() {
+    const partnerId = document.getElementById('bulkPartnerSelect').value;
+    const selectedDeliveries = Array.from(document.querySelectorAll('.delivery-checkbox:checked'))
+                                   .map(cb => cb.value);
+    
+    if (!partnerId || selectedDeliveries.length === 0) {
+        alert('Please select a partner and at least one delivery.');
+        return;
+    }
+    
+    if (confirm(`Assign partner to ${selectedDeliveries.length} deliveries?`)) {
+        bulkAssignPartner(selectedDeliveries, partnerId);
+    }
+}
+
+// API calls
+function assignPartnerToDelivery(deliveryId, partnerId, notes = '') {
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    formData.append('partner_id', partnerId);
+    formData.append('notes', notes);
+    
+    fetch(`/logistics/deliveries/${deliveryId}/assign-partner/`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('Error assigning partner. Please try again.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error assigning partner. Please try again.');
+    });
+}
+
+function updateDeliveryStatus(deliveryId, status) {
+    const formData = new FormData();
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    formData.append('status', status);
+    
+    fetch(`/logistics/deliveries/${deliveryId}/update-status/`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('Error updating status. Please try again.');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Error updating status. Please try again.');
+    });
+}
+
+function bulkAssignPartner(deliveryIds, partnerId) {
+    // Show loading
+    const executeBtn = document.getElementById('bulkExecuteBtn');
+    const originalText = executeBtn.textContent;
+    executeBtn.textContent = '⏳ Assigning...';
+    executeBtn.disabled = true;
+    
+    Promise.all(deliveryIds.map(deliveryId => {
+        const formData = new FormData();
+        formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+        formData.append('partner_id', partnerId);
+        formData.append('notes', 'Bulk assignment');
+        
+        return fetch(`/logistics/deliveries/${deliveryId}/assign-partner/`, {
+            method: 'POST',
+            body: formData
+        });
+    }))
+    .then(responses => {
+        const allSuccessful = responses.every(r => r.ok);
+        if (allSuccessful) {
+            alert(`Successfully assigned partner to ${deliveryIds.length} deliveries!`);
+            location.reload();
+        } else {
+            alert('Some assignments failed. Please check and retry.');
+            executeBtn.textContent = originalText;
+            executeBtn.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Bulk assign error:', error);
+        alert('Error during bulk assignment. Please try again.');
+        executeBtn.textContent = originalText;
+        executeBtn.disabled = false;
+    });
+}
+
+// Event listeners
+document.addEventListener('DOMContentLoaded', function() {
+    // Add change listeners for bulk selection
+    document.querySelectorAll('.delivery-checkbox').forEach(checkbox => {
+        checkbox.addEventListener('change', updateSelectionCount);
+    });
+    
+    // Add change listener for bulk partner select
+    const bulkPartnerSelect = document.getElementById('bulkPartnerSelect');
+    if (bulkPartnerSelect) {
+        bulkPartnerSelect.addEventListener('change', updateSelectionCount);
+    }
+    
+    // Close modal when clicking outside
+    document.getElementById('assignPartnerModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeAssignModal();
+        }
+    });
+    
+    // Auto-refresh for scheduled deliveries
+    if (document.querySelector('.need-assignment')) {
+        setTimeout(() => {
+            if (document.visibilityState === 'visible') {
+                location.reload();
+            }
+        }, 120000); // Refresh every 2 minutes if there are unassigned deliveries
+    }
+    
+    // Animate table rows on load
+    document.querySelectorAll('.delivery-row').forEach((row, index) => {
+        row.style.opacity = '0';
+        row.style.transform = 'translateX(-20px)';
+        setTimeout(() => {
+            row.style.transition = 'all 0.5s ease';
+            row.style.opacity = '1';
+            row.style.transform = 'translateX(0)';
+        }, index * 50);
+    });
+    
+    // Highlight urgent deliveries
+    document.querySelectorAll('.need-assignment').forEach(row => {
+        setInterval(() => {
+            row.style.backgroundColor = row.style.backgroundColor === 'rgba(255, 193, 7, 0.1)' ? 
+                                       'rgba(255, 193, 7, 0.05)' : 'rgba(255, 193, 7, 0.1)';
+        }, 3000);
+    });
+});
+
+// Keyboard shortcuts
+document.addEventListener('keydown', function(e) {
+    // ESC to close modal
+    if (e.key === 'Escape') {
+        closeAssignModal();
+        if (bulkMode) {
+            cancelBulkAssign();
+        }
+    }
+    
+    // Ctrl+F to focus search
+    if (e.ctrlKey && e.key === 'f') {
+        e.preventDefault();
+        document.getElementById('searchInput').focus();
+    }
+    
+    // Ctrl+R to refresh (prevent default and use our reload)
+    if (e.ctrlKey && e.key === 'r') {
+        e.preventDefault();
+        location.reload();
+    }
+});
+
+// Add tooltips for status badges
+document.querySelectorAll('.status-badge').forEach(badge => {
+    const status = badge.textContent.trim();
+    let tooltip = '';
+    
+    switch(badge.classList.contains('status-scheduled') && 'scheduled' || 
+           badge.classList.contains('status-confirmed') && 'confirmed' ||
+           badge.classList.contains('status-pickup_assigned') && 'pickup_assigned' ||
+           badge.classList.contains('status-collected') && 'collected' ||
+           badge.classList.contains('status-in_transit') && 'in_transit' ||
+           badge.classList.contains('status-arrived') && 'arrived' ||
+           badge.classList.contains('status-completed') && 'completed') {
+        case 'scheduled':
+            tooltip = 'Needs logistics partner assignment';
+            break;
+        case 'confirmed':
+            tooltip = 'Confirmed and ready for pickup';
+            break;
+        case 'pickup_assigned':
+            tooltip = 'Logistics partner assigned, awaiting pickup';
+            break;
+        case 'collected':
+            tooltip = 'Books picked up from vendor';
+            break;
+        case 'in_transit':
+            tooltip = 'On the way to warehouse';
+            break;
+        case 'arrived':
+            tooltip = 'Arrived at warehouse, needs confirmation';
+            break;
+        case 'completed':
+            tooltip = 'Stock confirmed and added to inventory';
+            break;
+    }
+    
+    if (tooltip) {
+        badge.title = tooltip;
+    }
+});
+</script>
+
+{% endblock %}

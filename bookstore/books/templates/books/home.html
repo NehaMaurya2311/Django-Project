@@ -44,66 +44,76 @@
             <div id="bestseller-books" class="section-books active">
                 {% if bestseller_books %}
                     <div class="book-grid">
-                        {% for book in bestseller_books %}
-                        <div class="book-card" data-book-id="{{ book.id }}">
-                            <div class="book-image">
-                                {% if book.get_cover_image_url %}
-                                    <img src="{{ book.get_cover_image_url }}" alt="{{ book.title }}"
-                                         onerror="this.onerror=null; this.src='{% static 'images/no-cover.jpg' %}'; this.alt='No cover available';">
-                                {% else %}
-                                    <img src="{% static 'images/no-cover.jpg' %}" alt="No cover available">
-                                {% endif %}
-                                <div class="book-badges">
-                                    <span class="badge badge-bestseller">
-                                        <i class="bi bi-award"></i> BESTSELLER
-                                    </span>
-                                    {% if book.is_on_sale %}
-                                        <span class="badge badge-sale">SALE</span>
-                                    {% endif %}
-                                </div>
-                                {% if not book.in_stock %}
-                                    <span class="badge badge-out-of-stock">Out of Stock</span>
-                                {% endif %}
-                                <div class="book-actions">
-                                    <button class="action-btn quick-view-btn" title="Quick View">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="action-btn wishlist-btn" title="Add to Wishlist">
-                                        <i class="{% if book.in_wishlist %}fas{% else %}far{% endif %} fa-heart"></i>
-                                    </button>
-                                    <button class="action-btn share-btn" title="Share"
-                                        data-book-title="{{ book.title }}"
-                                        data-book-url="{% url 'books:book_detail' book.slug %}">
-                                        <i class="fas fa-share-alt"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="book-info">
-                                <h3>{{ book.title|truncatechars:40 }}</h3>
-                                <p class="author">
-                                    <i class="bi bi-person"></i>
-                                    {% for author in book.authors.all %}
-                                        {{ author.name }}{% if not forloop.last %}, {% endif %}
-                                    {% endfor %}
-                                </p>
-                                <p class="category">{{ book.category.name }}</p>
-                                <p class="book-description">{{ book.short_description|truncatechars:80 }}</p>
-                                <div class="price-section">
-                                    <div>
-                                        <span class="price">${{ book.price }}</span>
-                                        {% if book.original_price and book.discount_percentage > 0 %}
-                                            <span class="price-old">${{ book.original_price }}</span>
+                        {% for book_data in bestseller_books %}
+                            {% with book=book_data.book %}
+                                {% if book.slug %}
+                                <div class="book-card" data-book-id="{{ book.id }}">
+                                    <div class="book-image">
+                                        <a href="{% url 'books:book_detail' book.slug %}">
+                                            {% if book.get_cover_image_url %}
+                                                <img src="{{ book.get_cover_image_url }}" alt="{{ book.title }}"
+                                                     onerror="this.onerror=null; this.src='{% static 'images/no-cover.jpg' %}'; this.alt='No cover available';">
+                                            {% else %}
+                                                <img src="{% static 'images/no-cover.jpg' %}" alt="No cover available">
+                                            {% endif %}
+                                        </a>
+                                        <div class="book-badges">
+                                            <span class="badge badge-bestseller">
+                                                <i class="bi bi-award"></i> BESTSELLER
+                                            </span>
+                                            {% if book_data.is_on_sale %}
+                                                <span class="badge badge-sale">SALE</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if not book.is_in_stock %}
+                                            <span class="badge badge-out-of-stock">Out of Stock</span>
                                         {% endif %}
+                                        <div class="book-actions">
+                                            <button class="action-btn quick-view-btn" title="Quick View" data-book-slug="{{ book.slug }}">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="action-btn wishlist-btn" title="Add to Wishlist" data-book-id="{{ book.id }}">
+                                                <i class="far fa-heart"></i>
+                                            </button>
+                                            <button class="action-btn share-btn" title="Share"
+                                                data-book-title="{{ book.title }}"
+                                                data-book-url="{% url 'books:book_detail' book.slug %}">
+                                                <i class="fas fa-share-alt"></i>
+                                            </button>
+                                        </div>
                                     </div>
-                                    {% if book.discount_percentage > 0 %}
-                                        <span class="discount-percent">{{ book.discount_percentage }}% OFF</span>
-                                    {% endif %}
+                                    <div class="book-info">
+                                        <h3>
+                                            <a href="{% url 'books:book_detail' book.slug %}">
+                                                {{ book.title|truncatechars:40 }}
+                                            </a>
+                                        </h3>
+                                        <p class="author">
+                                            <i class="bi bi-person"></i>
+                                            {% for author in book.authors.all %}
+                                                {{ author.name }}{% if not forloop.last %}, {% endif %}
+                                            {% endfor %}
+                                        </p>
+                                        <p class="category">{{ book.category.name }}</p>
+                                        <p class="book-description">{{ book.short_description|truncatechars:80 }}</p>
+                                        <div class="price-section">
+                                            <div>
+                                                <span class="price">₹{{ book_data.sale_price|floatformat:0 }}</span>
+                                                {% if book_data.original_price != book_data.sale_price %}
+                                                    <span class="price-old">₹{{ book_data.original_price|floatformat:0 }}</span>
+                                                {% endif %}
+                                            </div>
+                                            {% if book_data.discount_percentage > 0 %}
+                                                <span class="discount-percent">{{ book_data.discount_percentage }}% OFF</span>
+                                            {% endif %}
+                                        </div>
+                                        <a href="{% url 'books:book_detail' book.slug %}" class="view-details-btn" onclick="event.stopPropagation()">
+                                            View Details
+                                        </a>
+                                    </div>
                                 </div>
-                                <a href="{% url 'books:book_detail' book.slug %}" class="view-details-btn" onclick="event.stopPropagation()">
-                                    View Details
-                                </a>
-                            </div>
-                        </div>
+                                {% endif %}
+                            {% endwith %}
                         {% endfor %}
                     </div>
                 {% else %}
@@ -119,79 +129,92 @@
             <div id="sale-books" class="section-books">
                 {% if sale_books %}
                     <div class="book-grid">
-                        {% for book in sale_books %}
-                        <div class="book-card" data-book-id="{{ book.id }}">
-                            <div class="book-image">
-                                {% if book.get_cover_image_url %}
-                                    <img src="{{ book.get_cover_image_url }}" alt="{{ book.title }}"
-                                         onerror="this.onerror=null; this.src='{% static 'images/no-cover.jpg' %}'; this.alt='No cover available';">
-                                {% else %}
-                                    <img src="{% static 'images/no-cover.jpg' %}" alt="No cover available">
-                                {% endif %}
-                                <div class="book-badges">
-                                    {% if book.discount_percentage > 0 %}
-                                        <span class="badge badge-sale">
-                                            {{ book.discount_percentage }}% OFF
-                                        </span>
-                                    {% else %}
-                                        <span class="badge badge-sale">
-                                            <i class="bi bi-tag"></i> SALE
-                                        </span>
-                                    {% endif %}
-                                    {% if book.is_bestseller %}
-                                        <span class="badge badge-bestseller">BESTSELLER</span>
-                                    {% endif %}
-                                </div>
-                                {% if not book.in_stock %}
-                                    <span class="badge badge-out-of-stock">Out of Stock</span>
-                                {% endif %}
-                                <div class="book-actions">
-                                    <button class="action-btn quick-view-btn" title="Quick View">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="action-btn wishlist-btn" title="Add to Wishlist">
-                                        <i class="{% if book.in_wishlist %}fas{% else %}far{% endif %} fa-heart"></i>
-                                    </button>
-                                    <button class="action-btn share-btn" title="Share"
-                                        data-book-title="{{ book.title }}"
-                                        data-book-url="{% url 'books:book_detail' book.slug %}">
-                                        <i class="fas fa-share-alt"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="book-info">
-                                <h3>{{ book.title|truncatechars:40 }}</h3>
-                                <p class="author">
-                                    <i class="bi bi-person"></i>
-                                    {% for author in book.authors.all %}
-                                        {{ author.name }}{% if not forloop.last %}, {% endif %}
-                                    {% endfor %}
-                                </p>
-                                <p class="category">{{ book.category.name }}</p>
-                                <p class="book-description">{{ book.short_description|truncatechars:80 }}</p>
-                                <div class="price-section">
-                                    <div>
-                                        <span class="price">${{ book.price }}</span>
-                                        {% if book.original_price and book.discount_percentage > 0 %}
-                                            <span class="price-old">${{ book.original_price }}</span>
+                        {% for book_data in sale_books %}
+                            {% with book=book_data.book %}
+                                {% if book.slug %}
+                                <div class="book-card" data-book-id="{{ book.id }}">
+                                    <div class="book-image">
+                                        <a href="{% url 'books:book_detail' book.slug %}">
+                                            {% if book.get_cover_image_url %}
+                                                <img src="{{ book.get_cover_image_url }}" alt="{{ book.title }}"
+                                                     onerror="this.onerror=null; this.src='{% static 'images/no-cover.jpg' %}'; this.alt='No cover available';">
+                                            {% else %}
+                                                <img src="{% static 'images/no-cover.jpg' %}" alt="No cover available">
+                                            {% endif %}
+                                        </a>
+                                        <div class="book-badges">
+                                            {% if book_data.discount_percentage > 0 %}
+                                                <span class="badge badge-sale">
+                                                    {{ book_data.discount_percentage }}% OFF
+                                                </span>
+                                            {% else %}
+                                                <span class="badge badge-sale">
+                                                    <i class="bi bi-tag"></i> SALE
+                                                </span>
+                                            {% endif %}
+                                            {% if book.is_bestseller %}
+                                                <span class="badge badge-bestseller">BESTSELLER</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if not book.is_in_stock %}
+                                            <span class="badge badge-out-of-stock">Out of Stock</span>
                                         {% endif %}
+                                        <div class="book-actions">
+                                            <button class="action-btn quick-view-btn" title="Quick View" data-book-slug="{{ book.slug }}">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="action-btn wishlist-btn" title="Add to Wishlist" data-book-id="{{ book.id }}">
+                                                <i class="far fa-heart"></i>
+                                            </button>
+                                            <button class="action-btn share-btn" title="Share"
+                                                data-book-title="{{ book.title }}"
+                                                data-book-url="{% url 'books:book_detail' book.slug %}">
+                                                <i class="fas fa-share-alt"></i>
+                                            </button>
+                                        </div>
                                     </div>
-                                    {% if book.discount_percentage > 0 %}
-                                        <span class="discount-percent">{{ book.discount_percentage }}% OFF</span>
-                                    {% endif %}
+                                    <div class="book-info">
+                                        <h3>
+                                            <a href="{% url 'books:book_detail' book.slug %}">
+                                                {{ book.title|truncatechars:40 }}
+                                            </a>
+                                        </h3>
+                                        <p class="author">
+                                            <i class="bi bi-person"></i>
+                                            {% for author in book.authors.all %}
+                                                {{ author.name }}{% if not forloop.last %}, {% endif %}
+                                            {% endfor %}
+                                        </p>
+                                        <p class="category">{{ book.category.name }}</p>
+                                        <p class="book-description">{{ book.short_description|truncatechars:80 }}</p>
+                                        <div class="price-section">
+                                            <div>
+                                                <span class="price">₹{{ book_data.sale_price|floatformat:0 }}</span>
+                                                {% if book_data.original_price != book_data.sale_price %}
+                                                    <span class="price-old">₹{{ book_data.original_price|floatformat:0 }}</span>
+                                                {% endif %}
+                                            </div>
+                                            {% if book_data.discount_percentage > 0 %}
+                                                <span class="discount-percent">{{ book_data.discount_percentage }}% OFF</span>
+                                            {% endif %}
+                                        </div>
+                                        <div class="sale-info">
+                                            <small class="sale-name">{{ book_data.sale_name }}</small>
+                                        </div>
+                                        <a href="{% url 'books:book_detail' book.slug %}" class="view-details-btn" onclick="event.stopPropagation()">
+                                            View Details
+                                        </a>
+                                    </div>
                                 </div>
-                                <a href="{% url 'books:book_detail' book.slug %}" class="view-details-btn" onclick="event.stopPropagation()">
-                                    View Details
-                                </a>
-                            </div>
-                        </div>
+                                {% endif %}
+                            {% endwith %}
                         {% endfor %}
                     </div>
                 {% else %}
                     <div class="empty-section">
                         <i class="bi bi-tag"></i>
                         <h5>No books on sale</h5>
-                        <p>Admin can mark books as on sale from the admin panel.</p>
+                        <p>Check back soon for amazing deals on your favorite books!</p>
                     </div>
                 {% endif %}
             </div>
@@ -200,69 +223,79 @@
             <div id="featured-books" class="section-books">
                 {% if featured_books %}
                     <div class="book-grid">
-                        {% for book in featured_books %}
-                        <div class="book-card" data-book-id="{{ book.id }}">
-                            <div class="book-image">
-                                {% if book.get_cover_image_url %}
-                                    <img src="{{ book.get_cover_image_url }}" alt="{{ book.title }}"
-                                         onerror="this.onerror=null; this.src='{% static 'images/no-cover.jpg' %}'; this.alt='No cover available';">
-                                {% else %}
-                                    <img src="{% static 'images/no-cover.jpg' %}" alt="No cover available">
-                                {% endif %}
-                                <div class="book-badges">
-                                    <span class="badge badge-featured">
-                                        <i class="bi bi-star"></i> FEATURED
-                                    </span>
-                                    {% if book.is_bestseller %}
-                                        <span class="badge badge-bestseller">BESTSELLER</span>
-                                    {% endif %}
-                                    {% if book.is_on_sale %}
-                                        <span class="badge badge-sale">SALE</span>
-                                    {% endif %}
-                                </div>
-                                {% if not book.in_stock %}
-                                    <span class="badge badge-out-of-stock">Out of Stock</span>
-                                {% endif %}
-                                <div class="book-actions">
-                                    <button class="action-btn quick-view-btn" title="Quick View">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                    <button class="action-btn wishlist-btn" title="Add to Wishlist">
-                                        <i class="{% if book.in_wishlist %}fas{% else %}far{% endif %} fa-heart"></i>
-                                    </button>
-                                    <button class="action-btn share-btn" title="Share"
-                                        data-book-title="{{ book.title }}"
-                                        data-book-url="{% url 'books:book_detail' book.slug %}">
-                                        <i class="fas fa-share-alt"></i>
-                                    </button>
-                                </div>
-                            </div>
-                            <div class="book-info">
-                                <h3>{{ book.title|truncatechars:40 }}</h3>
-                                <p class="author">
-                                    <i class="bi bi-person"></i>
-                                    {% for author in book.authors.all %}
-                                        {{ author.name }}{% if not forloop.last %}, {% endif %}
-                                    {% endfor %}
-                                </p>
-                                <p class="category">{{ book.category.name }}</p>
-                                <p class="book-description">{{ book.short_description|truncatechars:80 }}</p>
-                                <div class="price-section">
-                                    <div>
-                                        <span class="price">${{ book.price }}</span>
-                                        {% if book.original_price and book.discount_percentage > 0 %}
-                                            <span class="price-old">${{ book.original_price }}</span>
+                        {% for book_data in featured_books %}
+                            {% with book=book_data.book %}
+                                {% if book.slug %}
+                                <div class="book-card" data-book-id="{{ book.id }}">
+                                    <div class="book-image">
+                                        <a href="{% url 'books:book_detail' book.slug %}">
+                                            {% if book.get_cover_image_url %}
+                                                <img src="{{ book.get_cover_image_url }}" alt="{{ book.title }}"
+                                                     onerror="this.onerror=null; this.src='{% static 'images/no-cover.jpg' %}'; this.alt='No cover available';">
+                                            {% else %}
+                                                <img src="{% static 'images/no-cover.jpg' %}" alt="No cover available">
+                                            {% endif %}
+                                        </a>
+                                        <div class="book-badges">
+                                            <span class="badge badge-featured">
+                                                <i class="bi bi-star"></i> FEATURED
+                                            </span>
+                                            {% if book.is_bestseller %}
+                                                <span class="badge badge-bestseller">BESTSELLER</span>
+                                            {% endif %}
+                                            {% if book_data.is_on_sale %}
+                                                <span class="badge badge-sale">SALE</span>
+                                            {% endif %}
+                                        </div>
+                                        {% if not book.is_in_stock %}
+                                            <span class="badge badge-out-of-stock">Out of Stock</span>
                                         {% endif %}
+                                        <div class="book-actions">
+                                            <button class="action-btn quick-view-btn" title="Quick View" data-book-slug="{{ book.slug }}">
+                                                <i class="fas fa-eye"></i>
+                                            </button>
+                                            <button class="action-btn wishlist-btn" title="Add to Wishlist" data-book-id="{{ book.id }}">
+                                                <i class="far fa-heart"></i>
+                                            </button>
+                                            <button class="action-btn share-btn" title="Share"
+                                                data-book-title="{{ book.title }}"
+                                                data-book-url="{% url 'books:book_detail' book.slug %}">
+                                                <i class="fas fa-share-alt"></i>
+                                            </button>
+                                        </div>
                                     </div>
-                                    {% if book.discount_percentage > 0 %}
-                                        <span class="discount-percent">{{ book.discount_percentage }}% OFF</span>
-                                    {% endif %}
+                                    <div class="book-info">
+                                        <h3>
+                                            <a href="{% url 'books:book_detail' book.slug %}">
+                                                {{ book.title|truncatechars:40 }}
+                                            </a>
+                                        </h3>
+                                        <p class="author">
+                                            <i class="bi bi-person"></i>
+                                            {% for author in book.authors.all %}
+                                                {{ author.name }}{% if not forloop.last %}, {% endif %}
+                                            {% endfor %}
+                                        </p>
+                                        <p class="category">{{ book.category.name }}</p>
+                                        <p class="book-description">{{ book.short_description|truncatechars:80 }}</p>
+                                        <div class="price-section">
+                                            <div>
+                                                <span class="price">₹{{ book_data.sale_price|floatformat:0 }}</span>
+                                                {% if book_data.original_price != book_data.sale_price %}
+                                                    <span class="price-old">₹{{ book_data.original_price|floatformat:0 }}</span>
+                                                {% endif %}
+                                            </div>
+                                            {% if book_data.discount_percentage > 0 %}
+                                                <span class="discount-percent">{{ book_data.discount_percentage }}% OFF</span>
+                                            {% endif %}
+                                        </div>
+                                        <a href="{% url 'books:book_detail' book.slug %}" class="view-details-btn" onclick="event.stopPropagation()">
+                                            View Details
+                                        </a>
+                                    </div>
                                 </div>
-                                <a href="{% url 'books:book_detail' book.slug %}" class="view-details-btn" onclick="event.stopPropagation()">
-                                    View Details
-                                </a>
-                            </div>
-                        </div>
+                                {% endif %}
+                            {% endwith %}
                         {% endfor %}
                     </div>
                 {% else %}
@@ -277,7 +310,6 @@
     </section>
 
     <!-- Shop by Category Section -->
-
     {% if categories %}
     <section class="section section-alt">
         <div class="container">
