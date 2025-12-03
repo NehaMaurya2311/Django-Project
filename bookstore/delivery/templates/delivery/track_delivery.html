@@ -3,112 +3,396 @@
 
 {% block title %}Track Delivery - Order #{{ order.order_id }}{% endblock %}
 
+{% block extra_css %}
+<style>
+:root {
+    --primary-gradient: linear-gradient(135deg, #ff7b7b 0%, #ff9a56 100%);
+    --success-gradient: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+    --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+body {
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 50%, #ff8a80 100%);
+    min-height: 100vh;
+}
+
+.tracking-header {
+    background: var(--primary-gradient);
+    color: white;
+    padding: 2rem 0;
+    border-radius: 0 0 30px 30px;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(255, 123, 123, 0.3);
+}
+
+.tracking-card {
+    background: white;
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.tracking-card .card-header {
+    background: var(--info-gradient);
+    color: white;
+    border: none;
+    padding: 1.5rem;
+}
+
+.timeline {
+    position: relative;
+    padding: 2rem 0;
+}
+
+.timeline::before {
+    content: '';
+    position: absolute;
+    left: 40px;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(to bottom, #ff7b7b, #ff9a56);
+    border-radius: 2px;
+}
+
+.timeline-item {
+    position: relative;
+    margin-bottom: 2rem;
+    padding-left: 100px;
+}
+
+.timeline-icon {
+    position: absolute;
+    left: 20px;
+    top: 0;
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 1rem;
+    font-weight: bold;
+    z-index: 2;
+    border: 4px solid white;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.timeline-icon.pending {
+    background: linear-gradient(45deg, #ddd, #bbb);
+}
+
+.timeline-icon.active {
+    background: var(--success-gradient);
+    animation: pulse 2s infinite;
+}
+
+.timeline-icon.current {
+    background: var(--warning-gradient);
+    animation: bounce 1s infinite;
+}
+
+.timeline-content {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+    border-left: 4px solid transparent;
+}
+
+.timeline-content.active {
+    border-left-color: #56ab2f;
+}
+
+.timeline-content.current {
+    border-left-color: #ff7b7b;
+    background: linear-gradient(135deg, #fff5f5 0%, #fff8f0 100%);
+}
+
+.delivery-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.info-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    border-left: 4px solid;
+    transition: transform 0.3s ease;
+}
+
+.info-card:hover {
+    transform: translateY(-3px);
+}
+
+.info-card.pickup {
+    border-left-color: #4facfe;
+}
+
+.info-card.delivery {
+    border-left-color: #ff7b7b;
+}
+
+.info-card.partner {
+    border-left-color: #56ab2f;
+}
+
+.info-card.timing {
+    border-left-color: #f093fb;
+}
+
+.update-card {
+    background: white;
+    border-radius: 15px;
+    border: none;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    margin-bottom: 1rem;
+    overflow: hidden;
+    transition: transform 0.3s ease;
+}
+
+.update-card:hover {
+    transform: translateX(5px);
+}
+
+.update-header {
+    padding: 1rem 1.5rem;
+    background: linear-gradient(45deg, #f8f9fa, #e9ecef);
+}
+
+.rating-section {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.rating-header {
+    background: var(--success-gradient);
+    color: white;
+    padding: 1.5rem;
+}
+
+.rating-stars {
+    display: flex;
+    gap: 0.5rem;
+    margin: 1rem 0;
+}
+
+.rating-stars input {
+    display: none;
+}
+
+.rating-stars label {
+    color: #ddd;
+    font-size: 2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.rating-stars label:hover,
+.rating-stars label:hover ~ label,
+.rating-stars input:checked ~ label {
+    color: #ffd700;
+    transform: scale(1.1);
+}
+
+.tracking-id-section {
+    background: linear-gradient(45deg, #667eea, #764ba2);
+    color: white;
+    padding: 1rem 1.5rem;
+    border-radius: 15px;
+    margin-bottom: 1rem;
+}
+
+.copy-btn {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    border-radius: 10px;
+    padding: 0.3rem 0.8rem;
+    font-size: 0.8rem;
+    transition: all 0.3s ease;
+}
+
+.copy-btn:hover {
+    background: rgba(255,255,255,0.3);
+    color: white;
+    transform: scale(1.05);
+}
+
+@keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(86, 171, 47, 0.7); }
+    70% { box-shadow: 0 0 0 10px rgba(86, 171, 47, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(86, 171, 47, 0); }
+}
+
+@keyframes bounce {
+    0%, 20%, 60%, 100% { transform: translateY(0); }
+    40% { transform: translateY(-10px); }
+    80% { transform: translateY(-5px); }
+}
+
+@media (max-width: 768px) {
+    .timeline-item {
+        padding-left: 80px;
+    }
+    
+    .timeline-icon {
+        left: 10px;
+        width: 35px;
+        height: 35px;
+        font-size: 0.9rem;
+    }
+    
+    .timeline::before {
+        left: 27px;
+    }
+    
+    .delivery-info-grid {
+        grid-template-columns: 1fr;
+    }
+}
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="row">
-    <div class="col-lg-8 mx-auto">
-        <!-- Order Header -->
-        <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-                <h4 class="mb-0">
-                    <i class="fas fa-box"></i> Order #{{ order.order_id }}
-                </h4>
+<div class="tracking-header">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h2 class="mb-2">
+                    <i class="fas fa-box me-2"></i>Order #{{ order.order_id }}
+                </h2>
+                <p class="mb-0">Track your delivery in real-time</p>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6><strong>Order Date:</strong></h6>
-                        <p>{{ order.created_at|date:"F d, Y" }}</p>
-                        
-                        <h6><strong>Status:</strong></h6>
-                        <span class="status-badge status-{{ delivery.status }}">
-                            {{ delivery.get_status_display }}
-                        </span>
-                    </div>
-                    <div class="col-md-6">
-                        <h6><strong>Tracking ID:</strong></h6>
-                        <p class="font-monospace">{{ delivery.tracking_id }}</p>
-                        
-                        <h6><strong>Delivery Partner:</strong></h6>
-                        <p>
-                            {% if delivery.delivery_partner %}
-                                {{ delivery.delivery_partner.name }}
-                                <br><small class="text-muted">{{ delivery.delivery_partner.phone }}</small>
-                            {% else %}
-                                <span class="text-muted">Not assigned yet</span>
-                            {% endif %}
-                        </p>
+            <div class="col-md-4 text-md-end">
+                <div class="tracking-id-section">
+                    <small>Tracking ID</small>
+                    <div class="d-flex align-items-center justify-content-md-end">
+                        <span class="font-monospace me-2">{{ delivery.tracking_id }}</span>
+                        <button class="copy-btn" onclick="copyToClipboard('{{ delivery.tracking_id }}')">
+                            <i class="fas fa-copy"></i>
+                        </button>
                     </div>
                 </div>
-                
-                {% if delivery.estimated_delivery_time %}
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <div class="alert alert-info">
-                            <i class="fas fa-clock"></i>
-                            <strong>Estimated Delivery:</strong> {{ delivery.estimated_delivery_time|date:"F d, Y g:i A" }}
-                            {% if delivery.actual_delivery_time %}
-                                <br><strong>Delivered:</strong> {{ delivery.actual_delivery_time|date:"F d, Y g:i A" }}
-                            {% endif %}
-                        </div>
-                    </div>
-                </div>
-                {% endif %}
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- Delivery Progress Timeline -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-route"></i> Delivery Progress
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="timeline">
-                    {% for status_choice in delivery.DELIVERY_STATUS %}
-                        {% with status_key=status_choice.0 status_display=status_choice.1 %}
-                            <div class="timeline-item">
-                                <div class="timeline-icon 
-                                    {% if status_key == 'assigned' and delivery.status != 'assigned' %}active
-                                    {% elif status_key == 'picked_up' and delivery.status in 'picked_up,in_transit,out_for_delivery,delivered' %}active
-                                    {% elif status_key == 'in_transit' and delivery.status in 'in_transit,out_for_delivery,delivered' %}active
-                                    {% elif status_key == 'out_for_delivery' and delivery.status in 'out_for_delivery,delivered' %}active
-                                    {% elif status_key == 'delivered' and delivery.status == 'delivered' %}active
-                                    {% elif status_key == delivery.status %}current
-                                    {% endif %}">
-                                    {% if status_key == 'assigned' %}<i class="fas fa-clipboard"></i>
-                                    {% elif status_key == 'picked_up' %}<i class="fas fa-hand-paper"></i>
-                                    {% elif status_key == 'in_transit' %}<i class="fas fa-truck"></i>
-                                    {% elif status_key == 'out_for_delivery' %}<i class="fas fa-shipping-fast"></i>
-                                    {% elif status_key == 'delivered' %}<i class="fas fa-check"></i>
-                                    {% elif status_key == 'failed' %}<i class="fas fa-times"></i>
-                                    {% elif status_key == 'returned' %}<i class="fas fa-undo"></i>
-                                    {% endif %}
-                                </div>
-                                <div class="timeline-content">
-                                    <h6>{{ status_display }}</h6>
-                                    {% if status_key == delivery.status %}
-                                        <p class="text-success"><strong>Current Status</strong></p>
-                                    {% endif %}
-                                </div>
+<div class="container">
+    <!-- Delivery Information Grid -->
+    <div class="delivery-info-grid">
+        <div class="info-card pickup">
+            <h6><i class="fas fa-warehouse me-2"></i>Pickup Location</h6>
+            <p class="mb-0 text-muted">{{ delivery.pickup_address }}</p>
+        </div>
+        
+        <div class="info-card delivery">
+            <h6><i class="fas fa-home me-2"></i>Delivery Address</h6>
+            <p class="mb-0 text-muted">{{ delivery.delivery_address }}</p>
+        </div>
+        
+        <div class="info-card partner">
+            <h6><i class="fas fa-user-tie me-2"></i>Delivery Partner</h6>
+            {% if delivery.delivery_partner %}
+                <p class="mb-1 fw-bold">{{ delivery.delivery_partner.name }}</p>
+                <small class="text-muted">{{ delivery.delivery_partner.phone }}</small>
+            {% else %}
+                <p class="mb-0 text-muted">Partner assignment pending</p>
+            {% endif %}
+        </div>
+        
+        <div class="info-card timing">
+            <h6><i class="fas fa-clock me-2"></i>Delivery Timeline</h6>
+            <p class="mb-1"><strong>Estimated:</strong> {{ delivery.estimated_delivery_time|date:"M d, Y g:i A" }}</p>
+            {% if delivery.actual_delivery_time %}
+                <p class="mb-0 text-success"><strong>Delivered:</strong> {{ delivery.actual_delivery_time|date:"M d, Y g:i A" }}</p>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Delivery Progress Timeline -->
+    <div class="card tracking-card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-route me-2"></i>Delivery Progress
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="timeline">
+                {% for status_choice in delivery.DELIVERY_STATUS %}
+                    {% with status_key=status_choice.0 status_display=status_choice.1 %}
+                        <div class="timeline-item">
+                            <div class="timeline-icon 
+                                {% if status_key == 'assigned' and delivery.status != 'assigned' %}active
+                                {% elif status_key == 'picked_up' and delivery.status in 'picked_up,in_transit,out_for_delivery,delivered' %}active
+                                {% elif status_key == 'in_transit' and delivery.status in 'in_transit,out_for_delivery,delivered' %}active
+                                {% elif status_key == 'out_for_delivery' and delivery.status in 'out_for_delivery,delivered' %}active
+                                {% elif status_key == 'delivered' and delivery.status == 'delivered' %}active
+                                {% elif status_key == delivery.status %}current
+                                {% else %}pending
+                                {% endif %}">
+                                {% if status_key == 'assigned' %}<i class="fas fa-clipboard-list"></i>
+                                {% elif status_key == 'picked_up' %}<i class="fas fa-hand-paper"></i>
+                                {% elif status_key == 'in_transit' %}<i class="fas fa-truck"></i>
+                                {% elif status_key == 'out_for_delivery' %}<i class="fas fa-shipping-fast"></i>
+                                {% elif status_key == 'delivered' %}<i class="fas fa-check-circle"></i>
+                                {% elif status_key == 'failed' %}<i class="fas fa-times-circle"></i>
+                                {% elif status_key == 'returned' %}<i class="fas fa-undo"></i>
+                                {% endif %}
                             </div>
-                        {% endwith %}
-                    {% endfor %}
-                </div>
+                            <div class="timeline-content 
+                                {% if status_key == delivery.status %}current
+                                {% elif status_key == 'assigned' and delivery.status != 'assigned' %}active
+                                {% elif status_key == 'picked_up' and delivery.status in 'picked_up,in_transit,out_for_delivery,delivered' %}active
+                                {% elif status_key == 'in_transit' and delivery.status in 'in_transit,out_for_delivery,delivered' %}active
+                                {% elif status_key == 'out_for_delivery' and delivery.status in 'out_for_delivery,delivered' %}active
+                                {% elif status_key == 'delivered' and delivery.status == 'delivered' %}active
+                                {% endif %}">
+                                <h6 class="mb-1">{{ status_display }}</h6>
+                                {% if status_key == delivery.status %}
+                                    <p class="text-primary mb-0">
+                                        <i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>
+                                        <strong>Current Status</strong>
+                                    </p>
+                                    <small class="text-muted">Updated {{ delivery.updated_at|timesince }} ago</small>
+                                {% elif status_key == 'assigned' and delivery.status != 'assigned' %}
+                                    <small class="text-success">✓ Completed</small>
+                                {% elif status_key == 'picked_up' and delivery.status in 'picked_up,in_transit,out_for_delivery,delivered' %}
+                                    <small class="text-success">✓ Completed {{ delivery.picked_up_at|timesince }} ago</small>
+                                {% elif status_key == 'delivered' and delivery.status == 'delivered' %}
+                                    <small class="text-success">✓ Delivered {{ delivery.delivered_at|timesince }} ago</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endwith %}
+                {% endfor %}
             </div>
         </div>
+    </div>
 
-        <!-- Delivery Updates -->
-        {% if updates %}
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-history"></i> Delivery Updates
-                </h5>
-            </div>
-            <div class="card-body">
-                {% for update in updates %}
-                <div class="border-bottom pb-3 mb-3">
+    <!-- Delivery Updates -->
+    {% if updates %}
+    <div class="card tracking-card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-history me-2"></i>Delivery Updates
+            </h5>
+        </div>
+        <div class="card-body">
+            {% for update in updates %}
+            <div class="update-card">
+                <div class="update-header">
                     <div class="d-flex justify-content-between align-items-start">
                         <div>
                             <span class="status-badge status-{{ update.status }}">
@@ -116,161 +400,339 @@
                             </span>
                             {% if update.location %}
                                 <div class="mt-2">
-                                    <i class="fas fa-map-marker-alt text-muted"></i>
-                                    <small class="text-muted">{{ update.location }}</small>
+                                    <i class="fas fa-map-marker-alt text-primary me-1"></i>
+                                    <small class="fw-bold">{{ update.location }}</small>
                                 </div>
                             {% endif %}
-                            <p class="mt-2 mb-0">{{ update.description }}</p>
                         </div>
                         <small class="text-muted">
-                            {{ update.timestamp|date:"M d, Y g:i A" }}
+                            {{ update.timestamp|date:"M d, Y" }}
+                            <br>
+                            {{ update.timestamp|time:"g:i A" }}
                         </small>
                     </div>
                 </div>
-                {% endfor %}
-            </div>
-        </div>
-        {% endif %}
-
-        <!-- Delivery Addresses -->
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-map"></i> Delivery Information
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-6">
-                        <h6><i class="fas fa-warehouse"></i> Pickup Address:</h6>
-                        <p>{{ delivery.pickup_address|linebreaks }}</p>
-                    </div>
-                    <div class="col-md-6">
-                        <h6><i class="fas fa-home"></i> Delivery Address:</h6>
-                        <p>{{ delivery.delivery_address|linebreaks }}</p>
-                    </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ update.description }}</p>
                 </div>
-                
-                {% if delivery.delivery_notes %}
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <h6><i class="fas fa-sticky-note"></i> Delivery Notes:</h6>
-                        <p class="alert alert-light">{{ delivery.delivery_notes|linebreaks }}</p>
-                    </div>
-                </div>
-                {% endif %}
             </div>
+            {% endfor %}
         </div>
+    </div>
+    {% endif %}
 
-        <!-- Customer Feedback (if delivered) -->
-        {% if delivery.status == 'delivered' %}
-        <div class="card mb-4">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-star"></i> Rate Your Delivery Experience
-                </h5>
-            </div>
-            <div class="card-body">
-                {% if delivery.customer_rating %}
-                    <div class="alert alert-success">
-                        <h6>Thank you for your feedback!</h6>
-                        <p><strong>Rating:</strong> 
-                            {% for i in "12345" %}
-                                {% if forloop.counter <= delivery.customer_rating %}
-                                    <i class="fas fa-star text-warning"></i>
-                                {% else %}
-                                    <i class="far fa-star text-warning"></i>
-                                {% endif %}
+    <!-- Customer Rating Section (if delivered) -->
+    {% if delivery.status == 'delivered' %}
+    <div class="card rating-section">
+        <div class="rating-header">
+            <h5 class="mb-0">
+                <i class="fas fa-star me-2"></i>Rate Your Delivery Experience
+            </h5>
+        </div>
+        <div class="card-body">
+            {% if delivery.customer_rating %}
+                <div class="alert alert-success border-0" style="background: linear-gradient(45deg, #d4edda, #c3e6cb);">
+                    <h6><i class="fas fa-heart me-2"></i>Thank you for your feedback!</h6>
+                    <div class="d-flex align-items-center mb-2">
+                        <strong class="me-2">Rating:</strong>
+                        {% for i in "12345" %}
+                            {% if forloop.counter <= delivery.customer_rating %}
+                                <i class="fas fa-star text-warning me-1"></i>
+                            {% else %}
+                                <i class="far fa-star text-warning me-1"></i>
+                            {% endif %}
+                        {% endfor %}
+                        <span class="ms-2 fw-bold">{{ delivery.customer_rating }}/5</span>
+                    </div>
+                    {% if delivery.customer_feedback %}
+                        <p class="mb-0"><strong>Feedback:</strong> "{{ delivery.customer_feedback }}"</p>
+                    {% endif %}
+                </div>
+            {% else %}
+                <form method="post" action="{% url 'delivery:rate_delivery' delivery.id %}">
+                    {% csrf_token %}
+                    <div class="mb-4">
+                        <label class="form-label fw-bold">How was your delivery experience?</label>
+                        <div class="rating-stars justify-content-center">
+                            {% for i in "54321" %}
+                                <input type="radio" name="rating" value="{{ i }}" id="star{{ i }}" required>
+                                <label for="star{{ i }}"><i class="fas fa-star"></i></label>
                             {% endfor %}
-                        </p>
-                        {% if delivery.customer_feedback %}
-                            <p><strong>Feedback:</strong> {{ delivery.customer_feedback }}</p>
-                        {% endif %}
+                        </div>
                     </div>
-                {% else %}
-                    <form method="post" action="{% url 'delivery:rate_delivery' delivery.id %}">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label class="form-label">Rate your delivery experience:</label>
-                            <div class="rating">
-                                {% for i in "12345" %}
-                                <input type="radio" name="rating" value="{{ forloop.counter }}" id="star{{ forloop.counter }}" required>
-                                <label for="star{{ forloop.counter }}"><i class="fas fa-star"></i></label>
-                                {% endfor %}
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="feedback" class="form-label">Additional Feedback (Optional):</label>
-                            <textarea name="feedback" id="feedback" class="form-control" rows="3" placeholder="Tell us about your delivery experience..."></textarea>
-                        </div>
-                        <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-paper-plane"></i> Submit Feedback
+                    <div class="mb-4">
+                        <label for="feedback" class="form-label fw-bold">Tell us more (Optional):</label>
+                        <textarea name="feedback" id="feedback" class="form-control" rows="3" 
+                                  placeholder="Share your thoughts about the delivery service..." 
+                                  style="border-radius: 10px; border: 2px solid #e9ecef;"></textarea>
+                    </div>
+                    <div class="text-center">
+                        <button type="submit" class="btn btn-lg" style="background: var(--primary-gradient); color: white; border-radius: 25px; padding: 0.8rem 2.5rem; border: none; font-weight: 600;">
+                            <i class="fas fa-paper-plane me-2"></i>Submit Feedback
                         </button>
-                    </form>
-                {% endif %}
+                    </div>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Additional Delivery Notes -->
+    {% if delivery.delivery_notes %}
+    <div class="card tracking-card">
+        <div class="card-header">
+            <h5 class="mb-0">
+                <i class="fas fa-sticky-note me-2"></i>Delivery Notes
+            </h5>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info border-0" style="background: linear-gradient(45deg, #cce7ff, #b3d9ff); border-radius: 15px;">
+                <p class="mb-0">{{ delivery.delivery_notes|linebreaks }}</p>
             </div>
         </div>
-        {% endif %}
+    </div>
+    {% endif %}
 
-        <!-- Actions -->
-        <div class="text-center mb-4">
-            <a href="#" class="btn btn-outline-primary me-2">
-                <i class="fas fa-list"></i> View All Orders
-            </a>
-            <button class="btn btn-outline-secondary" onclick="window.print()">
-                <i class="fas fa-print"></i> Print Tracking Info
-            </button>
+    <!-- Action Buttons -->
+    <div class="text-center mb-5">
+        <div class="row justify-content-center">
+            <div class="col-auto">
+                <a href="{% url 'orders:order_list' %}" class="btn btn-outline-primary me-2" style="border-radius: 25px; padding: 0.8rem 2rem;">
+                    <i class="fas fa-list me-2"></i>My Orders
+                </a>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-secondary me-2" onclick="window.print()" style="border-radius: 25px; padding: 0.8rem 2rem;">
+                    <i class="fas fa-print me-2"></i>Print Details
+                </button>
+            </div>
+            <div class="col-auto">
+                <button class="btn btn-outline-info" onclick="shareTracking()" style="border-radius: 25px; padding: 0.8rem 2rem;">
+                    <i class="fas fa-share me-2"></i>Share Tracking
+                </button>
+            </div>
         </div>
     </div>
 </div>
 {% endblock %}
 
-{% block extra_css %}
-<style>
-.rating {
-    display: flex;
-    flex-direction: row-reverse;
-    justify-content: flex-end;
-}
-
-.rating input {
-    display: none;
-}
-
-.rating label {
-    color: #ddd;
-    font-size: 1.5rem;
-    margin: 0 2px;
-    cursor: pointer;
-    transition: color 0.2s;
-}
-
-.rating label:hover,
-.rating label:hover ~ label,
-.rating input:checked ~ label {
-    color: #ffc107;
-}
-
-@media print {
-    .btn, .navbar, .footer {
-        display: none !important;
-    }
-    
-    .card {
-        box-shadow: none !important;
-        border: 1px solid #ddd !important;
-    }
-}
-</style>
-{% endblock %}
-
 {% block extra_js %}
 <script>
+// Copy tracking ID to clipboard
+function copyToClipboard(text) {
+    navigator.clipboard.writeText(text).then(function() {
+        showToast('Tracking ID copied to clipboard!', 'success');
+    }).catch(function() {
+        showToast('Failed to copy tracking ID', 'error');
+    });
+}
+
+// Share tracking information
+function shareTracking() {
+    const trackingUrl = window.location.href;
+    const trackingId = '{{ delivery.tracking_id }}';
+    
+    if (navigator.share) {
+        navigator.share({
+            title: 'Order Tracking - #{{ order.order_id }}',
+            text: `Track my delivery: ${trackingId}`,
+            url: trackingUrl
+        }).catch(console.error);
+    } else {
+        // Fallback - copy URL to clipboard
+        navigator.clipboard.writeText(trackingUrl).then(function() {
+            showToast('Tracking link copied to clipboard!', 'success');
+        });
+    }
+}
+
+// Toast notification system
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    const bgColor = type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#cce7ff';
+    const textColor = type === 'success' ? '#155724' : type === 'error' ? '#721c24' : '#004085';
+    
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        background: ${bgColor};
+        color: ${textColor};
+        padding: 1rem 1.5rem;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        animation: slideInRight 0.3s ease-out;
+        min-width: 300px;
+        border: 1px solid ${type === 'success' ? '#c3e6cb' : type === 'error' ? '#f5c6cb' : '#b8daff'};
+    `;
+    
+    toast.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+            <span>${message}</span>
+            <button type="button" class="btn-close ms-auto" onclick="this.parentElement.parentElement.remove()" style="background: none; border: none; color: ${textColor}; font-size: 1.2rem;">×</button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.style.animation = 'slideOutRight 0.3s ease-out';
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    document.body.removeChild(toast);
+                }
+            }, 300);
+        }
+    }, 4000);
+}
+
 // Auto-refresh page every 30 seconds if delivery is in progress
 {% if delivery.status not in 'delivered,failed,returned' %}
-setTimeout(function() {
-    location.reload();
+let refreshInterval = setInterval(function() {
+    if (!document.hidden) {
+        // Check for updates via API
+        fetch(`/delivery/api/status/{{ delivery.tracking_id }}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.status !== '{{ delivery.status }}') {
+                    // Status changed, reload page
+                    location.reload();
+                }
+            })
+            .catch(() => {
+                // If API fails, do full page reload
+                location.reload();
+            });
+    }
 }, 30000);
+
+// Stop refresh when page is hidden
+document.addEventListener('visibilitychange', function() {
+    if (document.hidden) {
+        clearInterval(refreshInterval);
+    } else {
+        refreshInterval = setInterval(function() {
+            if (!document.hidden) {
+                fetch(`/delivery/api/status/{{ delivery.tracking_id }}/`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.status !== '{{ delivery.status }}') {
+                            location.reload();
+                        }
+                    })
+                    .catch(() => location.reload());
+            }
+        }, 30000);
+    }
+});
 {% endif %}
+
+// Add smooth scroll to timeline when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    // Find current status in timeline and scroll to it
+    const currentItem = document.querySelector('.timeline-content.current');
+    if (currentItem) {
+        setTimeout(() => {
+            currentItem.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }, 1000);
+    }
+    
+    // Add loading animation to cards
+    const cards = document.querySelectorAll('.info-card, .tracking-card, .rating-section');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+        card.style.animation = 'fadeInUp 0.6s ease-out both';
+    });
+    
+    // Initialize rating stars interaction
+    const ratingInputs = document.querySelectorAll('.rating-stars input');
+    const ratingLabels = document.querySelectorAll('.rating-stars label');
+    
+    ratingLabels.forEach((label, index) => {
+        label.addEventListener('mouseenter', function() {
+            // Highlight stars on hover
+            ratingLabels.forEach((l, i) => {
+                if (i >= index) {
+                    l.style.color = '#ffd700';
+                } else {
+                    l.style.color = '#ddd';
+                }
+            });
+        });
+        
+        label.addEventListener('mouseleave', function() {
+            // Reset to selected state
+            const checked = document.querySelector('.rating-stars input:checked');
+            if (checked) {
+                const checkedIndex = Array.from(ratingInputs).indexOf(checked);
+                ratingLabels.forEach((l, i) => {
+                    l.style.color = i >= checkedIndex ? '#ffd700' : '#ddd';
+                });
+            } else {
+                ratingLabels.forEach(l => l.style.color = '#ddd');
+            }
+        });
+    });
+});
+
+// Add CSS animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+    
+    @keyframes fadeInUp {
+        from {
+            opacity: 0;
+            transform: translateY(30px);
+        }
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+    
+    @media print {
+        .btn, .rating-section form, .copy-btn {
+            display: none !important;
+        }
+        
+        body {
+            background: white !important;
+        }
+        
+        .card {
+            box-shadow: none !important;
+            border: 1px solid #ddd !important;
+        }
+        
+        .timeline::before {
+            background: #ddd !important;
+        }
+    }
+`;
+document.head.appendChild(style);
 </script>
 {% endblock %}

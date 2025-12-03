@@ -1,17 +1,27 @@
-# support/urls.py
+# support/urls.py - Updated version
 from django.urls import path
 from . import views
+from .views import ChatbotView, create_ticket_from_chatbot
 
 app_name = 'support'
 
 urlpatterns = [
+    # Support Center Home
+    path('', views.support_home, name='home'),
+    
     # FAQ and Help Center URLs
     path('faq/', views.faq, name='faq'),
+    
     # Customer URLs
-    path('', views.my_tickets, name='my_tickets'),
+    path('tickets/', views.my_tickets, name='my_tickets'),
     path('create/', views.create_ticket, name='create_ticket'),
     path('ticket/<str:ticket_id>/', views.ticket_detail, name='ticket_detail'),
     path('ticket/<str:ticket_id>/rate/', views.rate_ticket, name='rate_ticket'),
+    
+    # Chatbot URLs
+    path('chatbot/', ChatbotView.as_view(), name='chatbot'),
+    path('chatbot/create-ticket/', create_ticket_from_chatbot, name='chatbot_create_ticket'),
+    path('chatbot/widget/', views.chatbot_widget, name='chatbot_widget'),
     
     # Live Chat URLs
     path('chat/start/', views.start_chat, name='start_chat'),

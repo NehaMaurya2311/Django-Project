@@ -1,0 +1,323 @@
+<!-- support/templates/support/rate_ticket.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Rate Ticket - {{ ticket.ticket_id }}{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Rate Your Support Experience</h3>
+                    <small class="text-muted">Ticket #{{ ticket.ticket_id }}: {{ ticket.subject }}</small>
+                </div>
+                <div class="card-body">
+                    <form method="post">
+                        {% csrf_token %}
+                        
+                        <div class="mb-3">
+                            {{ form.rating.label_tag }}
+                            {% for choice in form.rating %}
+                                <div class="form-check">
+                                    {{ choice.tag }}
+                                    <label class="form-check-label" for="{{ choice.id_for_label }}">
+                                        {{ choice.choice_label }}
+                                    </label>
+                                </div>
+                            {% endfor %}
+                        </div>
+                        
+                        <div class="mb-3">
+                            {{ form.feedback.label_tag }}
+                            {{ form.feedback }}
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary">Submit Rating</button>
+                        <a href="{% url 'support:ticket_detail' ticket.ticket_id %}" class="btn btn-secondary">Cancel</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+<!-- support/templates/support/chat_room.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Live Chat{% endblock %}
+
+{% block content %}
+<div class="container-fluid mt-4">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <h4>Live Chat - {{ chat.session_id }}</h4>
+                    <span class="badge bg-{{ chat.status|default:'secondary' }}">{{ chat.get_status_display }}</span>
+                </div>
+                <div class="card-body">
+                    <div id="chat-messages" style="height: 400px; overflow-y: auto; border: 1px solid #dee2e6; padding: 15px; margin-bottom: 15px;">
+                        <!-- Messages will be loaded here -->
+                    </div>
+                    
+                    {% if chat.status != 'ended' %}
+                    <div class="row">
+                        <div class="col-10">
+                            <input type="text" id="message-input" class="form-control" placeholder="Type your message...">
+                        </div>
+                        <div class="col-2">
+                            <button id="send-button" class="btn btn-primary w-100">Send</button>
+                        </div>
+                    </div>
+                    <div class="mt-2">
+                        <button id="end-chat" class="btn btn-danger btn-sm">End Chat</button>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Basic chat functionality - you'll need to implement WebSocket or polling
+document.addEventListener('DOMContentLoaded', function() {
+    const messagesDiv = document.getElementById('chat-messages');
+    const messageInput = document.getElementById('message-input');
+    const sendButton = document.getElementById('send-button');
+    const endChatButton = document.getElementById('end-chat');
+    
+    // Load initial messages
+    loadMessages();
+    
+    // Send message
+    if (sendButton) {
+        sendButton.addEventListener('click', sendMessage);
+    }
+    
+    // Send on Enter
+    if (messageInput) {
+        messageInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+    }
+    
+    // End chat
+    if (endChatButton) {
+        endChatButton.addEventListener('click', function() {
+            if (confirm('Are you sure you want to end this chat?')) {
+                endChat();
+            }
+        });
+    }
+    
+    function sendMessage() {
+        const message = messageInput.value.trim();
+        if (!message) return;
+        
+        fetch('{% url "support:send_message" chat.session_id %}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: JSON.stringify({message: message})
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                messageInput.value = '';
+                loadMessages();
+            } else {
+                alert('Error sending message');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error sending message');
+        });
+    }
+    
+    function loadMessages() {
+        fetch('{% url "support:get_messages" chat.session_id %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.messages) {
+                displayMessages(data.messages);
+            }
+        })
+        .catch(error => console.error('Error loading messages:', error));
+    }
+    
+    function displayMessages(messages) {
+        if (messages.length === 0) return;
+        
+        messages.forEach(msg => {
+            const msgDiv = document.createElement('div');
+            msgDiv.className = `mb-2 ${msg.is_agent ? 'text-end' : 'text-start'}`;
+            msgDiv.innerHTML = `
+                <div class="d-inline-block p-2 rounded ${msg.is_agent ? 'bg-primary text-white' : 'bg-light'}">
+                    <small class="d-block">${msg.user}${msg.is_agent ? ' (Agent)' : ''}</small>
+                    <div>${msg.message}</div>
+                    <small class="text-muted">${new Date(msg.timestamp).toLocaleTimeString()}</small>
+                </div>
+            `;
+            messagesDiv.appendChild(msgDiv);
+        });
+        
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    }
+    
+    function endChat() {
+        fetch('{% url "support:end_chat" chat.session_id %}', {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload();
+            } else {
+                alert('Error ending chat');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error ending chat');
+        });
+    }
+    
+    // Poll for new messages every 2 seconds
+    setInterval(loadMessages, 2000);
+});
+</script>
+{% endblock %}
+
+<!-- support/templates/support/admin_tickets.html -->
+{% extends 'admin/base.html' %}
+{% load static %}
+
+{% block title %}Manage Support Tickets{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Support Tickets</h2>
+    </div>
+    
+    <!-- Filters -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <form method="get" class="row g-3">
+                <div class="col-md-3">
+                    {{ filter_form.status.label_tag }}
+                    {{ filter_form.status }}
+                </div>
+                <div class="col-md-3">
+                    {{ filter_form.priority.label_tag }}
+                    {{ filter_form.priority }}
+                </div>
+                <div class="col-md-3">
+                    {{ filter_form.category.label_tag }}
+                    {{ filter_form.category }}
+                </div>
+                <div class="col-md-3">
+                    <label for="search" class="form-label">Search</label>
+                    <input type="text" class="form-control" name="search" id="search" 
+                           value="{{ search_query|default:'' }}" placeholder="Ticket ID, subject, user...">
+                </div>
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary">Filter</button>
+                    <a href="{% url 'support:admin_tickets' %}" class="btn btn-secondary">Clear</a>
+                </div>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Tickets Table -->
+    {% if tickets %}
+    <div class="card">
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Ticket ID</th>
+                            <th>Customer</th>
+                            <th>Subject</th>
+                            <th>Category</th>
+                            <th>Status</th>
+                            <th>Priority</th>
+                            <th>Assigned To</th>
+                            <th>Created</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in tickets %}
+                        <tr>
+                            <td><strong>{{ ticket.ticket_id }}</strong></td>
+                            <td>{{ ticket.user.username }}</td>
+                            <td>{{ ticket.subject|truncatechars:50 }}</td>
+                            <td>{{ ticket.category|default:'-' }}</td>
+                            <td>
+                                <span class="badge bg-{{ ticket.status|default:'secondary' }}">
+                                    {{ ticket.get_status_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge bg-{{ ticket.priority|default:'secondary' }}">
+                                    {{ ticket.get_priority_display }}
+                                </span>
+                            </td>
+                            <td>{{ ticket.assigned_to.username|default:'-' }}</td>
+                            <td>{{ ticket.created_at|date:'M j, Y H:i' }}</td>
+                            <td>
+                                <a href="{% url 'support:admin_ticket_detail' ticket.ticket_id %}" 
+                                   class="btn btn-sm btn-outline-primary">View</a>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="9" class="text-center">No tickets found.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            {% if tickets.has_other_pages %}
+            <nav aria-label="Tickets pagination">
+                <ul class="pagination justify-content-center">
+                    {% if tickets.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ tickets.previous_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">Previous</a>
+                        </li>
+                    {% endif %}
+                    
+                    <li class="page-item active">
+                        <span class="page-link">Page {{ tickets.number }} of {{ tickets.paginator.num_pages }}</span>
+                    </li>
+                    
+                    {% if tickets.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ tickets.next_page_number }}{% if request.GET.status %}&status={{ request.GET.status }}{% endif %}">Next</a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

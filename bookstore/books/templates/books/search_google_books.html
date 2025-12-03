@@ -94,7 +94,7 @@
             <h2>Search Results for "{{ query }}"</h2>
             <div>
                 <span class="badge bg-primary me-2">{{ books|length }} results</span>
-                <a href="{% url 'books:search_google_books' %}?q={{ query }}&source=google_books" class="btn btn-outline-primary btn-sm">
+                <a href="{% url 'books:search_books' %}?q={{ query }}&source=google_books" class="btn btn-outline-primary btn-sm">
                     <i class="fas fa-search me-1"></i>Search Our Library
                 </a>
             </div>
@@ -380,7 +380,7 @@ $(document).ready(function() {
                 card.addClass('checking-duplicate');
                 
                 $.ajax({
-                    url: "{% url 'books:check_book_exists' %}",
+                    url: "{% url 'books:ajax_check_book_exists' %}",
                     method: 'GET',
                     data: {
                         'google_books_id': googleId,

@@ -274,9 +274,9 @@ def approve_offer(request, offer_id):
                 f'Offer approved successfully! {offer.vendor.business_name} will be notified to schedule delivery.'
             )
         
-        return redirect('warehouse:offer_detail', offer_id=offer_id)
+        return redirect('warehouse:stock_offers_list')
     
-    return redirect('warehouse:offer_detail', offer_id=offer_id)
+    return redirect('warehouse:stock_offers_list')
 
 @login_required
 @user_passes_test(is_staff_or_admin)

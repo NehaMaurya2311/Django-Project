@@ -1,0 +1,694 @@
+{% extends 'delivery/base.html' %}
+{% load static %}
+
+{% block title %}Create New Delivery{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --success-gradient: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+    --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+body {
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 50%, #ff8a80 100%);
+    min-height: 100vh;
+}
+
+.page-header {
+    background: var(--success-gradient);
+    color: white;
+    padding: 2rem 0;
+    border-radius: 0 0 30px 30px;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(86, 171, 47, 0.3);
+}
+
+.create-card {
+    background: white;
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.create-header {
+    background: var(--info-gradient);
+    color: white;
+    padding: 1.5rem;
+}
+
+.search-section {
+    padding: 2rem;
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.order-input {
+    border: 3px solid #e9ecef;
+    border-radius: 15px;
+    padding: 1rem 1.5rem;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.order-input:focus {
+    border-color: #56ab2f;
+    box-shadow: 0 0 0 0.2rem rgba(86, 171, 47, 0.25);
+    transform: scale(1.02);
+}
+
+.search-btn {
+    background: var(--primary-gradient);
+    border: none;
+    border-radius: 15px;
+    color: white;
+    padding: 1rem 2rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.search-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+    color: white;
+}
+
+.order-preview {
+    background: white;
+    border-radius: 15px;
+    padding: 2rem;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    border-left: 4px solid #56ab2f;
+    margin-top: 2rem;
+    animation: fadeInUp 0.6s ease-out;
+}
+
+.order-detail-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+}
+
+.detail-item {
+    text-align: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.detail-label {
+    font-size: 0.8rem;
+    color: #666;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.detail-value {
+    font-weight: 700;
+    color: #333;
+}
+
+.confirm-btn {
+    background: var(--success-gradient);
+    border: none;
+    border-radius: 15px;
+    color: white;
+    padding: 0.8rem 2.5rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.confirm-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(86, 171, 47, 0.4);
+    color: white;
+}
+
+.cancel-btn {
+    border: 2px solid #6c757d;
+    border-radius: 15px;
+    color: #6c757d;
+    padding: 0.8rem 2rem;
+    background: transparent;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.cancel-btn:hover {
+    background: #6c757d;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.error-message {
+    background: linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%);
+    color: #721c24;
+    padding: 1rem 1.5rem;
+    border-radius: 10px;
+    border-left: 4px solid #dc3545;
+    margin-top: 1rem;
+}
+
+.info-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1.5rem;
+    margin-top: 2rem;
+}
+
+.info-card {
+    background: white;
+    border-radius: 15px;
+    padding: 1.5rem;
+    box-shadow: 0 5px 20px rgba(0,0,0,0.08);
+    text-align: center;
+    transition: transform 0.3s ease;
+}
+
+.info-card:hover {
+    transform: translateY(-3px);
+}
+
+.info-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 15px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    color: white;
+    margin: 0 auto 1rem;
+}
+
+.info-icon.search {
+    background: var(--info-gradient);
+}
+
+.info-icon.assign {
+    background: var(--warning-gradient);
+}
+
+.info-icon.track {
+    background: var(--success-gradient);
+}
+
+.animate-in {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.loading-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(255,255,255,0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 15px;
+    z-index: 10;
+}
+
+.spinner {
+    width: 40px;
+    height: 40px;
+    border: 4px solid #e9ecef;
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="mb-0">
+                <i class="fas fa-plus-circle me-2"></i>Create New Delivery
+            </h2>
+            <a href="{% url 'delivery:dashboard' %}" class="btn btn-light">
+                <i class="fas fa-arrow-left me-2"></i>Back to Dashboard
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card create-card animate-in">
+                <div class="create-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-search me-2"></i>Find Order to Create Delivery
+                    </h5>
+                </div>
+                
+                <div class="search-section">
+                    <form method="post" id="orderSearchForm">
+                        {% csrf_token %}
+                        <div class="row align-items-end">
+                            <div class="col-md-8">
+                                <label for="order_id" class="form-label fw-bold">Order ID</label>
+                                <input type="text" name="order_id" id="order_id" class="form-control order-input" 
+                                       placeholder="Enter Order ID (e.g., ORD123ABC)" required>
+                                <small class="text-muted mt-2">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Enter the complete Order ID to create delivery
+                                </small>
+                            </div>
+                            <div class="col-md-4">
+                                <button type="submit" class="btn search-btn w-100">
+                                    <i class="fas fa-search me-2"></i>Find Order
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="errorMessage" class="error-message" style="display: none;">
+                            <i class="fas fa-exclamation-circle me-2"></i>
+                            <span id="errorText"></span>
+                        </div>
+                    </form>
+                    
+                    <!-- Order Preview Section (Hidden by default) -->
+                    <div id="orderPreview" class="order-preview" style="display: none;">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <h6 class="mb-0">
+                                <i class="fas fa-box me-2"></i>Order Details
+                            </h6>
+                            <span id="orderStatus" class="badge bg-primary"></span>
+                        </div>
+                        
+                        <div class="order-detail-grid">
+                            <div class="detail-item">
+                                <div class="detail-label">Order ID</div>
+                                <div class="detail-value" id="previewOrderId">-</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Customer</div>
+                                <div class="detail-value" id="previewCustomer">-</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Total Amount</div>
+                                <div class="detail-value" id="previewAmount">-</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">Order Date</div>
+                                <div class="detail-value" id="previewDate">-</div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <h6 class="fw-bold mb-2">
+                                    <i class="fas fa-map-marker-alt me-2"></i>Shipping Address
+                                </h6>
+                                <div id="previewAddress" class="text-muted">-</div>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="fw-bold mb-2">
+                                    <i class="fas fa-boxes me-2"></i>Items
+                                </h6>
+                                <div id="previewItems" class="text-muted">-</div>
+                            </div>
+                        </div>
+                        
+                        <div class="text-center mt-4">
+                            <button type="button" class="btn cancel-btn me-3" onclick="hideOrderPreview()">
+                                <i class="fas fa-times me-2"></i>Cancel
+                            </button>
+                            <button type="button" class="btn confirm-btn" id="confirmCreateBtn">
+                                <i class="fas fa-truck me-2"></i>Create Delivery
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Loading Overlay -->
+                    <div id="loadingOverlay" class="loading-overlay" style="display: none;">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Information Cards -->
+            <div class="info-cards">
+                <div class="info-card animate-in">
+                    <div class="info-icon search">
+                        <i class="fas fa-search"></i>
+                    </div>
+                    <h6>Find Order</h6>
+                    <p class="text-muted mb-0">Enter a valid Order ID to search for orders that need delivery setup.</p>
+                </div>
+                
+                <div class="info-card animate-in">
+                    <div class="info-icon assign">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <h6>Auto Assignment</h6>
+                    <p class="text-muted mb-0">System will automatically assign available delivery partners based on service areas.</p>
+                </div>
+                
+                <div class="info-card animate-in">
+                    <div class="info-icon track">
+                        <i class="fas fa-route"></i>
+                    </div>
+                    <h6>Instant Tracking</h6>
+                    <p class="text-muted mb-0">Delivery tracking will be immediately available to customers after creation.</p>
+                </div>
+            </div>
+            
+            <!-- Recent Orders Section -->
+            <div class="card mt-4 animate-in">
+                <div class="card-header" style="background: var(--primary-gradient); color: white;">
+                    <h6 class="mb-0">
+                        <i class="fas fa-clock me-2"></i>Recent Orders Without Delivery
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row" id="recentOrders">
+                        <div class="col-12 text-center text-muted">
+                            <i class="fas fa-spinner fa-spin me-2"></i>Loading recent orders...
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('orderSearchForm');
+    const orderInput = document.getElementById('order_id');
+    const orderPreview = document.getElementById('orderPreview');
+    const errorMessage = document.getElementById('errorMessage');
+    const loadingOverlay = document.getElementById('loadingOverlay');
+    const confirmBtn = document.getElementById('confirmCreateBtn');
+    
+    let currentOrder = null;
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        e.preventDefault();
+        searchOrder();
+    });
+    
+    // Order input formatting
+    orderInput.addEventListener('input', function() {
+        this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (this.value.length > 20) {
+            this.value = this.value.substring(0, 20);
+        }
+        
+        // Hide previous results when typing
+        hideOrderPreview();
+        hideError();
+    });
+    
+    // Confirm delivery creation
+    confirmBtn.addEventListener('click', function() {
+        if (currentOrder) {
+            createDelivery(currentOrder.order_id);
+        }
+    });
+    
+    // Load recent orders
+    loadRecentOrders();
+    
+    // Animate info cards
+    const cards = document.querySelectorAll('.info-card');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.2 + 1}s`;
+    });
+});
+
+function searchOrder() {
+    const orderId = document.getElementById('order_id').value.trim();
+    
+    if (!orderId) {
+        showError('Please enter an Order ID');
+        return;
+    }
+    
+    showLoading();
+    hideError();
+    hideOrderPreview();
+    
+    // Simulate API call (replace with actual endpoint)
+    setTimeout(() => {
+        // Mock order data - replace with actual API call
+        const mockOrder = {
+            order_id: orderId,
+            customer_name: 'John Doe',
+            customer_email: 'john@example.com',
+            total_amount: 1250.00,
+            status: 'confirmed',
+            created_at: '2025-01-15T10:30:00Z',
+            shipping_address: '123 Main Street, Andheri West, Mumbai, Maharashtra - 400058',
+            items: ['The Great Gatsby', 'To Kill a Mockingbird', '1984'],
+            item_count: 3
+        };
+        
+        hideLoading();
+        
+        // Check if order exists and is valid
+        if (orderId === 'ORD123ABC') { // Mock existing order
+            showError('Delivery already exists for this order');
+        } else if (orderId === 'INVALID') { // Mock invalid order
+            showError('Order not found');
+        } else {
+            showOrderPreview(mockOrder);
+        }
+    }, 1500);
+}
+
+function showOrderPreview(order) {
+    currentOrder = order;
+    
+    document.getElementById('previewOrderId').textContent = order.order_id;
+    document.getElementById('previewCustomer').textContent = order.customer_name;
+    document.getElementById('previewAmount').textContent = `₹${order.total_amount.toFixed(2)}`;
+    document.getElementById('previewDate').textContent = new Date(order.created_at).toLocaleDateString();
+    document.getElementById('previewAddress').textContent = order.shipping_address;
+    document.getElementById('previewItems').textContent = `${order.item_count} items: ${order.items.join(', ')}`;
+    document.getElementById('orderStatus').textContent = order.status.toUpperCase();
+    
+    // Set status badge color
+    const statusBadge = document.getElementById('orderStatus');
+    statusBadge.className = `badge ${getStatusBadgeClass(order.status)}`;
+    
+    document.getElementById('orderPreview').style.display = 'block';
+}
+
+function hideOrderPreview() {
+    document.getElementById('orderPreview').style.display = 'none';
+    currentOrder = null;
+}
+
+function showError(message) {
+    document.getElementById('errorText').textContent = message;
+    document.getElementById('errorMessage').style.display = 'block';
+}
+
+function hideError() {
+    document.getElementById('errorMessage').style.display = 'none';
+}
+
+function showLoading() {
+    document.getElementById('loadingOverlay').style.display = 'flex';
+}
+
+function hideLoading() {
+    document.getElementById('loadingOverlay').style.display = 'none';
+}
+
+function createDelivery(orderId) {
+    showLoading();
+    
+    // Create form data
+    const formData = new FormData();
+    formData.append('order_id', orderId);
+    formData.append('csrfmiddlewaretoken', document.querySelector('[name=csrfmiddlewaretoken]').value);
+    
+    // Submit to server
+    fetch('{% url "delivery:create_delivery" %}', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        hideLoading();
+        if (data.success) {
+            showToast(`Delivery created successfully! Tracking ID: ${data.tracking_id}`, 'success');
+            setTimeout(() => {
+                window.location.href = data.redirect_url || '{% url "delivery:dashboard" %}';
+            }, 2000);
+        } else {
+            showError(data.error || 'Failed to create delivery');
+        }
+    })
+    .catch(error => {
+        hideLoading();
+        showError('Network error. Please try again.');
+        console.error('Error:', error);
+    });
+}
+
+function loadRecentOrders() {
+    // Mock recent orders - replace with actual API call
+    setTimeout(() => {
+        const recentOrdersHtml = `
+            <div class="col-md-4 mb-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-3">
+                        <h6 class="card-title mb-1">ORD456DEF</h6>
+                        <p class="card-text small text-muted mb-2">Jane Smith • ₹890.00</p>
+                        <button class="btn btn-sm btn-outline-primary" onclick="quickCreate('ORD456DEF')">
+                            <i class="fas fa-plus me-1"></i>Create Delivery
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-3">
+                        <h6 class="card-title mb-1">ORD789GHI</h6>
+                        <p class="card-text small text-muted mb-2">Mike Johnson • ₹1,450.00</p>
+                        <button class="btn btn-sm btn-outline-primary" onclick="quickCreate('ORD789GHI')">
+                            <i class="fas fa-plus me-1"></i>Create Delivery
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4 mb-3">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-body p-3">
+                        <h6 class="card-title mb-1">ORD101JKL</h6>
+                        <p class="card-text small text-muted mb-2">Sarah Wilson • ₹675.00</p>
+                        <button class="btn btn-sm btn-outline-primary" onclick="quickCreate('ORD101JKL')">
+                            <i class="fas fa-plus me-1"></i>Create Delivery
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.getElementById('recentOrders').innerHTML = recentOrdersHtml;
+    }, 1000);
+}
+
+function quickCreate(orderId) {
+    document.getElementById('order_id').value = orderId;
+    searchOrder();
+}
+
+function getStatusBadgeClass(status) {
+    const statusClasses = {
+        'pending': 'bg-warning',
+        'confirmed': 'bg-primary',
+        'processing': 'bg-info',
+        'shipped': 'bg-success',
+        'delivered': 'bg-success',
+        'cancelled': 'bg-danger'
+    };
+    return statusClasses[status] || 'bg-secondary';
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    const bgColor = type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#cce7ff';
+    const textColor = type === 'success' ? '#155724' : type === 'error' ? '#721c24' : '#004085';
+    
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        background: ${bgColor};
+        color: ${textColor};
+        padding: 1rem 1.5rem;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        animation: slideInRight 0.3s ease-out;
+        min-width: 300px;
+        max-width: 500px;
+        border: 1px solid ${type === 'success' ? '#c3e6cb' : type === 'error' ? '#f5c6cb' : '#b8daff'};
+    `;
+    
+    toast.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+            <span>${message}</span>
+            <button type="button" onclick="this.parentElement.parentElement.remove()" 
+                    style="background: none; border: none; color: ${textColor}; font-size: 1.2rem; margin-left: 10px;">×</button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.style.animation = 'slideOutRight 0.3s ease-out';
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    document.body.removeChild(toast);
+                }
+            }, 300);
+        }
+    }, 5000);
+}
+
+// Add CSS animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

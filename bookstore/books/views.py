@@ -611,8 +611,9 @@ def add_book(request):
     if request.method == 'POST':
         google_books_id = request.POST.get('google_books_id')
         
+        # Check if this is a Google Books API submission
         if google_books_id:
-            # Check for duplicates
+            # Handle Google Books API submission (existing logic)
             try:
                 existing_book = Book.objects.filter(google_books_id=google_books_id).first()
                 if existing_book:
@@ -652,11 +653,7 @@ def add_book(request):
                         messages.warning(request, f'Book "{title_author_duplicate.title}" already exists in the library!')
                         return redirect('books:book_detail', slug=title_author_duplicate.slug)
 
-            except Exception as e:
-                print(f"Error checking for duplicates: {e}")
-            
-            # Create book from API data
-            try:
+                # Create book from API data (your existing Google Books logic)
                 api_url = f"https://www.googleapis.com/books/v1/volumes/{google_books_id}?key={settings.GOOGLE_BOOKS_API_KEY}"
                 response = requests.get(api_url, timeout=10)
                 
@@ -740,7 +737,7 @@ def add_book(request):
                         publisher=publisher,
                         category=category,
                         subcategory=subcategory,
-                        subsubcategory=subsubcategory  # NEW: Set sub-subcategory
+                        subsubcategory=subsubcategory
                     )
                     
                     # Handle publication date
@@ -758,47 +755,6 @@ def add_book(request):
                     
                     # Handle cover image URL
                     if cover_image_url and cover_image_url.startswith('http'):
-                        if cover_image_url.startswith('http://'):
-                            cover_image_url = cover_image_url.replace('http://', 'https://')
-                        book.cover_image_url = cover_image_url
-                
-                else:
-                    # Fallback to form data
-                    title = request.POST.get('title', '').strip()
-                    if not title:
-                        raise ValueError("Book title is required")
-                    
-                    description = request.POST.get('description', 'No description available')
-                    authors_list = request.POST.get('authors', '').split(',')
-                    categories_list = request.POST.get('categories', '').split(',')
-                    cover_image_url = request.POST.get('cover_image')
-                    
-                    slug = slugify(title)
-                    counter = 1
-                    base_slug = slug
-                    while Book.objects.filter(slug=slug).exists():
-                        slug = f"{base_slug}-{counter}"
-                        counter += 1
-                    
-                    # Handle categories for fallback
-                    primary_category = categories_list[0] if categories_list else ''
-                    main_category_name, subcategory_name, subsubcategory_name = map_google_books_category(primary_category)
-                    category, subcategory, subsubcategory = get_or_create_category_hierarchy(
-                        main_category_name, subcategory_name, subsubcategory_name
-                    )
-                    
-                    book = Book(
-                        title=title,
-                        description=description,
-                        google_books_id=google_books_id,
-                        price=request.POST.get('price', 299.00),
-                        slug=slug,
-                        category=category,
-                        subcategory=subcategory,
-                        subsubcategory=subsubcategory
-                    )
-                    
-                    if cover_image_url:
                         if cover_image_url.startswith('http://'):
                             cover_image_url = cover_image_url.replace('http://', 'https://')
                         book.cover_image_url = cover_image_url
@@ -847,29 +803,48 @@ def add_book(request):
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'success': False, 'error': 'Network error while fetching book details'}, status=400)
                 messages.error(request, 'Network error while adding book. Please try again.')
+                return redirect('books:search_google_books')
             except ValueError as e:
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'success': False, 'error': str(e)}, status=400)
                 messages.error(request, str(e))
+                return redirect('books:search_google_books')
             except Exception as e:
                 print(f"Unexpected error adding book: {e}")
                 if request.headers.get('X-Requested-With') == 'XMLHttpRequest':
                     return JsonResponse({'success': False, 'error': f'Error adding book: {str(e)}'}, status=400)
                 messages.error(request, f'Error adding book: {str(e)}')
-                
-            return redirect('books:search_google_books')
+                return redirect('books:search_google_books')
         
-        # Handle regular form submission (manual entry)
-        form = BookForm(request.POST, request.FILES)
-        if form.is_valid():
-            book = form.save()
-            messages.success(request, f'Book "{book.title}" added successfully!')
-            return redirect('books:book_detail', slug=book.slug)
+        else:
+            # Handle MANUAL form submission (when google_books_id is NOT present)
+            print("Processing manual form submission...")
+            form = BookForm(request.POST, request.FILES)
+            
+            if form.is_valid():
+                print("Form is valid, saving book...")
+                try:
+                    book = form.save()
+                    print(f"Book saved successfully: {book.title}")
+                    messages.success(request, f'Book "{book.title}" added successfully!')
+                    return redirect('books:add_book', slug=book.slug)
+                except Exception as e:
+                    print(f"Error saving book: {e}")
+                    messages.error(request, f'Error saving book: {str(e)}')
+                    # Re-render form with errors
+                    return render(request, 'books/add_book.html', {'form': form})
+            else:
+                print("Form validation failed:")
+                print(f"Form errors: {form.errors}")
+                # Form is invalid, re-render with errors
+                messages.error(request, 'Please correct the errors below.')
+                return render(request, 'books/add_book.html', {'form': form})
+    
     else:
+        # GET request - show empty form
         form = BookForm()
     
     return render(request, 'books/add_book.html', {'form': form})
-
 @login_required
 def delete_book(request, slug):
     if not request.user.is_superuser:

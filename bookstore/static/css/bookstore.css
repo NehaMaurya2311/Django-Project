@@ -1,0 +1,869 @@
+/* ================================
+   BOOKSTORE COMPLETE CSS STYLES
+   Color Theme: Coral/Orange Gradient
+   ================================ */
+
+/* Root Variables */
+:root {
+  /* Primary Colors - Coral/Orange Theme */
+  --primary-coral: #FF6B6B;
+  --primary-orange: #FF8E53;
+  --secondary-coral: #FFE0E0;
+  --accent-orange: #FF7A00;
+  --warm-peach: #FFAB91;
+  
+  /* Gradient Colors */
+  --gradient-main: linear-gradient(135deg, #FF6B6B 0%, #FF8E53 50%, #FFB74D 100%);
+  --gradient-secondary: linear-gradient(135deg, #FFE0E0 0%, #FFCCBC 100%);
+  --gradient-card: linear-gradient(145deg, #fff 0%, #FFF8F5 100%);
+  
+  /* Text Colors */
+  --text-primary: #2C3E50;
+  --text-secondary: #546E7A;
+  --text-muted: #78909C;
+  --text-white: #FFFFFF;
+  
+  /* Background Colors */
+  --bg-light: #FFF8F5;
+  --bg-card: #FFFFFF;
+  --bg-overlay: rgba(255, 107, 107, 0.1);
+  
+  /* Status Colors */
+  --success-color: #4CAF50;
+  --danger-color: #F44336;
+  --warning-color: #FF9800;
+  --info-color: #2196F3;
+  
+  /* Shadows */
+  --shadow-light: 0 2px 4px rgba(255, 107, 107, 0.1);
+  --shadow-medium: 0 4px 12px rgba(255, 107, 107, 0.15);
+  --shadow-heavy: 0 8px 25px rgba(255, 107, 107, 0.2);
+  --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.1);
+  
+  /* Border Radius */
+  --border-radius-sm: 0.375rem;
+  --border-radius-md: 0.5rem;
+  --border-radius-lg: 0.75rem;
+  --border-radius-xl: 1rem;
+  
+  /* Transitions */
+  --transition-fast: 0.2s ease;
+  --transition-medium: 0.3s ease;
+  --transition-slow: 0.5s ease;
+}
+
+/* ================================
+   BASE STYLES
+   ================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  background: var(--bg-light);
+  color: var(--text-primary);
+  line-height: 1.6;
+}
+
+/* ================================
+   TYPOGRAPHY
+   ================================ */
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  color: var(--text-primary);
+  margin-bottom: 1rem;
+}
+
+.display-1, .display-2, .display-3, .display-4, .display-5, .display-6 {
+  font-weight: 700;
+  background: var(--gradient-main);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.text-coral {
+  color: var(--primary-coral) !important;
+}
+
+.text-orange {
+  color: var(--primary-orange) !important;
+}
+
+/* ================================
+   BUTTONS
+   ================================ */
+
+.btn {
+  border-radius: var(--border-radius-md);
+  font-weight: 500;
+  padding: 0.625rem 1.5rem;
+  transition: all var(--transition-medium);
+  border: none;
+  position: relative;
+  overflow: hidden;
+}
+
+.btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-medium);
+}
+
+.btn-primary {
+  background: var(--gradient-main);
+  color: var(--text-white);
+  border: none;
+}
+
+.btn-primary:hover,
+.btn-primary:focus {
+  background: linear-gradient(135deg, #FF5252 0%, #FF7043 50%, #FF9800 100%);
+  color: var(--text-white);
+  box-shadow: var(--shadow-medium);
+}
+
+.btn-outline-primary {
+  border: 2px solid var(--primary-coral);
+  color: var(--primary-coral);
+  background: transparent;
+}
+
+.btn-outline-primary:hover {
+  background: var(--gradient-main);
+  color: var(--text-white);
+  border-color: transparent;
+}
+
+.btn-success {
+  background: var(--success-color);
+  border-color: var(--success-color);
+}
+
+.btn-danger {
+  background: var(--danger-color);
+  border-color: var(--danger-color);
+}
+
+.btn-warning {
+  background: var(--warning-color);
+  border-color: var(--warning-color);
+}
+
+.btn-info {
+  background: var(--info-color);
+  border-color: var(--info-color);
+}
+
+.btn-lg {
+  padding: 0.875rem 2rem;
+  font-size: 1.125rem;
+  border-radius: var(--border-radius-lg);
+}
+
+.btn-sm {
+  padding: 0.375rem 1rem;
+  font-size: 0.875rem;
+}
+
+/* Button Loading State */
+.btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* ================================
+   CARDS
+   ================================ */
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid rgba(255, 107, 107, 0.1);
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-card);
+  transition: all var(--transition-medium);
+  overflow: hidden;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-medium);
+  transform: translateY(-5px);
+}
+
+.card-header {
+  background: var(--gradient-secondary);
+  border-bottom: 1px solid rgba(255, 107, 107, 0.1);
+  padding: 1rem 1.5rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.card-body {
+  padding: 1.5rem;
+}
+
+.card-footer {
+  background: var(--bg-light);
+  border-top: 1px solid rgba(255, 107, 107, 0.1);
+  padding: 1rem 1.5rem;
+}
+
+/* Book Card Specific */
+.book-card {
+  position: relative;
+  height: 100%;
+}
+
+.book-card .card-img-top {
+  height: 250px;
+  object-fit: cover;
+  transition: transform var(--transition-medium);
+}
+
+.book-card:hover .card-img-top {
+  transform: scale(1.05);
+}
+
+.book-card .card-title a {
+  color: var(--text-primary);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.book-card .card-title a:hover {
+  color: var(--primary-coral);
+}
+
+/* ================================
+   FORMS
+   ================================ */
+
+.form-control {
+  border: 2px solid rgba(255, 107, 107, 0.2);
+  border-radius: var(--border-radius-md);
+  padding: 0.75rem;
+  transition: all var(--transition-fast);
+  background: var(--bg-card);
+}
+
+.form-control:focus {
+  border-color: var(--primary-coral);
+  box-shadow: 0 0 0 0.2rem rgba(255, 107, 107, 0.25);
+  outline: none;
+}
+
+.form-label {
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.form-select {
+  background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3e%3cpath fill='none' stroke='%23FF6B6B' stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='m1 6 7 7 7-7'/%3e%3c/svg%3e");
+}
+
+/* Input Groups */
+.input-group .btn {
+  border-color: rgba(255, 107, 107, 0.2);
+}
+
+.input-group .form-control {
+  border-right: none;
+}
+
+.input-group .form-control:focus {
+  border-right: 2px solid var(--primary-coral);
+}
+
+/* ================================
+   NAVIGATION & BREADCRUMBS
+   ================================ */
+
+.breadcrumb {
+  background: var(--gradient-secondary);
+  border-radius: var(--border-radius-md);
+  padding: 1rem;
+}
+
+.breadcrumb-item a {
+  color: var(--primary-coral);
+  text-decoration: none;
+  transition: color var(--transition-fast);
+}
+
+.breadcrumb-item a:hover {
+  color: var(--accent-orange);
+}
+
+.breadcrumb-item.active {
+  color: var(--text-secondary);
+}
+
+/* ================================
+   ALERTS & NOTIFICATIONS
+   ================================ */
+
+.alert {
+  border: none;
+  border-radius: var(--border-radius-md);
+  padding: 1rem 1.5rem;
+  margin-bottom: 1rem;
+  font-weight: 500;
+}
+
+.alert-success {
+  background: linear-gradient(135deg, #E8F5E8 0%, #C8E6C9 100%);
+  color: var(--success-color);
+  border-left: 4px solid var(--success-color);
+}
+
+.alert-danger {
+  background: linear-gradient(135deg, #FFEBEE 0%, #FFCDD2 100%);
+  color: var(--danger-color);
+  border-left: 4px solid var(--danger-color);
+}
+
+.alert-warning {
+  background: linear-gradient(135deg, #FFF8E1 0%, #FFECB3 100%);
+  color: var(--warning-color);
+  border-left: 4px solid var(--warning-color);
+}
+
+.alert-info {
+  background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+  color: var(--info-color);
+  border-left: 4px solid var(--info-color);
+}
+
+/* Floating Alerts */
+.alert-floating {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  z-index: 9999;
+  min-width: 300px;
+  animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+/* ================================
+   BADGES & LABELS
+   ================================ */
+
+.badge {
+  border-radius: var(--border-radius-sm);
+  padding: 0.375rem 0.75rem;
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+.bg-primary {
+  background: var(--gradient-main) !important;
+}
+
+.bg-danger {
+  background: var(--danger-color) !important;
+}
+
+.bg-success {
+  background: var(--success-color) !important;
+}
+
+.bg-warning {
+  background: var(--warning-color) !important;
+  color: var(--text-white) !important;
+}
+
+.bg-info {
+  background: var(--info-color) !important;
+}
+
+/* Sale Badge Animation */
+.sale-badge {
+  animation: pulse 2s infinite;
+  box-shadow: 0 0 10px rgba(244, 67, 54, 0.5);
+}
+
+@keyframes pulse {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+/* ================================
+   PRICING & SALES
+   ================================ */
+
+.price-section {
+  background: var(--gradient-card);
+  border: 2px solid rgba(255, 107, 107, 0.1);
+  border-radius: var(--border-radius-lg);
+  animation: fadeIn 0.5s ease-in;
+}
+
+@keyframes fadeIn {
+  from { 
+    opacity: 0; 
+    transform: translateY(10px); 
+  }
+  to { 
+    opacity: 1; 
+    transform: translateY(0); 
+  }
+}
+
+.text-success {
+  color: var(--success-color) !important;
+}
+
+.text-decoration-line-through {
+  text-decoration: line-through !important;
+  opacity: 0.7;
+}
+
+/* ================================
+   RATINGS & REVIEWS
+   ================================ */
+
+.fa-star {
+  font-size: 1rem;
+  margin-right: 0.125rem;
+}
+
+.text-warning {
+  color: var(--warning-color) !important;
+}
+
+/* ================================
+   PAGINATION
+   ================================ */
+
+.pagination {
+  margin-top: 2rem;
+}
+
+.page-link {
+  color: var(--primary-coral);
+  border: 1px solid rgba(255, 107, 107, 0.2);
+  background: var(--bg-card);
+  border-radius: var(--border-radius-sm);
+  margin: 0 0.125rem;
+  transition: all var(--transition-fast);
+}
+
+.page-link:hover {
+  color: var(--text-white);
+  background: var(--gradient-main);
+  border-color: transparent;
+  transform: translateY(-2px);
+}
+
+.page-item.active .page-link {
+  background: var(--gradient-main);
+  border-color: transparent;
+  color: var(--text-white);
+}
+
+/* ================================
+   MODALS
+   ================================ */
+
+.modal-content {
+  border: none;
+  border-radius: var(--border-radius-lg);
+  box-shadow: var(--shadow-heavy);
+}
+
+.modal-header {
+  background: var(--gradient-secondary);
+  border-bottom: 1px solid rgba(255, 107, 107, 0.1);
+  border-radius: var(--border-radius-lg) var(--border-radius-lg) 0 0;
+}
+
+.modal-title {
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+.modal-body {
+  padding: 2rem;
+}
+
+.modal-footer {
+  border-top: 1px solid rgba(255, 107, 107, 0.1);
+  background: var(--bg-light);
+}
+
+/* ================================
+   CART SPECIFIC STYLES
+   ================================ */
+
+.cart-item {
+  transition: all var(--transition-medium);
+}
+
+.cart-item:hover {
+  background: var(--bg-overlay);
+  border-radius: var(--border-radius-md);
+}
+
+.input-group-sm .form-control {
+  padding: 0.375rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.sticky-top {
+  position: -webkit-sticky;
+  position: sticky;
+  top: 20px;
+}
+
+/* ================================
+   WISHLIST SPECIFIC STYLES
+   ================================ */
+
+.wishlist-container {
+  min-height: 60vh;
+  padding: 2rem 0;
+}
+
+.wishlist-item {
+  transition: all var(--transition-medium);
+  position: relative;
+}
+
+.wishlist-item:hover {
+  transform: translateY(-5px);
+  box-shadow: var(--shadow-medium);
+}
+
+.wishlist-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.wishlist-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  background: var(--danger-color);
+  color: var(--text-white);
+  padding: 0.25rem 0.5rem;
+  border-radius: var(--border-radius-sm);
+  font-size: 0.75rem;
+  z-index: 2;
+}
+
+.empty-wishlist,
+.empty-cart {
+  text-align: center;
+  padding: 3rem;
+  color: var(--text-muted);
+}
+
+.empty-wishlist img,
+.empty-cart img {
+  max-width: 200px;
+  opacity: 0.5;
+  margin-bottom: 1rem;
+}
+
+/* ================================
+   FILTERS & SIDEBAR
+   ================================ */
+
+.filters-sidebar {
+  background: var(--bg-card);
+  border-radius: var(--border-radius-lg);
+  padding: 1.5rem;
+  box-shadow: var(--shadow-card);
+  position: sticky;
+  top: 20px;
+}
+
+.filter-section {
+  margin-bottom: 1.5rem;
+}
+
+.filter-section:last-child {
+  margin-bottom: 0;
+}
+
+/* ================================
+   LOADING STATES
+   ================================ */
+
+.spinner-border {
+  border-color: var(--primary-coral);
+  border-right-color: transparent;
+}
+
+.loading-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.9);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+}
+
+/* ================================
+   RESPONSIVE DESIGN
+   ================================ */
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 1rem;
+  }
+  
+  .card-body {
+    padding: 1rem;
+  }
+  
+  .btn-lg {
+    padding: 0.75rem 1.5rem;
+    font-size: 1rem;
+  }
+  
+  .display-5,
+  .display-6 {
+    font-size: 1.5rem;
+  }
+  
+  .alert-floating {
+    left: 20px;
+    right: 20px;
+    width: auto;
+  }
+  
+  .wishlist-actions {
+    flex-direction: column;
+  }
+  
+  .price-section {
+    padding: 1rem;
+  }
+}
+
+@media (max-width: 576px) {
+  .book-card .card-img-top {
+    height: 200px;
+  }
+  
+  .card-title {
+    font-size: 1rem;
+  }
+  
+  .btn {
+    padding: 0.5rem 1rem;
+    font-size: 0.875rem;
+  }
+  
+  .pagination {
+    font-size: 0.875rem;
+  }
+  
+  .breadcrumb {
+    padding: 0.75rem;
+    font-size: 0.875rem;
+  }
+}
+
+/* ================================
+   UTILITY CLASSES
+   ================================ */
+
+.bg-gradient-coral {
+  background: var(--gradient-main) !important;
+}
+
+.bg-gradient-secondary {
+  background: var(--gradient-secondary) !important;
+}
+
+.text-gradient {
+  background: var(--gradient-main);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.border-coral {
+  border-color: var(--primary-coral) !important;
+}
+
+.shadow-coral {
+  box-shadow: var(--shadow-medium) !important;
+}
+
+.rounded-lg {
+  border-radius: var(--border-radius-lg) !important;
+}
+
+.rounded-xl {
+  border-radius: var(--border-radius-xl) !important;
+}
+
+/* Hover Effects */
+.hover-lift {
+  transition: transform var(--transition-medium);
+}
+
+.hover-lift:hover {
+  transform: translateY(-5px);
+}
+
+.hover-scale {
+  transition: transform var(--transition-medium);
+}
+
+.hover-scale:hover {
+  transform: scale(1.05);
+}
+
+/* ================================
+   SPECIAL ANIMATIONS
+   ================================ */
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.bounce-in {
+  animation: bounceIn 0.6s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+/* ================================
+   DARK MODE SUPPORT (Optional)
+   ================================ */
+/* 
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-light: #1a1a1a;
+    --bg-card: #2d2d2d;
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --text-muted: #999999;
+    --shadow-card: 0 2px 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  .card {
+    background: var(--bg-card);
+    border-color: rgba(255, 107, 107, 0.2);
+  }
+  
+  .form-control {
+    background: var(--bg-card);
+    border-color: rgba(255, 107, 107, 0.3);
+    color: var(--text-primary);
+  }
+  
+  .modal-content {
+    background: var(--bg-card);
+  }
+} */
+
+/* ================================
+   PRINT STYLES
+   ================================ */
+
+@media print {
+  .btn,
+  .alert-floating,
+  .modal,
+  .filters-sidebar {
+    display: none !important;
+  }
+  
+  .card {
+    box-shadow: none;
+    border: 1px solid #ddd;
+  }
+  
+  .page-break {
+    page-break-after: always;
+  }
+}
+
+/* ================================
+   ACCESSIBILITY IMPROVEMENTS
+   ================================ */
+
+.sr-only {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+.btn:focus,
+.form-control:focus,
+.page-link:focus {
+  outline: 2px solid var(--primary-coral);
+  outline-offset: 2px;
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .btn-primary {
+    background: #000;
+    color: #fff;
+    border: 2px solid #000;
+  }
+  
+  .card {
+    border: 2px solid #000;
+  }
+}

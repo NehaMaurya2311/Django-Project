@@ -87,6 +87,7 @@
 
 /* Main Content Area */
 .main-content {
-    min-height: calc(100vh - 60px - 400px); /* Adjust based on your header and footer heights */
-    padding: 2rem 0;
+    min-height: calc(100vh - 60px - 400px);
+    
 }
+

@@ -12,16 +12,15 @@
     color: white;
     position: relative;
     margin: 0; /* Remove all margins */
-    padding: 0;
-    top: -1px; /* Remove any tiny gap */
+    padding: 0; /* Remove any tiny gap */
 
 }
 
 .hero-content {
     max-width: 600px;
     margin-left: auto; /* Push content to right side */
-    margin-right: 10%; /* Add some space from right edge */
     padding: 20px;
+    padding-left: 20px;
 }
 
 /* Update text styles for better visibility without overlay */
@@ -575,3 +574,11 @@ to {
             0% { transform: translate(-50%, -50%) rotate(0deg); }
             100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
+
+
+
+
+
+
+
+

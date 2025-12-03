@@ -88,8 +88,10 @@ CACHES = {
 TEMPLATES = [
     {
         'BACKEND': 'django.template.backends.django.DjangoTemplates',
-        'DIRS': [BASE_DIR / 'templates'],
-        'APP_DIRS': True,
+        'DIRS': [
+            BASE_DIR / 'templates',  # Keep this for global templates
+        ],
+        'APP_DIRS': True,  # This allows app-specific templates
         'OPTIONS': {
             'context_processors': [
                 'django.template.context_processors.debug',
@@ -97,7 +99,6 @@ TEMPLATES = [
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
                 'django.template.context_processors.i18n',
-                # Your custom context processors
                 'books.context_processors.cart_processor',
                 'books.context_processors.categories_processor',
                 'books.context_processors.breadcrumb_processor',

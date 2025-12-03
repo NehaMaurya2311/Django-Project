@@ -1,0 +1,854 @@
+{% extends 'delivery/base.html' %}
+{% load static %}
+
+{% block title %}Update Status - {{ delivery.tracking_id }}{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --success-gradient: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+    --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+}
+
+body {
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 50%, #ff8a80 100%);
+    min-height: 100vh;
+}
+
+.page-header {
+    background: var(--warning-gradient);
+    color: white;
+    padding: 2rem 0;
+    border-radius: 0 0 30px 30px;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(240, 147, 251, 0.3);
+}
+
+.delivery-info-card {
+    background: white;
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    overflow: hidden;
+    margin-bottom: 2rem;
+}
+
+.delivery-info-header {
+    background: var(--info-gradient);
+    color: white;
+    padding: 1.5rem;
+    position: relative;
+}
+
+.current-status {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+    background: rgba(255,255,255,0.2);
+}
+
+.status-update-card {
+    background: white;
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.status-update-header {
+    background: var(--success-gradient);
+    color: white;
+    padding: 1.5rem;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-control, .form-select {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #f093fb;
+    box-shadow: 0 0 0 0.2rem rgba(240, 147, 251, 0.25);
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.required-field::after {
+    content: ' *';
+    color: #dc3545;
+}
+
+.status-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.status-option {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 15px;
+    padding: 1rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.status-option:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+}
+
+.status-option.selected {
+    border-color: #f093fb;
+    background: linear-gradient(135deg, #fff5fd 0%, #ffeaf6 100%);
+}
+
+.status-option input {
+    display: none;
+}
+
+.status-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    margin: 0 auto 1rem;
+}
+
+.status-assigned .status-icon { background: linear-gradient(45deg, #ffeaa7, #fab1a0); }
+.status-picked_up .status-icon { background: linear-gradient(45deg, #74b9ff, #0984e3); }
+.status-in_transit .status-icon { background: linear-gradient(45deg, #a29bfe, #6c5ce7); }
+.status-out_for_delivery .status-icon { background: linear-gradient(45deg, #fd79a8, #e84393); }
+.status-delivered .status-icon { background: linear-gradient(45deg, #00b894, #00cec9); }
+.status-failed .status-icon { background: linear-gradient(45deg, #e17055, #d63031); }
+.status-returned .status-icon { background: linear-gradient(45deg, #636e72, #2d3436); }
+
+.location-suggestions {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 0 0 10px 10px;
+    max-height: 200px;
+    overflow-y: auto;
+    position: absolute;
+    width: 100%;
+    z-index: 1000;
+    display: none;
+}
+
+.location-suggestion {
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s;
+}
+
+.location-suggestion:hover {
+    background-color: #e9ecef;
+}
+
+.location-suggestion:last-child {
+    border-bottom: none;
+}
+
+.btn-update {
+    background: var(--success-gradient);
+    border: none;
+    border-radius: 15px;
+    color: white;
+    padding: 0.8rem 2.5rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    transition: all 0.3s ease;
+}
+
+.btn-update:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(86, 171, 47, 0.4);
+    color: white;
+}
+
+.btn-cancel {
+    border: 2px solid #6c757d;
+    border-radius: 15px;
+    color: #6c757d;
+    padding: 0.8rem 2rem;
+    background: transparent;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+    background: #6c757d;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.delivery-details-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1.5rem;
+    padding: 2rem;
+}
+
+.detail-item {
+    text-align: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 10px;
+}
+
+.detail-label {
+    font-size: 0.8rem;
+    color: #666;
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.detail-value {
+    font-weight: 700;
+    color: #333;
+}
+
+.timeline-preview {
+    background: #f8f9fa;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-top: 2rem;
+}
+
+.animate-in {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="mb-1">
+                    <i class="fas fa-edit me-2"></i>Update Delivery Status
+                </h2>
+                <p class="mb-0 opacity-75">{{ delivery.tracking_id }}</p>
+            </div>
+            <a href="{% url 'delivery:delivery_list' %}" class="btn btn-light">
+                <i class="fas fa-arrow-left me-2"></i>Back to Deliveries
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Current Delivery Information -->
+    <div class="card delivery-info-card animate-in">
+        <div class="delivery-info-header">
+            <span class="current-status status-{{ delivery.status }}">
+                {{ delivery.get_status_display }}
+            </span>
+            <h5 class="mb-1">Order #{{ delivery.order.order_id }}</h5>
+            <p class="mb-0 opacity-75">{{ delivery.order.user.get_full_name|default:delivery.order.user.username }}</p>
+        </div>
+        
+        <div class="delivery-details-grid">
+            <div class="detail-item">
+                <div class="detail-label">Tracking ID</div>
+                <div class="detail-value font-monospace">{{ delivery.tracking_id }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Partner</div>
+                <div class="detail-value">
+                    {{ delivery.delivery_partner.name|default:"Not Assigned" }}
+                </div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Created</div>
+                <div class="detail-value">{{ delivery.created_at|date:"M d, Y" }}</div>
+            </div>
+            <div class="detail-item">
+                <div class="detail-label">Est. Delivery</div>
+                <div class="detail-value">{{ delivery.estimated_delivery_time|date:"M d, Y" }}</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Status Update Form -->
+            <div class="card status-update-card animate-in">
+                <div class="status-update-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-sync-alt me-2"></i>Update Status & Location
+                    </h5>
+                </div>
+                
+                <div class="card-body">
+                    <form method="post" id="statusUpdateForm">
+                        {% csrf_token %}
+                        
+                        <!-- Status Selection -->
+                        <div class="form-group">
+                            <label class="form-label fw-bold required-field">Select New Status</label>
+                            <div class="status-selector">
+                                <label class="status-option status-assigned" for="status_assigned">
+                                    <input type="radio" name="status" value="assigned" id="status_assigned" 
+                                           {% if delivery.status == 'assigned' %}checked{% endif %}>
+                                    <div class="status-icon">
+                                        <i class="fas fa-clipboard-list"></i>
+                                    </div>
+                                    <div class="fw-bold">Assigned</div>
+                                    <small class="text-muted">Ready for pickup</small>
+                                </label>
+                                
+                                <label class="status-option status-picked_up" for="status_picked_up">
+                                    <input type="radio" name="status" value="picked_up" id="status_picked_up"
+                                           {% if delivery.status == 'picked_up' %}checked{% endif %}>
+                                    <div class="status-icon">
+                                        <i class="fas fa-hand-paper"></i>
+                                    </div>
+                                    <div class="fw-bold">Picked Up</div>
+                                    <small class="text-muted">Collected from warehouse</small>
+                                </label>
+                                
+                                <label class="status-option status-in_transit" for="status_in_transit">
+                                    <input type="radio" name="status" value="in_transit" id="status_in_transit"
+                                           {% if delivery.status == 'in_transit' %}checked{% endif %}>
+                                    <div class="status-icon">
+                                        <i class="fas fa-truck"></i>
+                                    </div>
+                                    <div class="fw-bold">In Transit</div>
+                                    <small class="text-muted">On the way</small>
+                                </label>
+                                
+                                <label class="status-option status-out_for_delivery" for="status_out_for_delivery">
+                                    <input type="radio" name="status" value="out_for_delivery" id="status_out_for_delivery"
+                                           {% if delivery.status == 'out_for_delivery' %}checked{% endif %}>
+                                    <div class="status-icon">
+                                        <i class="fas fa-shipping-fast"></i>
+                                    </div>
+                                    <div class="fw-bold">Out for Delivery</div>
+                                    <small class="text-muted">Final mile delivery</small>
+                                </label>
+                                
+                                <label class="status-option status-delivered" for="status_delivered">
+                                    <input type="radio" name="status" value="delivered" id="status_delivered"
+                                           {% if delivery.status == 'delivered' %}checked{% endif %}>
+                                    <div class="status-icon">
+                                        <i class="fas fa-check-circle"></i>
+                                    </div>
+                                    <div class="fw-bold">Delivered</div>
+                                    <small class="text-muted">Successfully delivered</small>
+                                </label>
+                                
+                                <label class="status-option status-failed" for="status_failed">
+                                    <input type="radio" name="status" value="failed" id="status_failed"
+                                           {% if delivery.status == 'failed' %}checked{% endif %}>
+                                    <div class="status-icon">
+                                        <i class="fas fa-times-circle"></i>
+                                    </div>
+                                    <div class="fw-bold">Failed</div>
+                                    <small class="text-muted">Delivery attempt failed</small>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- Location Input -->
+                        <div class="form-group position-relative">
+                            <label for="location" class="form-label fw-bold">Current Location</label>
+                            <input type="text" name="location" id="location" class="form-control" 
+                                   placeholder="Enter current location (e.g., Mumbai Central Hub)" 
+                                   autocomplete="off">
+                            <div class="location-suggestions" id="locationSuggestions"></div>
+                            <small class="text-muted">
+                                <i class="fas fa-info-circle me-1"></i>
+                                Add current location for better tracking visibility
+                            </small>
+                        </div>
+                        
+                        <!-- Description -->
+                        <div class="form-group">
+                            <label for="description" class="form-label fw-bold required-field">Update Description</label>
+                            <textarea name="description" id="description" class="form-control" rows="4" 
+                                      placeholder="Describe the status update..." required></textarea>
+                            <small class="text-muted">
+                                This message will be visible to customers in their tracking timeline
+                            </small>
+                        </div>
+                        
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between align-items-center mt-4">
+                            <div>
+                                <small class="text-muted">
+                                    <i class="fas fa-clock me-1"></i>
+                                    Last updated: {{ delivery.updated_at|timesince }} ago
+                                </small>
+                            </div>
+                            <div>
+                                <a href="{% url 'delivery:delivery_list' %}" class="btn btn-cancel me-3">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </a>
+                                <button type="submit" class="btn btn-update">
+                                    <i class="fas fa-save me-2"></i>Update Status
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <!-- Quick Actions -->
+            <div class="card animate-in">
+                <div class="card-header" style="background: var(--primary-gradient); color: white;">
+                    <h6 class="mb-0">
+                        <i class="fas fa-bolt me-2"></i>Quick Actions
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="d-grid gap-2">
+                        <a href="{% url 'delivery:track_delivery' delivery.order.order_id %}" 
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-eye me-2"></i>View Tracking
+                        </a>
+                        <a href="tel:{{ delivery.order.user.phone|default:'+91 0000000000' }}" 
+                           class="btn btn-outline-success">
+                            <i class="fas fa-phone me-2"></i>Call Customer
+                        </a>
+                        <a href="{% url 'delivery:assign_partner' delivery.id %}" 
+                           class="btn btn-outline-warning">
+                            <i class="fas fa-user-tie me-2"></i>Change Partner
+                        </a>
+                        <button type="button" class="btn btn-outline-info" onclick="showDeliveryNotes()">
+                            <i class="fas fa-sticky-note me-2"></i>Add Notes
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Delivery Address -->
+            <div class="card mt-3 animate-in">
+                <div class="card-header" style="background: var(--info-gradient); color: white;">
+                    <h6 class="mb-0">
+                        <i class="fas fa-map-marker-alt me-2"></i>Delivery Address
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ delivery.delivery_address }}</p>
+                    <div class="mt-3">
+                        <a href="https://maps.google.com/maps?q={{ delivery.delivery_address|urlencode }}" 
+                           target="_blank" class="btn btn-sm btn-outline-primary">
+                            <i class="fas fa-external-link-alt me-1"></i>Open in Maps
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Recent Updates -->
+            <div class="card mt-3 animate-in">
+                <div class="card-header" style="background: var(--warning-gradient); color: white;">
+                    <h6 class="mb-0">
+                        <i class="fas fa-history me-2"></i>Recent Updates
+                    </h6>
+                </div>
+                <div class="card-body">
+                    {% if delivery.updates.all %}
+                        {% for update in delivery.updates.all|slice:":3" %}
+                        <div class="d-flex align-items-start mb-3">
+                            <div class="flex-shrink-0">
+                                <span class="status-badge status-{{ update.status }}" style="font-size: 0.6rem; padding: 0.3rem 0.6rem;">
+                                    {{ update.get_status_display }}
+                                </span>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <div class="fw-bold">{{ update.description }}</div>
+                                <small class="text-muted">
+                                    {{ update.timestamp|date:"M d, g:i A" }}
+                                    {% if update.location %}• {{ update.location }}{% endif %}
+                                </small>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    {% else %}
+                        <p class="text-muted mb-0">No updates yet</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Status Preview Timeline -->
+    <div class="timeline-preview animate-in">
+        <h6 class="fw-bold mb-3">
+            <i class="fas fa-route me-2"></i>Status Flow Preview
+        </h6>
+        <div class="row text-center">
+            <div class="col">
+                <div class="status-icon small assigned-preview">
+                    <i class="fas fa-clipboard-list"></i>
+                </div>
+                <small>Assigned</small>
+            </div>
+            <div class="col">
+                <div class="status-icon small picked-up-preview">
+                    <i class="fas fa-hand-paper"></i>
+                </div>
+                <small>Picked Up</small>
+            </div>
+            <div class="col">
+                <div class="status-icon small in-transit-preview">
+                    <i class="fas fa-truck"></i>
+                </div>
+                <small>In Transit</small>
+            </div>
+            <div class="col">
+                <div class="status-icon small out-for-delivery-preview">
+                    <i class="fas fa-shipping-fast"></i>
+                </div>
+                <small>Out for Delivery</small>
+            </div>
+            <div class="col">
+                <div class="status-icon small delivered-preview">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <small>Delivered</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Notes Modal -->
+<div class="modal fade" id="notesModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background: var(--info-gradient); color: white;">
+                <h5 class="modal-title">
+                    <i class="fas fa-sticky-note me-2"></i>Delivery Notes
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form method="post" action="{% url 'delivery:update_status' delivery.id %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="add_notes" value="true">
+                    <div class="form-group">
+                        <label for="delivery_notes" class="form-label">Notes</label>
+                        <textarea name="delivery_notes" id="delivery_notes" class="form-control" 
+                                  rows="4" placeholder="Add special delivery instructions or notes...">{{ delivery.delivery_notes }}</textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="saveNotes()">
+                    <i class="fas fa-save me-2"></i>Save Notes
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('statusUpdateForm');
+    const statusOptions = document.querySelectorAll('.status-option input');
+    const locationInput = document.getElementById('location');
+    const descriptionInput = document.getElementById('description');
+    
+    // Handle status option selection
+    statusOptions.forEach(option => {
+        option.addEventListener('change', function() {
+            // Remove selected class from all options
+            document.querySelectorAll('.status-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // Add selected class to current option
+            this.closest('.status-option').classList.add('selected');
+            
+            // Auto-fill description based on status
+            updateDescription(this.value);
+            
+            // Show location suggestions based on status
+            showLocationSuggestions(this.value);
+        });
+    });
+    
+    // Set initial selected status
+    const checkedOption = document.querySelector('.status-option input:checked');
+    if (checkedOption) {
+        checkedOption.closest('.status-option').classList.add('selected');
+    }
+    
+    // Location autocomplete
+    locationInput.addEventListener('input', function() {
+        const query = this.value.toLowerCase();
+        if (query.length > 2) {
+            showLocationSuggestions(null, query);
+        } else {
+            hideLocationSuggestions();
+        }
+    });
+    
+    // Hide suggestions when clicking outside
+    document.addEventListener('click', function(e) {
+        if (!locationInput.contains(e.target)) {
+            hideLocationSuggestions();
+        }
+    });
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        const selectedStatus = document.querySelector('.status-option input:checked');
+        const description = descriptionInput.value.trim();
+        
+        if (!selectedStatus) {
+            e.preventDefault();
+            showToast('Please select a status', 'error');
+            return;
+        }
+        
+        if (!description) {
+            e.preventDefault();
+            showToast('Please add a description for the update', 'error');
+            return;
+        }
+        
+        // Show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating...';
+        submitBtn.disabled = true;
+    });
+    
+    // Animate cards
+    const cards = document.querySelectorAll('.animate-in');
+    cards.forEach((card, index) => {
+        card.style.animationDelay = `${index * 0.1}s`;
+    });
+});
+
+function updateDescription(status) {
+    const descriptions = {
+        'assigned': 'Delivery has been assigned and is ready for pickup from warehouse.',
+        'picked_up': 'Package has been collected from the warehouse and is in transit.',
+        'in_transit': 'Package is on route to the destination city/area.',
+        'out_for_delivery': 'Package is out for final delivery to customer address.',
+        'delivered': 'Package has been successfully delivered to the customer.',
+        'failed': 'Delivery attempt failed. Will retry or contact customer.',
+        'returned': 'Package is being returned to the sender.'
+    };
+    
+    const descriptionInput = document.getElementById('description');
+    if (descriptions[status] && !descriptionInput.value.trim()) {
+        descriptionInput.value = descriptions[status];
+    }
+}
+
+function showLocationSuggestions(status, query = '') {
+    const suggestions = document.getElementById('locationSuggestions');
+    let locations = [];
+    
+    // Common delivery locations
+    const commonLocations = [
+        'Mumbai Central Hub',
+        'Andheri Distribution Center',
+        'Bandra Kurla Complex',
+        'Navi Mumbai Hub',
+        'Thane Distribution Point',
+        'Pune Central Hub',
+        'Delhi Distribution Center',
+        'Bangalore Hub',
+        'Hyderabad Center',
+        'Chennai Hub'
+    ];
+    
+    // Status-specific locations
+    const statusLocations = {
+        'picked_up': ['Warehouse - Mumbai', 'Main Distribution Center', 'Pickup Hub'],
+        'in_transit': ['Highway - Mumbai-Pune', 'Regional Transit Hub', 'City Entry Point'],
+        'out_for_delivery': ['Local Delivery Station', 'Area Distribution Point', 'Customer Area Hub'],
+        'delivered': ['Customer Address', 'Delivery Complete', 'Package Handed Over']
+    };
+    
+    if (status && statusLocations[status]) {
+        locations = statusLocations[status];
+    } else if (query) {
+        locations = commonLocations.filter(loc => 
+            loc.toLowerCase().includes(query.toLowerCase())
+        );
+    } else {
+        locations = commonLocations.slice(0, 5);
+    }
+    
+    if (locations.length > 0) {
+        suggestions.innerHTML = locations.map(location => 
+            `<div class="location-suggestion" onclick="selectLocation('${location}')">${location}</div>`
+        ).join('');
+        suggestions.style.display = 'block';
+    } else {
+        hideLocationSuggestions();
+    }
+}
+
+function hideLocationSuggestions() {
+    document.getElementById('locationSuggestions').style.display = 'none';
+}
+
+function selectLocation(location) {
+    document.getElementById('location').value = location;
+    hideLocationSuggestions();
+}
+
+function showDeliveryNotes() {
+    const modal = new bootstrap.Modal(document.getElementById('notesModal'));
+    modal.show();
+}
+
+function saveNotes() {
+    const notesForm = document.querySelector('#notesModal form');
+    const formData = new FormData(notesForm);
+    
+    fetch(notesForm.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            showToast('Notes saved successfully', 'success');
+            bootstrap.Modal.getInstance(document.getElementById('notesModal')).hide();
+        } else {
+            showToast('Failed to save notes', 'error');
+        }
+    })
+    .catch(() => {
+        showToast('Network error', 'error');
+    });
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    const bgColor = type === 'success' ? '#d4edda' : 
+                   type === 'error' ? '#f8d7da' : '#cce7ff';
+    const textColor = type === 'success' ? '#155724' : 
+                     type === 'error' ? '#721c24' : '#004085';
+    
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        background: ${bgColor};
+        color: ${textColor};
+        padding: 1rem 1.5rem;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        animation: slideInRight 0.3s ease-out;
+        min-width: 300px;
+        border: 1px solid ${type === 'success' ? '#c3e6cb' : 
+                           type === 'error' ? '#f5c6cb' : '#b8daff'};
+    `;
+    
+    toast.innerHTML = `
+        <div class="d-flex align-items-center">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 
+                              type === 'error' ? 'exclamation-circle' : 'info-circle'} me-2"></i>
+            <span>${message}</span>
+            <button type="button" onclick="this.parentElement.parentElement.remove()" 
+                    style="background: none; border: none; color: ${textColor}; font-size: 1.2rem; margin-left: 10px;">×</button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.style.animation = 'slideOutRight 0.3s ease-out';
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    document.body.removeChild(toast);
+                }
+            }, 300);
+        }
+    }, 4000);
+}
+
+// Add CSS animations and styles
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+    
+    .status-icon.small {
+        width: 30px;
+        height: 30px;
+        font-size: 1rem;
+        margin: 0 auto 0.5rem;
+    }
+    
+    .assigned-preview { background: linear-gradient(45deg, #ffeaa7, #fab1a0); }
+    .picked-up-preview { background: linear-gradient(45deg, #74b9ff, #0984e3); }
+    .in-transit-preview { background: linear-gradient(45deg, #a29bfe, #6c5ce7); }
+    .out-for-delivery-preview { background: linear-gradient(45deg, #fd79a8, #e84393); }
+    .delivered-preview { background: linear-gradient(45deg, #00b894, #00cec9); }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

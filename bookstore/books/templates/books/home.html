@@ -6,7 +6,7 @@
 {% block meta_description %}Discover amazing books across all genres. Fiction, Non-Fiction, Comics, Children Books and more.{% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet" href="{% static 'css/pages/home.css' %}?v=1.0">
+<link rel="stylesheet" href="{% static 'css/pages/home.css' %}">
 {% endblock %}
 
 {% block content %}
@@ -69,7 +69,7 @@
                                             <span class="badge badge-out-of-stock">Out of Stock</span>
                                         {% endif %}
                                         <div class="book-actions">
-                                            <button class="action-btn quick-view-btn" title="Quick View" data-book-slug="{{ book.slug }}">
+                                            <button class="action-btn quick-view-btn" href="{% url 'books:book_detail' book.slug %}" title="Quick View" data-book-slug="{{ book.slug }}">
                                                 <i class="fas fa-eye"></i>
                                             </button>
                                             <button class="action-btn wishlist-btn" title="Add to Wishlist" data-book-id="{{ book.id }}">

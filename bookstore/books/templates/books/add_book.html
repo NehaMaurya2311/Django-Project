@@ -136,9 +136,28 @@
                                     </div>
                                 </div>
                                 
-                                <div class="mb-3">
-                                    <label for="{{ form.cover_image.id_for_label }}" class="form-label">Cover Image</label>
-                                    {{ form.cover_image }}
+                                <!-- Updated Cover Image Section -->
+                                <div class="mb-4">
+                                    <h6 class="mb-3">Cover Image</h6>
+                                    <div class="row">
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.cover_image.id_for_label }}" class="form-label">Upload Image File</label>
+                                            {{ form.cover_image }}
+                                            <small class="form-text text-muted">Upload an image file from your computer</small>
+                                        </div>
+                                        <div class="col-md-6 mb-3">
+                                            <label for="{{ form.cover_image_url.id_for_label }}" class="form-label">Or Enter Image URL</label>
+                                            {{ form.cover_image_url }}
+                                            <small class="form-text text-muted">{{ form.cover_image_url.help_text }}</small>
+                                            {% if form.cover_image_url.errors %}
+                                                <div class="text-danger">{{ form.cover_image_url.errors }}</div>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="alert alert-info">
+                                        <i class="fas fa-info-circle me-2"></i>
+                                        <strong>Note:</strong> If both file and URL are provided, the uploaded file will take priority.
+                                    </div>
                                 </div>
                                 
                                 <div class="row">
@@ -204,4 +223,29 @@
         </div>
     </div>
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Add some interactive behavior for the cover image fields
+    const coverImageFile = document.getElementById('{{ form.cover_image.id_for_label }}');
+    const coverImageUrl = document.getElementById('{{ form.cover_image_url.id_for_label }}');
+    
+    // Optional: Clear URL field when file is selected
+    if (coverImageFile && coverImageUrl) {
+        coverImageFile.addEventListener('change', function() {
+            if (this.files && this.files[0]) {
+                // Optionally clear URL field when file is selected
+                // coverImageUrl.value = '';
+            }
+        });
+        
+        coverImageUrl.addEventListener('input', function() {
+            if (this.value) {
+                // Optionally clear file field when URL is entered
+                // coverImageFile.value = '';
+            }
+        });
+    }
+});
+</script>
 {% endblock %}

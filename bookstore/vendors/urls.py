@@ -21,8 +21,8 @@ urlpatterns = [
     path('offers-awaiting-delivery/', views.offers_awaiting_delivery, name='offers_awaiting_delivery'),
     
     # FIXED: Bulk scheduling BEFORE single scheduling to avoid conflicts
-    path('bulk-schedule-delivery/', views.bulk_schedule_delivery, name='bulk_schedule_delivery'),
-    path('schedule-delivery/bulk/', views.bulk_schedule_delivery, name='bulk_schedule_delivery'),
+    # path('bulk-schedule-delivery/', views.bulk_schedule_delivery, name='bulk_schedule_delivery'),
+    # path('schedule-delivery/bulk/', views.bulk_schedule_delivery, name='bulk_schedule_delivery'),
     path('schedule-delivery/<int:offer_id>/', views.schedule_delivery, name='schedule_delivery'),    
     path('track-delivery/<int:offer_id>/', views.track_delivery, name='track_delivery'),
     path('delivery-history/', views.delivery_history, name='delivery_history'),

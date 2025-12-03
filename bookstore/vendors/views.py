@@ -22,7 +22,21 @@ from .models import VendorProfile, StockOffer, VendorTicket, OfferStatusNotifica
 from logistics.models import VendorLocation, DeliverySchedule, LogisticsPartner, DeliveryTracking
 
 User = get_user_model()
-
+def is_vendor(user):
+    """Check if user is a vendor with an approved profile"""
+    if not user.is_authenticated:
+        return False
+    
+    if user.user_type != 'vendor':
+        return False
+    
+    try:
+        vendor_profile = user.vendor_profile
+        return vendor_profile.status == 'approved'
+    except VendorProfile.DoesNotExist:
+        return False
+    """Check if user is a vendor (regardless of approval status)"""
+    return user.is_authenticated and user.user_type == 'vendor'
 
 def is_staff_or_admin(user):
     return user.is_authenticated and user.user_type in ['staff', 'admin']
@@ -76,7 +90,7 @@ def vendor_register(request):
 
 @login_required
 def vendor_dashboard(request):
-    """FIXED: Dashboard with proper out-of-stock book alerts"""
+    """FIXED: Dashboard with proper warehouse opportunity alerts"""
     try:
         vendor_profile = request.user.vendor_profile
     except VendorProfile.DoesNotExist:
@@ -95,15 +109,13 @@ def vendor_dashboard(request):
 
     processed_offers = StockOffer.objects.filter(vendor=vendor_profile, status='processed').count()
 
-    # FIXED: Add warehouse opportunity alerts
+    # FIXED: Get fresh warehouse opportunity data
     warehouse_opportunities = get_vendor_opportunities(vendor_profile)
 
     # Recent offers
     recent_offers = StockOffer.objects.filter(vendor=vendor_profile).order_by('-created_at')[:5]
 
     # Active deliveries
-    # The following line is now redundant and can be removed, as the import is at the top.
-    # from logistics.models import DeliverySchedule
     active_deliveries = DeliverySchedule.objects.filter(
         vendor=vendor_profile,
         status__in=['scheduled', 'confirmed', 'pickup_assigned', 'collected', 'in_transit', 'arrived']
@@ -135,8 +147,7 @@ def vendor_dashboard(request):
         'completed_deliveries': completed_deliveries,
         'unread_notifications': unread_notifications,
         'recent_notifications': recent_notifications,
-        # FIXED: Add warehouse opportunities
-        'warehouse_opportunities': warehouse_opportunities,
+        'warehouse_opportunities': warehouse_opportunities,  # This will now be accurate
     }
 
     return render(request, 'vendors/dashboard.html', context)
@@ -159,8 +170,22 @@ def stock_offers_list(request):
     return render(request, 'vendors/stock_offers.html', {'offers': offers})
 
 @login_required
+@user_passes_test(is_vendor)
+def submit_offer(request):
+    """Display the form to submit stock offers"""
+    
+    # Calculate real-time warehouse statistics
+    warehouse_stats = calculate_warehouse_stats()
+    
+    context = {
+        'warehouse_stats': warehouse_stats,
+    }
+    
+    return render(request, 'vendors/submit_offer.html', context)
+
+@login_required
 def submit_stock_offer(request):
-    """Enhanced stock offer submission with warehouse integration"""
+    """FIXED: Enhanced stock offer submission with proper warehouse integration"""
     vendor_profile = get_object_or_404(VendorProfile, user=request.user)
     
     if vendor_profile.status != 'approved':
@@ -183,16 +208,17 @@ def submit_stock_offer(request):
     else:
         form = StockOfferForm()
     
-    # Get warehouse statistics for prioritization
+    # FIXED: Get real-time warehouse statistics for prioritization
     warehouse_stats = get_warehouse_priority_stats()
     
     context = {
         'form': form,
         'vendor_profile': vendor_profile,
-        'warehouse_stats': warehouse_stats,
+        'warehouse_stats': warehouse_stats,  # This will now have correct data
     }
     
     return render(request, 'vendors/submit_offer.html', context)
+
 
 @login_required
 def vendor_tickets(request):
@@ -302,276 +328,6 @@ def notifications_count(request):
     
     return JsonResponse({'count': count})
 
-
-@login_required
-def bulk_schedule_delivery(request):
-    """FIXED: Handle both GET and POST for bulk delivery scheduling"""
-    vendor_profile = get_object_or_404(VendorProfile, user=request.user)
-    
-    if request.method == 'GET':
-        # Handle GET request - show the bulk scheduling form
-        
-        # Get selected offer IDs from URL parameters
-        offers_param = request.GET.get('offers', '')
-        selected_offer_ids = []
-        
-        if offers_param:
-            try:
-                selected_offer_ids = [id.strip() for id in offers_param.split(',') if id.strip()]
-            except:
-                selected_offer_ids = []
-        
-        # If no offers in URL, try to get from session
-        if not selected_offer_ids:
-            # You could also check session storage here if needed
-            messages.error(request, 'No offers selected for bulk scheduling.')
-            return redirect('vendors:offers_awaiting_delivery')
-        
-        # Validate that offers exist and belong to vendor
-        valid_offers = StockOffer.objects.filter(
-            id__in=selected_offer_ids,
-            vendor=vendor_profile,
-            status='approved'
-        ).exclude(
-            id__in=DeliverySchedule.objects.values_list('stock_offer_id', flat=True)
-        )
-        
-        if not valid_offers.exists():
-            messages.error(request, 'No valid offers found for bulk scheduling.')
-            return redirect('vendors:offers_awaiting_delivery')
-        
-        # Create forms
-        form = DeliveryScheduleForm(vendor=vendor_profile)
-        location_form = QuickVendorLocationForm()
-        
-        # Pre-fill contact info
-        form.fields['contact_person'].initial = vendor_profile.contact_person
-        form.fields['contact_phone'].initial = vendor_profile.phone
-        
-        # Pre-fill location form
-        location_form.fields['name'].initial = "New Location"
-        location_form.fields['address'].initial = vendor_profile.business_address
-        location_form.fields['city'].initial = vendor_profile.city
-        location_form.fields['state'].initial = vendor_profile.state
-        location_form.fields['pincode'].initial = vendor_profile.pincode
-        location_form.fields['contact_person'].initial = vendor_profile.contact_person
-        location_form.fields['phone'].initial = vendor_profile.phone
-        
-        # Get existing locations
-        existing_locations = VendorLocation.objects.filter(
-            vendor=vendor_profile, is_active=True
-        ).order_by('-is_primary', 'name')
-        
-        # Create primary location if none exist
-        if not existing_locations.exists():
-            primary_location = VendorLocation.objects.create(
-                vendor=vendor_profile,
-                name="Primary Business Address",
-                address=vendor_profile.business_address,
-                city=vendor_profile.city,
-                state=vendor_profile.state,
-                pincode=vendor_profile.pincode,
-                contact_person=vendor_profile.contact_person,
-                phone=vendor_profile.phone,
-                is_primary=True,
-                is_active=True
-            )
-            existing_locations = VendorLocation.objects.filter(vendor=vendor_profile, is_active=True)
-        
-        context = {
-            'form': form,
-            'location_form': location_form,
-            'vendor_profile': vendor_profile,
-            'existing_locations': existing_locations,
-            'selected_offers': valid_offers,
-            'selected_offer_ids': selected_offer_ids,
-        }
-        
-        return render(request, 'vendors/schedule_delivery.html', context)
-    
-    elif request.method == 'POST':
-        # Handle POST request - process the bulk scheduling
-        
-        try:
-            # Get selected offer IDs - handle both form data and JSON
-            selected_offers = request.POST.getlist('selected_offers[]')
-            if not selected_offers:
-                selected_offers = request.POST.getlist('selected_offers')
-            
-            if not selected_offers:
-                return JsonResponse({
-                    'success': False, 
-                    'message': 'No offers selected for scheduling.'
-                })
-            
-            print(f"DEBUG: Selected offers: {selected_offers}")  # Debug log
-            
-            # Validate offers belong to vendor and are approved
-            offers = StockOffer.objects.filter(
-                id__in=selected_offers,
-                vendor=vendor_profile,
-                status='approved'
-            ).exclude(
-                id__in=DeliverySchedule.objects.values_list('stock_offer_id', flat=True)
-            )
-            
-            if not offers.exists():
-                return JsonResponse({
-                    'success': False, 
-                    'message': 'No valid offers found for scheduling. Offers may already be scheduled or not approved.'
-                })
-            
-            # Get and parse form data with proper datetime handling
-            delivery_date_str = request.POST.get('scheduled_delivery_date')
-            contact_person = request.POST.get('contact_person', '').strip()
-            contact_phone = request.POST.get('contact_phone', '').strip()
-            special_instructions = request.POST.get('special_instructions', '')
-            vendor_location_id = request.POST.get('vendor_location')
-            
-            print(f"DEBUG: Form data - Date: {delivery_date_str}, Contact: {contact_person}, Phone: {contact_phone}, Location: {vendor_location_id}")
-            
-            # Validate required fields properly
-            if not delivery_date_str:
-                return JsonResponse({
-                    'success': False, 
-                    'message': 'Please select a delivery date and time.'
-                })
-                
-            if not contact_person:
-                return JsonResponse({
-                    'success': False, 
-                    'message': 'Please enter a contact person name.'
-                })
-                
-            if not contact_phone:
-                return JsonResponse({
-                    'success': False, 
-                    'message': 'Please enter a contact phone number.'
-                })
-            
-            # Parse datetime properly with timezone support
-            try:
-                from django.utils.dateparse import parse_datetime
-                from django.utils import timezone as django_timezone
-                
-                # Parse the datetime string
-                if 'T' in delivery_date_str:
-                    # ISO format from datetime-local input
-                    delivery_date = parse_datetime(delivery_date_str)
-                    if delivery_date is None:
-                        # Try parsing as naive datetime and make it timezone-aware
-                        from datetime import datetime
-                        delivery_date = datetime.fromisoformat(delivery_date_str.replace('T', ' '))
-                        delivery_date = django_timezone.make_aware(delivery_date)
-                else:
-                    # Other format
-                    from datetime import datetime
-                    delivery_date = datetime.strptime(delivery_date_str, '%Y-%m-%d %H:%M:%S')
-                    delivery_date = django_timezone.make_aware(delivery_date)
-                    
-                # Ensure timezone awareness
-                if delivery_date.tzinfo is None:
-                    delivery_date = django_timezone.make_aware(delivery_date)
-                    
-            except (ValueError, TypeError) as e:
-                print(f"DEBUG: DateTime parsing error: {e}")
-                return JsonResponse({
-                    'success': False, 
-                    'message': f'Invalid delivery date format. Please select a valid date and time.'
-                })
-            
-            # Handle vendor location properly
-            vendor_location = None
-            if vendor_location_id:
-                try:
-                    vendor_location = VendorLocation.objects.get(
-                        id=vendor_location_id, 
-                        vendor=vendor_profile,
-                        is_active=True
-                    )
-                except VendorLocation.DoesNotExist:
-                    return JsonResponse({
-                        'success': False, 
-                        'message': 'Selected pickup location is not valid.'
-                    })
-            
-            # If no location selected, create/get default location
-            if not vendor_location:
-                vendor_location, created = VendorLocation.objects.get_or_create(
-                    vendor=vendor_profile,
-                    name="Primary Business Address",
-                    defaults={
-                        'address': vendor_profile.business_address,
-                        'city': vendor_profile.city,
-                        'state': vendor_profile.state,
-                        'pincode': vendor_profile.pincode,
-                        'contact_person': vendor_profile.contact_person,
-                        'phone': vendor_profile.phone,
-                        'is_primary': True,
-                        'is_active': True
-                    }
-                )
-            
-            # Create delivery schedules with proper error handling and datetime formatting
-            created_deliveries = []
-            total_value = 0
-            
-            with transaction.atomic():
-                for offer in offers:
-                    try:
-                        # Create delivery schedule with proper datetime object
-                        delivery = DeliverySchedule.objects.create(
-                            stock_offer=offer,
-                            vendor=vendor_profile,
-                            vendor_location=vendor_location,
-                            scheduled_delivery_date=delivery_date,  # Now properly parsed datetime
-                            contact_person=contact_person,
-                            contact_phone=contact_phone,
-                            special_instructions=special_instructions,
-                            status='scheduled'
-                        )
-                        
-                        # Format datetime properly for display
-                        formatted_date = delivery_date.strftime('%B %d, %Y at %I:%M %p')
-                        
-                        # Create tracking entry
-                        DeliveryTracking.objects.create(
-                            delivery=delivery,
-                            status='scheduled',
-                            notes=f"Bulk delivery scheduled for {formatted_date}",
-                            updated_by=request.user
-                        )
-                        
-                        # Create notification
-                        OfferStatusNotification.objects.create(
-                            stock_offer=offer,
-                            status='pickup_scheduled',
-                            message=f"Delivery scheduled for {formatted_date}. "
-                                    f"Logistics partner will be assigned soon."
-                        )
-                        
-                        created_deliveries.append(delivery)
-                        total_value += offer.total_amount
-                        
-                    except Exception as e:
-                        print(f"DEBUG: Error creating delivery for offer {offer.id}: {str(e)}")
-                        raise e
-            
-            return JsonResponse({
-                'success': True,
-                'message': f'Successfully scheduled {len(created_deliveries)} deliveries! Total value: ₹{total_value:,.2f}',
-                'deliveries_count': len(created_deliveries),
-                'total_value': total_value
-            })
-            
-        except Exception as e:
-            print(f"DEBUG: Bulk schedule error: {str(e)}")
-            import traceback
-            traceback.print_exc()
-            return JsonResponse({
-                'success': False, 
-                'message': f'Error scheduling deliveries: {str(e)}'
-            })
 
 @login_required
 def schedule_single_delivery(request, offer_id):
@@ -1372,29 +1128,67 @@ def calculate_suggested_quantity(book):
         return 20
 
 def get_warehouse_priority_stats():
-    """Get warehouse statistics to show priority areas"""
+    """FIXED: Get warehouse statistics to show priority areas with proper Stock model queries"""
     try:
+        from warehouse.models import Stock  # Make sure import is correct
+        from books.models import Book, Category
+        from django.db.models import Q, F, Count
+        
+        # FIXED: Count books that are actually out of stock (quantity = 0)
+        out_of_stock_books = Stock.objects.filter(
+            quantity=0  # Use 'quantity' instead of 'available_quantity'
+        ).count()
+        
+        # FIXED: Count books with low stock (quantity <= reorder_level but > 0)
+        low_stock_books = Stock.objects.filter(
+            quantity__lte=F('reorder_level'),
+            quantity__gt=0
+        ).count()
+        
+        # FIXED: Books without stock records (books that exist but have no Stock entry)
+        books_without_stock = Book.objects.filter(
+            status__in=['available', 'out_of_stock'],
+            stock__isnull=True  # Books that don't have a Stock record
+        ).count()
+        
+        # FIXED: Categories that have books needing attention
+        categories_need_attention = Category.objects.filter(
+            is_active=True,
+            books__status__in=['available', 'out_of_stock']
+        ).annotate(
+            # Count books that are out of stock OR have no stock record
+            critical_books=Count('books', filter=Q(
+                Q(books__stock__quantity=0) |  # Out of stock
+                Q(books__stock__isnull=True)   # No stock record
+            )),
+            # Count books with low stock
+            low_stock_count=Count('books', filter=Q(
+                books__stock__quantity__lte=F('books__stock__reorder_level'),
+                books__stock__quantity__gt=0
+            ))
+        ).filter(
+            Q(critical_books__gt=0) | Q(low_stock_count__gt=0)
+        ).distinct().count()
+        
         return {
-            'out_of_stock_books': Stock.objects.filter(available_quantity=0).count(),
-            'low_stock_books': Stock.objects.filter(
-                available_quantity__lte=F('reorder_level'),
-                available_quantity__gt=0
-            ).count(),
-            'total_books_need_restock': Stock.objects.filter(
-                Q(available_quantity=0) | Q(available_quantity__lte=F('reorder_level'))
-            ).count(),
-            'categories_need_attention': Category.objects.filter(
-                books__stock__available_quantity__lte=F('books__stock__reorder_level'),
-                is_active=True
-            ).distinct().count()
+            'out_of_stock_books': out_of_stock_books,
+            'low_stock_books': low_stock_books,
+            'books_without_stock': books_without_stock,
+            'total_books_need_restock': out_of_stock_books + low_stock_books + books_without_stock,
+            'categories_need_attention': categories_need_attention
         }
-    except Exception:
+        
+    except Exception as e:
+        print(f"Error calculating warehouse priority stats: {e}")
         return {
             'out_of_stock_books': 0,
             'low_stock_books': 0,
+            'books_without_stock': 0,
             'total_books_need_restock': 0,
             'categories_need_attention': 0
         }
+
+
 
 def calculate_category_opportunity(category):
     """Calculate opportunity score for a category"""
@@ -1434,8 +1228,6 @@ def get_priority_categories_for_vendor(vendor_profile):
     ).filter(
         needs_restock__gt=0
     ).order_by('-out_of_stock_count', '-needs_restock', 'name')
-
-
 
 def get_vendor_opportunities(vendor_profile):
     """FIXED: Get warehouse opportunities for vendor dashboard"""

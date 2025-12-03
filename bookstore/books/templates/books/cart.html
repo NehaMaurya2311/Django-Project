@@ -2,7 +2,9 @@
 {% load static %}
 
 {% block title %}Shopping Cart - {{ block.super }}{% endblock %}
-
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/bookstore.css' %}">
+{% endblock %}
 {% block content %}
 <div class="container my-5">
     <h2 class="mb-4">

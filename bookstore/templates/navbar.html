@@ -9,7 +9,7 @@
     <div class="container-fluid">
         <!-- Brand/Logo -->
         <a class="navbar-brand d-flex align-items-center" href="{% url 'books:home' %}">
-            <img src="{% static 'images/logo/logo.png' %}" alt="BookStore Logo" height="40" class="me-2 d-none d-sm-inline">
+            <img src="{% static 'images/logo1.png' %}" alt="BookStore Logo" height="60" class="me-2">
             <span class="brand-text fw-bold fs-4">
                 <span class="text">Book</span><span class="text">Store</span>
             </span>
@@ -141,27 +141,34 @@
                 </li>
 
                 <!-- Support -->
-                <li class="nav-item">
-                    <a class="nav-link" href="{% url 'support:create_ticket' %}">
-                        <i class="fas fa-headset me-1"></i>{% trans "Support" %}
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle" href="#" id="supportDropdown" role="button" 
+                       data-bs-toggle="dropdown" aria-expanded="false">
+                        Support
                     </a>
+                    <ul class="dropdown-menu">
+                        <li><a class="dropdown-item" href="{% url 'support:home' %}">
+                            <i class="fas fa-home me-2"></i>Support Center
+                        </a></li>
+                        <li><hr class="dropdown-divider"></li>
+                        <li><a class="dropdown-item" href="{% url 'support:chatbot_widget' %}">
+                            <i class="fas fa-comments me-2"></i>Chat Support
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'support:create_ticket' %}">
+                            <i class="fas fa-ticket-alt me-2"></i>Create Ticket
+                        </a></li>
+                        <li><a class="dropdown-item" href="{% url 'support:faq' %}">
+                            <i class="fas fa-question-circle me-2"></i>FAQ
+                        </a></li>
+                        {% if user.is_authenticated %}
+                        <li><a class="dropdown-item" href="{% url 'support:my_tickets' %}">
+                            <i class="fas fa-list-alt me-2"></i>My Tickets
+                        </a></li>
+                        {% endif %}
+                    </ul>
                 </li>
             </ul>
 
-            <!-- Search Bar -->
-            <div class="d-flex me-3">
-                <form class="d-flex search-form" method="GET" action="{% url 'books:search_books' %}">
-                    <div class="input-group">
-                        <input class="form-control search-input" type="search" 
-                               placeholder="{% trans 'Search books, authors...' %}" 
-                               name="q" value="{{ request.GET.q|default:'' }}" 
-                               autocomplete="off">
-                        <button class="btn btn-outline-primary search-btn" type="submit" title="{% trans 'Search' %}">
-                            <i class="fas fa-search"></i>
-                        </button>
-                    </div>
-                </form>
-            </div>
 
             <!-- Right Side Icons & Links -->
             <div class="navbar-nav ms-auto d-flex align-items-center">

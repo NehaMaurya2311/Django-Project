@@ -1,0 +1,373 @@
+<!-- reviews/templates/reviews/book_reviews.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}{{ book.title }} Reviews - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/bookstore.css' %}">
+<style>
+.rating-stars {
+    color: #ffc107;
+}
+.rating-distribution {
+    font-size: 0.9rem;
+}
+.review-card {
+    transition: all 0.3s ease;
+}
+.review-card:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+}
+.verified-purchase {
+    color: #28a745;
+    font-size: 0.8rem;
+}
+.helpful-count {
+    font-size: 0.85rem;
+    color: #6c757d;
+}
+.star-rating {
+    display: inline-flex;
+    gap: 2px;
+}
+.progress-bar-container {
+    height: 8px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'books:home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'books:book_detail' book.slug %}">{{ book.title|truncatechars:30 }}</a></li>
+            <li class="breadcrumb-item active">Reviews</li>
+        </ol>
+    </nav>
+
+    <!-- Book Info Header -->
+    <div class="row mb-4">
+        <div class="col-md-2">
+            {% if book.get_cover_image_url %}
+                <img src="{{ book.get_cover_image_url }}" class="img-fluid rounded shadow-sm" alt="{{ book.title }}">
+            {% else %}
+                <div class="bg-light rounded d-flex align-items-center justify-content-center" style="height: 150px;">
+                    <i class="fas fa-book fa-3x text-muted"></i>
+                </div>
+            {% endif %}
+        </div>
+        <div class="col-md-10">
+            <h2>{{ book.title }}</h2>
+            <p class="text-muted mb-2">
+                by {% for author in book.authors.all %}{{ author.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+            </p>
+            <div class="d-flex align-items-center mb-3">
+                <div class="star-rating me-3">
+                    {% for i in "12345" %}
+                        {% if avg_rating >= forloop.counter %}
+                            <i class="fas fa-star rating-stars"></i>
+                        {% else %}
+                            <i class="far fa-star rating-stars"></i>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+                <span class="fw-bold me-2">{{ avg_rating }}</span>
+                <span class="text-muted">({{ total_reviews }} reviews)</span>
+            </div>
+            <div class="d-flex gap-2">
+                <a href="{% url 'books:book_detail' book.slug %}" class="btn btn-outline-secondary btn-sm">
+                    <i class="fas fa-arrow-left me-1"></i>Back to Book
+                </a>
+                {% if user.is_authenticated %}
+                    <a href="{% url 'reviews:write_review' book.id %}" class="btn btn-primary btn-sm">
+                        <i class="fas fa-edit me-1"></i>Write a Review
+                    </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Rating Summary -->
+        <div class="col-md-4 mb-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0">Rating Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-center mb-3">
+                        <h3 class="display-4 mb-0">{{ avg_rating }}</h3>
+                        <div class="star-rating mb-2">
+                            {% for i in "12345" %}
+                                {% if avg_rating >= forloop.counter %}
+                                    <i class="fas fa-star rating-stars"></i>
+                                {% else %}
+                                    <i class="far fa-star rating-stars"></i>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <p class="text-muted">{{ total_reviews }} reviews</p>
+                    </div>
+
+                    <!-- Rating Distribution Bars -->
+                    {% for i in "54321" %}
+                        {% with star_count=forloop.counter0|add:1 %}
+                        <div class="d-flex align-items-center mb-2 rating-distribution">
+                            <span class="me-2" style="min-width: 60px;">{{ 6|add:star_count|add:-1 }} stars</span>
+                            <div class="progress flex-grow-1 me-2 progress-bar-container">
+                                {% with count=rating_distribution|default_if_none:0 total=total_reviews|default:1 %}
+                                    {% if 6|add:star_count|add:-1 == 5 %}
+                                        {% with percentage=rating_distribution.5|default:0|mul:100|div:total %}
+                                            <div class="progress-bar bg-warning" style="width: {{ percentage }}%"></div>
+                                        {% endwith %}
+                                    {% elif 6|add:star_count|add:-1 == 4 %}
+                                        {% with percentage=rating_distribution.4|default:0|mul:100|div:total %}
+                                            <div class="progress-bar bg-warning" style="width: {{ percentage }}%"></div>
+                                        {% endwith %}
+                                    {% elif 6|add:star_count|add:-1 == 3 %}
+                                        {% with percentage=rating_distribution.3|default:0|mul:100|div:total %}
+                                            <div class="progress-bar bg-warning" style="width: {{ percentage }}%"></div>
+                                        {% endwith %}
+                                    {% elif 6|add:star_count|add:-1 == 2 %}
+                                        {% with percentage=rating_distribution.2|default:0|mul:100|div:total %}
+                                            <div class="progress-bar bg-warning" style="width: {{ percentage }}%"></div>
+                                        {% endwith %}
+                                    {% else %}
+                                        {% with percentage=rating_distribution.1|default:0|mul:100|div:total %}
+                                            <div class="progress-bar bg-warning" style="width: {{ percentage }}%"></div>
+                                        {% endwith %}
+                                    {% endif %}
+                                {% endwith %}
+                            </div>
+                            <span style="min-width: 30px;">
+                                {% if 6|add:star_count|add:-1 == 5 %}{{ rating_distribution.5|default:0 }}
+                                {% elif 6|add:star_count|add:-1 == 4 %}{{ rating_distribution.4|default:0 }}
+                                {% elif 6|add:star_count|add:-1 == 3 %}{{ rating_distribution.3|default:0 }}
+                                {% elif 6|add:star_count|add:-1 == 2 %}{{ rating_distribution.2|default:0 }}
+                                {% else %}{{ rating_distribution.1|default:0 }}
+                                {% endif %}
+                            </span>
+                        </div>
+                        {% endwith %}
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Reviews List -->
+        <div class="col-md-8">
+            {% if reviews %}
+                {% for review in reviews %}
+                <div class="card review-card mb-3">
+                    <div class="card-body">
+                        <!-- Review Header -->
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <div>
+                                <h6 class="mb-1">{{ review.user.first_name|default:review.user.username }}</h6>
+                                <div class="star-rating mb-1">
+                                    {% for i in "12345" %}
+                                        {% if review.rating >= forloop.counter %}
+                                            <i class="fas fa-star rating-stars"></i>
+                                        {% else %}
+                                            <i class="far fa-star rating-stars"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% if review.is_verified_purchase %}
+                                    <span class="badge bg-success verified-purchase">
+                                        <i class="fas fa-check-circle me-1"></i>Verified Purchase
+                                    </span>
+                                {% endif %}
+                            </div>
+                            <small class="text-muted">{{ review.created_at|date:"M d, Y" }}</small>
+                        </div>
+
+                        <!-- Review Title -->
+                        {% if review.title %}
+                            <h6 class="fw-bold mb-2">{{ review.title }}</h6>
+                        {% endif %}
+
+                        <!-- Review Content -->
+                        <p class="mb-3">{{ review.comment|linebreaks }}</p>
+
+                        <!-- Review Actions -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="d-flex align-items-center gap-3">
+                                {% if user.is_authenticated and user != review.user %}
+                                    <button class="btn btn-sm btn-outline-secondary helpful-btn" 
+                                            data-review-id="{{ review.id }}"
+                                            data-is-helpful="true">
+                                        <i class="fas fa-thumbs-up me-1"></i>
+                                        Helpful
+                                        <span class="helpful-count">({{ review.helpful_count }})</span>
+                                    </button>
+                                {% else %}
+                                    <span class="helpful-count">
+                                        <i class="fas fa-thumbs-up me-1"></i>
+                                        {{ review.helpful_count }} found this helpful
+                                    </span>
+                                {% endif %}
+                            </div>
+
+                            <!-- User's own review actions -->
+                            {% if user == review.user %}
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                            type="button" data-bs-toggle="dropdown">
+                                        <i class="fas fa-ellipsis-v"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li>
+                                            <a class="dropdown-item" href="{% url 'reviews:edit_review' review.id %}">
+                                                <i class="fas fa-edit me-2"></i>Edit
+                                            </a>
+                                        </li>
+                                        <li>
+                                            <a class="dropdown-item text-danger" href="{% url 'reviews:delete_review' review.id %}">
+                                                <i class="fas fa-trash me-2"></i>Delete
+                                            </a>
+                                        </li>
+                                    </ul>
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <!-- Admin Response -->
+                        {% if review.admin_response %}
+                            <div class="border-start border-primary border-3 ps-3 mt-3 bg-light p-2 rounded">
+                                <h6 class="text-primary mb-1">
+                                    <i class="fas fa-reply me-1"></i>Response from {{ review.admin_response.responded_by.first_name|default:"BookStore" }}
+                                </h6>
+                                <p class="mb-1">{{ review.admin_response.response|linebreaks }}</p>
+                                <small class="text-muted">{{ review.admin_response.created_at|date:"M d, Y" }}</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+                {% endfor %}
+
+                <!-- Pagination -->
+                {% if reviews.has_other_pages %}
+                    <nav aria-label="Reviews pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            {% if reviews.has_previous %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ reviews.previous_page_number }}">
+                                        <i class="fas fa-chevron-left"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+
+                            {% for num in reviews.paginator.page_range %}
+                                {% if reviews.number == num %}
+                                    <li class="page-item active">
+                                        <span class="page-link">{{ num }}</span>
+                                    </li>
+                                {% elif num > reviews.number|add:'-3' and num < reviews.number|add:'3' %}
+                                    <li class="page-item">
+                                        <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                                    </li>
+                                {% endif %}
+                            {% endfor %}
+
+                            {% if reviews.has_next %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ reviews.next_page_number }}">
+                                        <i class="fas fa-chevron-right"></i>
+                                    </a>
+                                </li>
+                            {% endif %}
+                        </ul>
+                    </nav>
+                {% endif %}
+            {% else %}
+                <div class="card">
+                    <div class="card-body text-center py-5">
+                        <i class="fas fa-star fa-4x text-muted mb-3"></i>
+                        <h5>No reviews yet</h5>
+                        <p class="text-muted">Be the first to review this book!</p>
+                        {% if user.is_authenticated %}
+                            <a href="{% url 'reviews:write_review' book.id %}" class="btn btn-primary">
+                                <i class="fas fa-edit me-2"></i>Write the First Review
+                            </a>
+                        {% else %}
+                            <a href="{% url 'accounts:login' %}" class="btn btn-primary">
+                                <i class="fas fa-sign-in-alt me-2"></i>Login to Write a Review
+                            </a>
+                        {% endif %}
+                    </div>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Hidden CSRF Token -->
+{% csrf_token %}
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function getCSRFToken() {
+    let token = document.querySelector('[name=csrfmiddlewaretoken]');
+    if (token) return token.value;
+    
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, 10) === 'csrftoken=') {
+                cookieValue = decodeURIComponent(cookie.substring(10));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}
+
+// Handle helpful button clicks
+document.addEventListener('DOMContentLoaded', function() {
+    const helpfulButtons = document.querySelectorAll('.helpful-btn');
+    
+    helpfulButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const reviewId = this.dataset.reviewId;
+            const csrfToken = getCSRFToken();
+            
+            fetch(`{% url 'reviews:mark_helpful' 0 %}`.replace('0', reviewId), {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRFToken': csrfToken,
+                    'Content-Type': 'application/json'
+                },
+                credentials: 'same-origin'
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const countSpan = this.querySelector('.helpful-count');
+                    countSpan.textContent = `(${data.helpful_count})`;
+                    
+                    // Update button state
+                    if (data.user_found_helpful) {
+                        this.classList.remove('btn-outline-secondary');
+                        this.classList.add('btn-secondary');
+                    } else {
+                        this.classList.remove('btn-secondary');
+                        this.classList.add('btn-outline-secondary');
+                    }
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+            });
+        });
+    });
+});
+</script>
+{% endblock %}

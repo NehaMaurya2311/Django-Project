@@ -9,6 +9,11 @@
     position: static !important;
 }
 
+.logo-img {
+    height: 90px; /* Adjust as needed */
+    width: 130px;
+}
+
 .mega-menu {
     position: absolute;
     top: 100%;

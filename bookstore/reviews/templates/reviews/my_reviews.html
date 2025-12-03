@@ -1,0 +1,453 @@
+<!-- reviews/templates/reviews/my_reviews.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}My Reviews - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/bookstore.css' %}">
+<style>
+.review-card {
+    transition: all 0.3s ease;
+    border: 1px solid #e3e6f0;
+}
+
+.review-card:hover {
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    transform: translateY(-2px);
+}
+
+.rating-stars {
+    color: #ffc107;
+}
+
+.status-badge {
+    font-size: 0.8rem;
+}
+
+.review-stats {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: bold;
+    display: block;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+.review-actions {
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.review-card:hover .review-actions {
+    opacity: 1;
+}
+
+.empty-state {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6c757d;
+}
+
+.empty-state i {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.book-cover {
+    width: 80px;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 8px;
+}
+
+.helpful-count {
+    font-size: 0.85rem;
+    color: #28a745;
+}
+
+.review-content {
+    max-height: 100px;
+    overflow: hidden;
+    position: relative;
+}
+
+.review-content.expanded {
+    max-height: none;
+}
+
+.expand-btn {
+    background: linear-gradient(to bottom, transparent, rgba(255,255,255,0.9));
+    border: none;
+    color: #007bff;
+    font-size: 0.85rem;
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    padding: 1rem 0 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Page Header -->
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2><i class="fas fa-star me-2 text-warning"></i>My Reviews</h2>
+            <p class="text-muted mb-0">Manage your book reviews and see their impact</p>
+        </div>
+        <div>
+            <a href="{% url 'books:all_books' %}" class="btn btn-primary">
+                <i class="fas fa-plus me-2"></i>Review More Books
+            </a>
+        </div>
+    </div>
+
+    {% if reviews %}
+        <!-- Review Statistics -->
+        <div class="review-stats">
+            <div class="row">
+                <div class="col-md-3 stat-item">
+                    <span class="stat-number">{{ reviews.paginator.count }}</span>
+                    <span class="stat-label">Total Reviews</span>
+                </div>
+                <div class="col-md-3 stat-item">
+                    <span class="stat-number">
+                        {{ reviews.paginator.count }}
+                    </span>
+                    <span class="stat-label">Books Reviewed</span>
+                </div>
+                </div>
+                <div class="col-md-3 stat-item">
+                    <span class="stat-number">
+                        {% with approved_count=0 %}
+                            {% for review in reviews %}
+                                {% if review.status == 'approved' %}
+                                    {% with approved_count=approved_count|add:1 %}{% endwith %}
+                                {% endif %}
+                            {% endfor %}
+                            {{ approved_count }}
+                        {% endwith %}
+                    </span>
+                    <span class="stat-label">Approved</span>
+                </div>
+                <div class="col-md-3 stat-item">
+                    <span class="stat-number">
+                        {% with total_helpful=0 %}
+                            {% for review in reviews %}
+                                {% with total_helpful=total_helpful|add:review.helpful_count %}{% endwith %}
+                            {% endfor %}
+                            {{ total_helpful }}
+                        {% endwith %}
+                    </span>
+                    <span class="stat-label">Helpful Votes</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Filter Options -->
+        <div class="card mb-4">
+            <div class="card-body py-2">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <div class="btn-group" role="group" aria-label="Filter reviews">
+                            <input type="radio" class="btn-check" name="status-filter" id="all-reviews" value="all" checked>
+                            <label class="btn btn-outline-secondary btn-sm" for="all-reviews">
+                                All Reviews ({{ reviews.paginator.count }})
+                            </label>
+
+                            <input type="radio" class="btn-check" name="status-filter" id="approved-reviews" value="approved">
+                            <label class="btn btn-outline-success btn-sm" for="approved-reviews">
+                                Approved
+                            </label>
+
+                            <input type="radio" class="btn-check" name="status-filter" id="pending-reviews" value="pending">
+                            <label class="btn btn-outline-warning btn-sm" for="pending-reviews">
+                                Pending
+                            </label>
+                        </div>
+                    </div>
+                    <div class="col-md-6 text-md-end">
+                        <small class="text-muted">
+                            Showing {{ reviews.start_index }}-{{ reviews.end_index }} of {{ reviews.paginator.count }} reviews
+                        </small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Reviews List -->
+        <div class="row" id="reviews-container">
+            {% for review in reviews %}
+            <div class="col-12 mb-4 review-item" data-status="{{ review.status }}">
+                <div class="card review-card">
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Book Cover -->
+                            <div class="col-md-2 text-center mb-3 mb-md-0">
+                                {% if review.book.get_cover_image_url %}
+                                    <img src="{{ review.book.get_cover_image_url }}" 
+                                         class="book-cover shadow-sm" alt="{{ review.book.title }}">
+                                {% else %}
+                                    <div class="book-cover bg-light d-flex align-items-center justify-content-center shadow-sm">
+                                        <i class="fas fa-book fa-2x text-muted"></i>
+                                    </div>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Review Content -->
+                            <div class="col-md-10">
+                                <!-- Header -->
+                                <div class="d-flex justify-content-between align-items-start mb-2">
+                                    <div>
+                                        <h5 class="mb-1">
+                                            <a href="{% url 'books:book_detail' review.book.slug %}" 
+                                               class="text-decoration-none text-dark">
+                                                {{ review.book.title }}
+                                            </a>
+                                        </h5>
+                                        <p class="text-muted small mb-2">
+                                            by {% for author in review.book.authors.all %}{{ author.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                                        </p>
+                                    </div>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <!-- Status Badge -->
+                                        <span class="badge status-badge {% if review.status == 'approved' %}bg-success{% elif review.status == 'pending' %}bg-warning text-dark{% else %}bg-danger{% endif %}">
+                                            {% if review.status == 'approved' %}
+                                                <i class="fas fa-check-circle me-1"></i>Approved
+                                            {% elif review.status == 'pending' %}
+                                                <i class="fas fa-clock me-1"></i>Pending
+                                            {% else %}
+                                                <i class="fas fa-times-circle me-1"></i>Rejected
+                                            {% endif %}
+                                        </span>
+                                        {% if review.is_verified_purchase %}
+                                            <span class="badge bg-primary status-badge">
+                                                <i class="fas fa-check-circle me-1"></i>Verified
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Rating -->
+                                <div class="mb-2">
+                                    {% for i in "12345" %}
+                                        {% if review.rating >= forloop.counter %}
+                                            <i class="fas fa-star rating-stars"></i>
+                                        {% else %}
+                                            <i class="far fa-star rating-stars"></i>
+                                        {% endif %}
+                                    {% endfor %}
+                                    <span class="ms-2 small text-muted">{{ review.rating }} out of 5 stars</span>
+                                </div>
+
+                                <!-- Review Title -->
+                                {% if review.title %}
+                                    <h6 class="fw-bold mb-2">{{ review.title }}</h6>
+                                {% endif %}
+
+                                <!-- Review Content -->
+                                <div class="review-content mb-3" id="content-{{ review.id }}">
+                                    <p class="mb-0">{{ review.comment|linebreaks|truncatewords:30 }}</p>
+                                    {% if review.comment|length > 150 %}
+                                        <button class="expand-btn" onclick="toggleReviewContent({{ review.id }})">
+                                            <i class="fas fa-chevron-down me-1"></i>Show more
+                                        </button>
+                                    {% endif %}
+                                </div>
+
+                                <!-- Review Meta -->
+                                <div class="row text-muted small mb-3">
+                                    <div class="col-md-6">
+                                        <div class="d-flex align-items-center gap-3">
+                                            <span>
+                                                <i class="fas fa-calendar me-1"></i>
+                                                {{ review.created_at|date:"M d, Y" }}
+                                            </span>
+                                            {% if review.helpful_count > 0 %}
+                                                <span class="helpful-count">
+                                                    <i class="fas fa-thumbs-up me-1"></i>
+                                                    {{ review.helpful_count }} helpful
+                                                </span>
+                                            {% endif %}
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6 text-md-end">
+                                        {% if review.updated_at != review.created_at %}
+                                            <span>
+                                                <i class="fas fa-edit me-1"></i>
+                                                Updated {{ review.updated_at|date:"M d, Y" }}
+                                            </span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+
+                                <!-- Actions -->
+                                <div class="review-actions">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'books:book_detail' review.book.slug %}" 
+                                               class="btn btn-outline-secondary btn-sm">
+                                                <i class="fas fa-book me-1"></i>View Book
+                                            </a>
+                                            <a href="{% url 'reviews:book_reviews' review.book.slug %}" 
+                                               class="btn btn-outline-info btn-sm">
+                                                <i class="fas fa-comments me-1"></i>All Reviews
+                                            </a>
+                                        </div>
+                                        <div class="btn-group btn-group-sm">
+                                            <a href="{% url 'reviews:edit_review' review.id %}" 
+                                               class="btn btn-outline-primary btn-sm">
+                                                <i class="fas fa-edit me-1"></i>Edit
+                                            </a>
+                                            <a href="{% url 'reviews:delete_review' review.id %}" 
+                                               class="btn btn-outline-danger btn-sm">
+                                                <i class="fas fa-trash me-1"></i>Delete
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Admin Response -->
+                                {% if review.admin_response %}
+                                    <div class="border-start border-primary border-3 ps-3 mt-3 bg-light p-2 rounded">
+                                        <h6 class="text-primary mb-1">
+                                            <i class="fas fa-reply me-1"></i>
+                                            Response from {{ review.admin_response.responded_by.first_name|default:"BookStore Team" }}
+                                        </h6>
+                                        <p class="mb-1 small">{{ review.admin_response.response|linebreaks }}</p>
+                                        <small class="text-muted">{{ review.admin_response.created_at|date:"M d, Y" }}</small>
+                                    </div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Pagination -->
+        {% if reviews.has_other_pages %}
+            <nav aria-label="Reviews pagination" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if reviews.has_previous %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ reviews.previous_page_number }}">
+                                <i class="fas fa-chevron-left"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+
+                    {% for num in reviews.paginator.page_range %}
+                        {% if reviews.number == num %}
+                            <li class="page-item active">
+                                <span class="page-link">{{ num }}</span>
+                            </li>
+                        {% elif num > reviews.number|add:'-3' and num < reviews.number|add:'3' %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ num }}">{{ num }}</a>
+                            </li>
+                        {% endif %}
+                    {% endfor %}
+
+                    {% if reviews.has_next %}
+                        <li class="page-item">
+                            <a class="page-link" href="?page={{ reviews.next_page_number }}">
+                                <i class="fas fa-chevron-right"></i>
+                            </a>
+                        </li>
+                    {% endif %}
+                </ul>
+            </nav>
+        {% endif %}
+
+    {% else %}
+        <!-- Empty State -->
+        <div class="card">
+            <div class="card-body">
+                <div class="empty-state">
+                    <i class="fas fa-star-half-alt"></i>
+                    <h4>No reviews yet</h4>
+                    <p>You haven't written any reviews yet. Share your thoughts about the books you've read!</p>
+                    <div class="mt-4">
+                        <a href="{% url 'books:all_books' %}" class="btn btn-primary">
+                            <i class="fas fa-search me-2"></i>Find Books to Review
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Toggle review content expansion
+function toggleReviewContent(reviewId) {
+    const content = document.getElementById(`content-${reviewId}`);
+    const button = content.querySelector('.expand-btn');
+    
+    if (content.classList.contains('expanded')) {
+        content.classList.remove('expanded');
+        button.innerHTML = '<i class="fas fa-chevron-down me-1"></i>Show more';
+    } else {
+        content.classList.add('expanded');
+        button.innerHTML = '<i class="fas fa-chevron-up me-1"></i>Show less';
+        button.style.position = 'static';
+        button.style.background = 'transparent';
+        button.style.padding = '0.5rem 0';
+    }
+}
+
+// Filter functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const filterButtons = document.querySelectorAll('input[name="status-filter"]');
+    const reviewItems = document.querySelectorAll('.review-item');
+    
+    filterButtons.forEach(button => {
+        button.addEventListener('change', function() {
+            const filterValue = this.value;
+            
+            reviewItems.forEach(item => {
+                const status = item.dataset.status;
+                
+                if (filterValue === 'all' || status === filterValue) {
+                    item.style.display = 'block';
+                    item.style.animation = 'fadeIn 0.3s ease-in';
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        });
+    });
+});
+
+// Add fade-in animation
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

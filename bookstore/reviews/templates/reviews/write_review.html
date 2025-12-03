@@ -1,0 +1,304 @@
+<!-- reviews/templates/reviews/write_review.html -->
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Write Review - {{ book.title }} - {{ block.super }}{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/bookstore.css' %}">
+<style>
+.rating-input {
+    display: flex;
+    gap: 5px;
+    margin-bottom: 1rem;
+}
+
+.rating-input input[type="radio"] {
+    display: none;
+}
+
+.rating-input label {
+    font-size: 2rem;
+    color: #ddd;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.rating-input label:hover,
+.rating-input label:hover ~ label,
+.rating-input input[type="radio"]:checked ~ label {
+    color: #ffc107;
+}
+
+.rating-input input[type="radio"]:checked ~ label ~ label {
+    color: #ddd;
+}
+
+.book-info-card {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: none;
+}
+
+.review-guidelines {
+    background-color: #f8f9fa;
+    border-left: 4px solid #007bff;
+    padding: 1rem;
+    margin-bottom: 2rem;
+}
+
+.verified-purchase-badge {
+    background: linear-gradient(135deg, #28a745, #20c997);
+    color: white;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.form-floating textarea {
+    min-height: 120px;
+}
+
+.rating-description {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-top: 0.5rem;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container my-5">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'books:home' %}">Home</a></li>
+            <li class="breadcrumb-item"><a href="{% url 'books:book_detail' book.slug %}">{{ book.title|truncatechars:30 }}</a></li>
+            <li class="breadcrumb-item active">Write Review</li>
+        </ol>
+    </nav>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <!-- Page Header -->
+            <div class="text-center mb-4">
+                <h2><i class="fas fa-star me-2 text-warning"></i>Write a Review</h2>
+                <p class="text-muted">Share your thoughts about this book with other readers</p>
+            </div>
+
+            <!-- Book Info Card -->
+            <div class="card book-info-card mb-4">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-3 text-center">
+                            {% if book.get_cover_image_url %}
+                                <img src="{{ book.get_cover_image_url }}" class="img-fluid rounded shadow-sm" 
+                                     style="max-height: 150px;" alt="{{ book.title }}">
+                            {% else %}
+                                <div class="bg-white rounded d-flex align-items-center justify-content-center shadow-sm" 
+                                     style="height: 150px; width: 100px; margin: 0 auto;">
+                                    <i class="fas fa-book fa-3x text-muted"></i>
+                                </div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-9">
+                            <h4 class="mb-2">{{ book.title }}</h4>
+                            <p class="text-muted mb-2">
+                                by {% for author in book.authors.all %}{{ author.name }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                            </p>
+                            <p class="mb-2">
+                                <span class="badge bg-secondary">{{ book.category.name }}</span>
+                                <span class="badge bg-outline-secondary">{{ book.get_format_display }}</span>
+                            </p>
+                            {% if has_purchased %}
+                                <div class="verified-purchase-badge">
+                                    <i class="fas fa-check-circle"></i>
+                                    <span>Verified Purchase</span>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-info py-2 mb-0">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    <small>You haven't purchased this book yet. You can still write a review based on your reading experience.</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Review Guidelines -->
+            <div class="review-guidelines">
+                <h6 class="mb-2"><i class="fas fa-lightbulb me-2"></i>Review Guidelines</h6>
+                <ul class="mb-0 small">
+                    <li>Be honest and specific about your experience with the book</li>
+                    <li>Focus on the content, writing style, and overall reading experience</li>
+                    <li>Avoid spoilers - help other readers discover the story for themselves</li>
+                    <li>Keep your review respectful and constructive</li>
+                </ul>
+            </div>
+
+            <!-- Review Form -->
+            <div class="card">
+                <div class="card-body">
+                    <form method="post" id="reviewForm">
+                        {% csrf_token %}
+                        
+                        <!-- Rating Section -->
+                        <div class="mb-4">
+                            <label class="form-label fw-bold">Rating *</label>
+                            <div class="rating-input" id="rating-input">
+                                {% for choice in form.rating.field.choices %}
+                                    <input type="radio" name="rating" value="{{ choice.0 }}" id="rating-{{ choice.0 }}" required>
+                                    <label for="rating-{{ choice.0 }}" class="rating-star" data-rating="{{ choice.0 }}">
+                                        <i class="fas fa-star"></i>
+                                    </label>
+                                {% endfor %}
+                            </div>
+                            <div class="rating-description" id="rating-description">
+                                Click on the stars to rate this book
+                            </div>
+                        </div>
+
+                        <!-- Review Title -->
+                        <div class="form-floating mb-3">
+                            {{ form.title }}
+                            <label for="{{ form.title.id_for_label }}">Review Title (Optional)</label>
+                            <div class="form-text">Give your review a helpful title</div>
+                        </div>
+
+                        <!-- Review Comment -->
+                        <div class="form-floating mb-3">
+                            {{ form.comment }}
+                            <label for="{{ form.comment.id_for_label }}">Your Review *</label>
+                            <div class="form-text">Tell other readers about your experience with this book</div>
+                        </div>
+
+                        <!-- Form Actions -->
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div class="text-muted small">
+                                <i class="fas fa-clock me-1"></i>
+                                Your review will be published after approval
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="{% url 'books:book_detail' book.slug %}" class="btn btn-outline-secondary">
+                                    <i class="fas fa-times me-1"></i>Cancel
+                                </a>
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="fas fa-paper-plane me-1"></i>Submit Review
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Additional Info -->
+            <div class="mt-4 text-center">
+                <small class="text-muted">
+                    <i class="fas fa-shield-alt me-1"></i>
+                    Reviews are moderated to ensure quality and authenticity
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const ratingInputs = document.querySelectorAll('input[name="rating"]');
+    const ratingStars = document.querySelectorAll('.rating-star');
+    const ratingDescription = document.getElementById('rating-description');
+    
+    const ratingDescriptions = {
+        1: "Poor - Did not meet expectations",
+        2: "Fair - Below average",
+        3: "Good - Met expectations",
+        4: "Very Good - Above average", 
+        5: "Excellent - Outstanding!"
+    };
+    
+    // Handle star hover effects
+    ratingStars.forEach((star, index) => {
+        star.addEventListener('mouseenter', function() {
+            const rating = this.dataset.rating;
+            updateStarDisplay(rating);
+            ratingDescription.textContent = ratingDescriptions[rating];
+        });
+        
+        star.addEventListener('click', function() {
+            const rating = this.dataset.rating;
+            document.getElementById(`rating-${rating}`).checked = true;
+            updateStarDisplay(rating);
+            ratingDescription.textContent = ratingDescriptions[rating];
+        });
+    });
+    
+    // Reset on mouse leave
+    document.getElementById('rating-input').addEventListener('mouseleave', function() {
+        const checkedRating = document.querySelector('input[name="rating"]:checked');
+        if (checkedRating) {
+            updateStarDisplay(checkedRating.value);
+            ratingDescription.textContent = ratingDescriptions[checkedRating.value];
+        } else {
+            updateStarDisplay(0);
+            ratingDescription.textContent = "Click on the stars to rate this book";
+        }
+    });
+    
+    function updateStarDisplay(rating) {
+        ratingStars.forEach((star, index) => {
+            const starRating = parseInt(star.dataset.rating);
+            if (starRating <= rating) {
+                star.style.color = '#ffc107';
+            } else {
+                star.style.color = '#ddd';
+            }
+        });
+    }
+    
+    // Form validation
+    const form = document.getElementById('reviewForm');
+    form.addEventListener('submit', function(e) {
+        const rating = document.querySelector('input[name="rating"]:checked');
+        const comment = document.querySelector('textarea[name="comment"]');
+        
+        if (!rating) {
+            e.preventDefault();
+            alert('Please select a rating for this book.');
+            return;
+        }
+        
+        if (!comment.value.trim()) {
+            e.preventDefault();
+            alert('Please write a review comment.');
+            comment.focus();
+            return;
+        }
+        
+        if (comment.value.trim().length < 10) {
+            e.preventDefault();
+            alert('Please write a more detailed review (at least 10 characters).');
+            comment.focus();
+            return;
+        }
+        
+        // Show loading state
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn.innerHTML;
+        submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Submitting...';
+        submitBtn.disabled = true;
+        
+        // If validation passes, form will submit
+        // Reset button if there's an error (though this is rare)
+        setTimeout(() => {
+            submitBtn.innerHTML = originalText;
+            submitBtn.disabled = false;
+        }, 3000);
+    });
+});
+</script>
+{% endblock %}

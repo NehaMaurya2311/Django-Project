@@ -1,0 +1,809 @@
+{% extends 'delivery/base.html' %}
+{% load static %}
+
+{% block title %}Edit Partner - {{ partner.name }}{% endblock %}
+
+{% block extra_css %}
+<style>
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --success-gradient: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+    --warning-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --info-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+}
+
+body {
+    background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 50%, #ff8a80 100%);
+    min-height: 100vh;
+}
+
+.page-header {
+    background: var(--warning-gradient);
+    color: white;
+    padding: 2rem 0;
+    border-radius: 0 0 30px 30px;
+    margin-bottom: 2rem;
+    box-shadow: 0 8px 32px rgba(240, 147, 251, 0.3);
+}
+
+.form-card {
+    background: white;
+    border-radius: 20px;
+    border: none;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    overflow: hidden;
+}
+
+.form-header {
+    background: var(--info-gradient);
+    color: white;
+    padding: 1.5rem;
+}
+
+.partner-status-indicator {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    padding: 0.5rem 1rem;
+    border-radius: 25px;
+    font-weight: 700;
+    text-transform: uppercase;
+    font-size: 0.75rem;
+}
+
+.partner-status-indicator.active {
+    background: rgba(255,255,255,0.2);
+    color: #00b894;
+}
+
+.partner-status-indicator.inactive {
+    background: rgba(255,255,255,0.2);
+    color: #fdcb6e;
+}
+
+.partner-status-indicator.suspended {
+    background: rgba(255,255,255,0.2);
+    color: #e17055;
+}
+
+.stats-row {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-radius: 15px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 10px;
+    padding: 1rem;
+    text-align: center;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.stat-number {
+    font-size: 2rem;
+    font-weight: 800;
+    margin-bottom: 0.5rem;
+}
+
+.stat-label {
+    color: #666;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    font-weight: 600;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-control, .form-select {
+    border: 2px solid #e9ecef;
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus, .form-select:focus {
+    border-color: #f093fb;
+    box-shadow: 0 0 0 0.2rem rgba(240, 147, 251, 0.25);
+}
+
+.form-label {
+    font-weight: 600;
+    color: #495057;
+    margin-bottom: 0.5rem;
+}
+
+.required-field::after {
+    content: ' *';
+    color: #dc3545;
+}
+
+.btn-update {
+    background: var(--success-gradient);
+    border: none;
+    border-radius: 15px;
+    color: white;
+    padding: 0.8rem 2.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-update:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(86, 171, 47, 0.4);
+    color: white;
+}
+
+.btn-cancel {
+    border: 2px solid #6c757d;
+    border-radius: 15px;
+    color: #6c757d;
+    padding: 0.8rem 2rem;
+    background: transparent;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-cancel:hover {
+    background: #6c757d;
+    color: white;
+    transform: translateY(-2px);
+}
+
+.btn-delete {
+    background: linear-gradient(135deg, #e17055 0%, #d63031 100%);
+    border: none;
+    border-radius: 15px;
+    color: white;
+    padding: 0.8rem 1.5rem;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.btn-delete:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(225, 112, 85, 0.4);
+    color: white;
+}
+
+.service-areas-help {
+    background: #f8f9fa;
+    border-left: 4px solid #17a2b8;
+    padding: 1rem;
+    border-radius: 0 10px 10px 0;
+    margin-top: 0.5rem;
+}
+
+.form-section {
+    padding: 2rem;
+    border-bottom: 1px solid #eee;
+}
+
+.form-section:last-child {
+    border-bottom: none;
+}
+
+.section-title {
+    color: #495057;
+    font-weight: 700;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.input-group-text {
+    background: #f8f9fa;
+    border: 2px solid #e9ecef;
+    border-right: none;
+}
+
+.danger-zone {
+    border: 2px solid #dc3545;
+    border-radius: 10px;
+    padding: 1.5rem;
+    background: #fff5f5;
+}
+
+.animate-in {
+    animation: fadeInUp 0.6s ease-out;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h2 class="mb-1">
+                    <i class="fas fa-user-edit me-2"></i>Edit Partner
+                </h2>
+                <p class="mb-0 opacity-75">{{ partner.name }}</p>
+            </div>
+            <div class="d-flex gap-2">
+                <span class="partner-status-indicator {{ partner.status }}">
+                    {{ partner.get_status_display }}
+                </span>
+                <a href="{% url 'delivery:partner_list' %}" class="btn btn-light">
+                    <i class="fas fa-arrow-left me-2"></i>Back to Partners
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="container">
+    <!-- Partner Statistics -->
+    <div class="stats-row animate-in">
+        <div class="row">
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number text-primary">{{ partner.total_deliveries|default:0 }}</div>
+                    <div class="stat-label">Total Deliveries</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number text-warning">{{ partner.pending_deliveries|default:0 }}</div>
+                    <div class="stat-label">Pending</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number text-success">{{ partner.completed_deliveries|default:0 }}</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="stat-card">
+                    <div class="stat-number text-info">{{ partner.rating|floatformat:1 }}</div>
+                    <div class="stat-label">Rating</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card form-card animate-in">
+                <div class="form-header">
+                    <h5 class="mb-0">
+                        <i class="fas fa-building me-2"></i>Partner Information
+                    </h5>
+                </div>
+                
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Basic Information Section -->
+                    <div class="form-section">
+                        <h6 class="section-title">
+                            <i class="fas fa-info-circle me-2"></i>Basic Information
+                        </h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_name" class="form-label required-field">Company Name</label>
+                                    <input type="text" name="name" id="id_name" class="form-control" 
+                                           value="{{ partner.name }}" placeholder="Enter company name" required>
+                                    <div class="invalid-feedback">
+                                        Please provide a valid company name.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_contact_person" class="form-label required-field">Contact Person</label>
+                                    <input type="text" name="contact_person" id="id_contact_person" 
+                                           class="form-control" value="{{ partner.contact_person }}" 
+                                           placeholder="Enter contact person name" required>
+                                    <div class="invalid-feedback">
+                                        Please provide a contact person name.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_phone" class="form-label required-field">Phone Number</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-phone"></i>
+                                        </span>
+                                        <input type="tel" name="phone" id="id_phone" class="form-control" 
+                                               value="{{ partner.phone }}" placeholder="+91 9876543210" required>
+                                    </div>
+                                    <div class="invalid-feedback">
+                                        Please provide a valid phone number.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="id_email" class="form-label required-field">Email Address</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-envelope"></i>
+                                        </span>
+                                        <input type="email" name="email" id="id_email" class="form-control" 
+                                               value="{{ partner.email }}" placeholder="contact@company.com" required>
+                                    </div>
+                                    <div class="invalid-feedback">
+                                        Please provide a valid email address.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="id_address" class="form-label required-field">Address</label>
+                            <textarea name="address" id="id_address" class="form-control" rows="3" 
+                                      placeholder="Enter complete business address" required>{{ partner.address }}</textarea>
+                            <div class="invalid-feedback">
+                                Please provide a complete address.
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Service Information Section -->
+                    <div class="form-section">
+                        <h6 class="section-title">
+                            <i class="fas fa-cogs me-2"></i>Service Information
+                        </h6>
+                        
+                        <div class="form-group">
+                            <label for="id_service_areas" class="form-label required-field">Service Areas (Pincodes)</label>
+                            <textarea name="service_areas" id="id_service_areas" class="form-control" rows="3" 
+                                      placeholder="400001, 400002, 400003, 400004, 400005">{{ service_areas_str }}</textarea>
+                            <div class="service-areas-help">
+                                <i class="fas fa-info-circle me-2"></i>
+                                <strong>Enter pincodes separated by commas.</strong> 
+                                Example: 400001, 400002, 400003. This determines which areas this partner can deliver to.
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_max_daily_deliveries" class="form-label">Maximum Daily Deliveries</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">
+                                            <i class="fas fa-boxes"></i>
+                                        </span>
+                                        <input type="number" name="max_daily_deliveries" id="id_max_daily_deliveries" 
+                                               class="form-control" value="{{ partner.max_daily_deliveries }}" 
+                                               min="1" max="500">
+                                    </div>
+                                    <small class="text-muted">Maximum number of deliveries this partner can handle per day</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_cost_per_delivery" class="form-label">Cost per Delivery (₹)</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">₹</span>
+                                        <input type="number" name="cost_per_delivery" id="id_cost_per_delivery" 
+                                               class="form-control" value="{{ partner.cost_per_delivery }}" 
+                                               min="0" step="0.01">
+                                    </div>
+                                    <small class="text-muted">Cost charged by this partner per delivery</small>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="form-group">
+                                    <label for="id_status" class="form-label">Status</label>
+                                    <select name="status" id="id_status" class="form-select">
+                                        <option value="active" {% if partner.status == 'active' %}selected{% endif %}>Active</option>
+                                        <option value="inactive" {% if partner.status == 'inactive' %}selected{% endif %}>Inactive</option>
+                                        <option value="suspended" {% if partner.status == 'suspended' %}selected{% endif %}>Suspended</option>
+                                    </select>
+                                    <small class="text-muted">Current operational status</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Form Actions -->
+                    <div class="form-section">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <small class="text-muted">
+                                    <i class="fas fa-info-circle me-1"></i>
+                                    Last updated: {{ partner.updated_at|date:"M d, Y g:i A" }}
+                                </small>
+                            </div>
+                            <div>
+                                <a href="{% url 'delivery:partner_list' %}" class="btn btn-cancel me-3">
+                                    <i class="fas fa-times me-2"></i>Cancel
+                                </a>
+                                <button type="submit" class="btn btn-update">
+                                    <i class="fas fa-save me-2"></i>Update Partner
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            
+            <!-- Danger Zone -->
+            <div class="card mt-4 animate-in">
+                <div class="card-body">
+                    <div class="danger-zone">
+                        <h6 class="text-danger mb-3">
+                            <i class="fas fa-exclamation-triangle me-2"></i>Danger Zone
+                        </h6>
+                        <p class="text-muted mb-3">
+                            Permanently suspend this partner. This action cannot be undone and will affect all associated deliveries.
+                        </p>
+                        <button type="button" class="btn btn-delete" onclick="confirmSuspension()">
+                            <i class="fas fa-ban me-2"></i>Suspend Partner
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Partner Deliveries Summary -->
+            <div class="card mt-4 animate-in">
+                <div class="card-header" style="background: var(--info-gradient); color: white;">
+                    <h6 class="mb-0">
+                        <i class="fas fa-chart-line me-2"></i>Recent Activity
+                    </h6>
+                </div>
+                <div class="card-body">
+                    <div class="row text-center">
+                        <div class="col-md-3">
+                            <h5 class="text-warning">{{ partner.pending_deliveries|default:0 }}</h5>
+                            <small class="text-muted">Current Load</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h5 class="text-info">{{ partner.max_daily_deliveries }}</h5>
+                            <small class="text-muted">Daily Capacity</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h5 class="text-success">
+                                {% widthratio partner.pending_deliveries partner.max_daily_deliveries 100 %}%
+                            </h5>
+                            <small class="text-muted">Capacity Used</small>
+                        </div>
+                        <div class="col-md-3">
+                            <h5 class="text-primary">{{ partner.service_areas|length }}</h5>
+                            <small class="text-muted">Service Areas</small>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-3">
+                        <div class="progress" style="height: 10px; border-radius: 5px;">
+                            <div class="progress-bar" role="progressbar" 
+                                 style="width: {% widthratio partner.pending_deliveries partner.max_daily_deliveries 100 %}%; background: var(--warning-gradient);">
+                            </div>
+                        </div>
+                        <div class="d-flex justify-content-between mt-2">
+                            <small class="text-muted">Daily Load</small>
+                            <small class="text-muted">{{ partner.pending_deliveries }} / {{ partner.max_daily_deliveries }}</small>
+                        </div>
+                    </div>
+                    
+                    <div class="text-center mt-4">
+                        <a href="{% url 'delivery:delivery_list' %}?partner={{ partner.id }}" 
+                           class="btn btn-outline-primary">
+                            <i class="fas fa-eye me-2"></i>View All Deliveries
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div class="modal fade" id="suspensionModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header" style="background: var(--warning-gradient); color: white;">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm Partner Suspension
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to suspend <strong>{{ partner.name }}</strong>?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>This will:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Prevent new delivery assignments</li>
+                        <li>Mark partner as suspended</li>
+                        <li>Require manual reactivation</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form method="post" class="d-inline">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="suspended">
+                    <button type="submit" class="btn btn-danger">
+                        <i class="fas fa-ban me-2"></i>Suspend Partner
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Form validation
+    const form = document.querySelector('form');
+    const inputs = form.querySelectorAll('input[required], textarea[required]');
+    
+    // Real-time validation
+    inputs.forEach(input => {
+        input.addEventListener('blur', function() {
+            validateField(this);
+        });
+        
+        input.addEventListener('input', function() {
+            if (this.classList.contains('is-invalid')) {
+                validateField(this);
+            }
+        });
+    });
+    
+    // Form submission
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        inputs.forEach(input => {
+            if (!validateField(input)) {
+                isValid = false;
+            }
+        });
+        
+        if (!isValid) {
+            e.preventDefault();
+            showToast('Please correct the errors in the form', 'error');
+        } else {
+            // Show loading state
+            const submitBtn = form.querySelector('button[type="submit"]');
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Updating Partner...';
+            submitBtn.disabled = true;
+        }
+    });
+    
+    // Phone number formatting
+    const phoneInput = document.getElementById('id_phone');
+    phoneInput.addEventListener('input', function() {
+        let value = this.value.replace(/\D/g, '');
+        if (value.length > 10) {
+            value = value.substring(0, 10);
+        }
+        this.value = value;
+    });
+    
+    // Service areas helper
+    const serviceAreasInput = document.getElementById('id_service_areas');
+    serviceAreasInput.addEventListener('input', function() {
+        const value = this.value;
+        const pincodes = value.split(',').map(p => p.trim()).filter(p => p);
+        
+        // Validate pincodes
+        const invalidPincodes = pincodes.filter(p => !/^\d{6}$/.test(p));
+        
+        if (invalidPincodes.length > 0) {
+            this.setCustomValidity('Invalid pincodes: ' + invalidPincodes.join(', '));
+        } else {
+            this.setCustomValidity('');
+        }
+    });
+    
+    // Status change warning
+    const statusSelect = document.getElementById('id_status');
+    const originalStatus = '{{ partner.status }}';
+    statusSelect.addEventListener('change', function() {
+        if (this.value === 'suspended' && originalStatus !== 'suspended') {
+            showToast('Warning: Suspending partner will prevent new delivery assignments', 'warning');
+        } else if (this.value === 'inactive' && originalStatus === 'active') {
+            showToast('Setting partner to inactive will reduce their visibility in assignment', 'info');
+        } else if (this.value === 'active' && originalStatus !== 'active') {
+            showToast('Partner will be available for new delivery assignments', 'success');
+        }
+    });
+    
+    // Animate form sections
+    const sections = document.querySelectorAll('.form-section, .stat-card');
+    sections.forEach((section, index) => {
+        section.style.animationDelay = `${index * 0.1}s`;
+        section.style.animation = 'fadeInUp 0.6s ease-out both';
+    });
+});
+
+function confirmSuspension() {
+    const modal = new bootstrap.Modal(document.getElementById('suspensionModal'));
+    modal.show();
+}
+
+function validateField(field) {
+    const value = field.value.trim();
+    let isValid = true;
+    
+    // Required field validation
+    if (field.hasAttribute('required') && value === '') {
+        setFieldInvalid(field, 'This field is required');
+        isValid = false;
+    }
+    // Email validation
+    else if (field.type === 'email' && value !== '') {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(value)) {
+            setFieldInvalid(field, 'Please enter a valid email address');
+            isValid = false;
+        } else {
+            setFieldValid(field);
+        }
+    }
+    // Phone validation
+    else if (field.type === 'tel' && value !== '') {
+        if (!/^\d{10}$/.test(value)) {
+            setFieldInvalid(field, 'Please enter a valid 10-digit phone number');
+            isValid = false;
+        } else {
+            setFieldValid(field);
+        }
+    }
+    // Number validation
+    else if (field.type === 'number' && value !== '') {
+        const numValue = parseFloat(value);
+        const min = parseFloat(field.min);
+        const max = parseFloat(field.max);
+        
+        if (isNaN(numValue)) {
+            setFieldInvalid(field, 'Please enter a valid number');
+            isValid = false;
+        } else if (min !== null && numValue < min) {
+            setFieldInvalid(field, `Value must be at least ${min}`);
+            isValid = false;
+        } else if (max !== null && numValue > max) {
+            setFieldInvalid(field, `Value must be at most ${max}`);
+            isValid = false;
+        } else {
+            setFieldValid(field);
+        }
+    }
+    else if (value !== '') {
+        setFieldValid(field);
+    }
+    
+    return isValid;
+}
+
+function setFieldInvalid(field, message) {
+    field.classList.remove('is-valid');
+    field.classList.add('is-invalid');
+    
+    const feedback = field.parentNode.querySelector('.invalid-feedback');
+    if (feedback) {
+        feedback.textContent = message;
+    }
+}
+
+function setFieldValid(field) {
+    field.classList.remove('is-invalid');
+    field.classList.add('is-valid');
+}
+
+function showToast(message, type = 'info') {
+    const toast = document.createElement('div');
+    const bgColor = type === 'success' ? '#d4edda' : 
+                   type === 'error' ? '#f8d7da' : 
+                   type === 'warning' ? '#fff3cd' : '#cce7ff';
+    const textColor = type === 'success' ? '#155724' : 
+                     type === 'error' ? '#721c24' : 
+                     type === 'warning' ? '#856404' : '#004085';
+    
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 9999;
+        background: ${bgColor};
+        color: ${textColor};
+        padding: 1rem 1.5rem;
+        border-radius: 15px;
+        box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        animation: slideInRight 0.3s ease-out;
+        min-width: 300px;
+        max-width: 500px;
+        border: 1px solid ${type === 'success' ? '#c3e6cb' : 
+                           type === 'error' ? '#f5c6cb' : 
+                           type === 'warning' ? '#ffeaa7' : '#b8daff'};
+    `;
+    
+    toast.innerHTML = `
+        <div class="d-flex align-items-start">
+            <i class="fas fa-${type === 'success' ? 'check-circle' : 
+                              type === 'error' ? 'exclamation-circle' : 
+                              type === 'warning' ? 'exclamation-triangle' : 'info-circle'} me-2 mt-1"></i>
+            <div class="flex-grow-1">${message}</div>
+            <button type="button" onclick="this.parentElement.parentElement.remove()" 
+                    style="background: none; border: none; color: ${textColor}; font-size: 1.2rem; margin-left: 10px;">×</button>
+        </div>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        if (toast.parentElement) {
+            toast.style.animation = 'slideOutRight 0.3s ease-out';
+            setTimeout(() => {
+                if (toast.parentElement) {
+                    document.body.removeChild(toast);
+                }
+            }, 300);
+        }
+    }, type === 'warning' ? 6000 : 4000);
+}
+
+// Add CSS animations
+const style = document.createElement('style');
+style.textContent = `
+    @keyframes slideInRight {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOutRight {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+    
+    .is-valid {
+        border-color: #28a745 !important;
+    }
+    
+    .is-invalid {
+        border-color: #dc3545 !important;
+    }
+    
+    .invalid-feedback {
+        display: block;
+        width: 100%;
+        margin-top: 0.25rem;
+        font-size: 0.875em;
+        color: #dc3545;
+    }
+`;
+document.head.appendChild(style);
+</script>
+{% endblock %}

@@ -10,14 +10,24 @@ class BookForm(forms.ModelForm):
         widget=forms.TextInput(attrs={'class': 'form-control'})
     )
     
+    # Add cover_image_url field to the form
+    cover_image_url = forms.URLField(
+        required=False,
+        help_text="Enter a URL for the cover image (alternative to uploading a file)",
+        widget=forms.URLInput(attrs={
+            'class': 'form-control',
+            'placeholder': 'https://example.com/cover-image.jpg'
+        })
+    )
+    
     class Meta:
         model = Book
         fields = [
             'title', 'authors', 'publisher', 'isbn', 'isbn13', 'category',
             'subcategory', 'description', 'short_description', 'format',
             'pages', 'language', 'price', 'original_price', 'cover_image',
-            'publication_date', 'edition', 'weight', 'dimensions',
-            'is_featured', 'is_bestseller', 'is_on_sale'
+            'cover_image_url', 'publication_date', 'edition', 'weight', 
+            'dimensions', 'is_featured', 'is_bestseller', 'is_on_sale'
         ]
         widgets = {
             'title': forms.TextInput(attrs={'class': 'form-control'}),
@@ -57,13 +67,40 @@ class BookForm(forms.ModelForm):
         self.fields['edition'].required = False
         self.fields['weight'].required = False
         self.fields['dimensions'].required = False
+        self.fields['cover_image'].required = False
+        self.fields['cover_image_url'].required = False
+    
+    def clean(self):
+        cleaned_data = super().clean()
+        cover_image = cleaned_data.get('cover_image')
+        cover_image_url = cleaned_data.get('cover_image_url')
+        
+        # Validate that at least one cover image source is provided (optional but good UX)
+        # You can remove this validation if you want to allow books without covers
+        if not cover_image and not cover_image_url:
+            # This is just a warning, not an error - books can exist without covers
+            pass
+        
+        return cleaned_data
     
     def save(self, commit=True):
         book = super().save(commit=False)
         
         # Generate slug if not provided
         if not book.slug:
-            book.slug = slugify(book.title)
+            import uuid
+            base_slug = slugify(book.title)
+            if not base_slug:  # In case title has no valid characters for slug
+                base_slug = f"book-{uuid.uuid4().hex[:8]}"
+            
+            # Ensure slug is unique
+            slug = base_slug
+            counter = 1
+            while Book.objects.filter(slug=slug).exists():
+                slug = f"{base_slug}-{counter}"
+                counter += 1
+            
+            book.slug = slug
         
         if commit:
             book.save()

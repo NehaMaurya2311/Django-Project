@@ -1,0 +1,213 @@
+<!-- support/templates/support/ticket_detail.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Ticket {{ ticket.ticket_id }} - {{ ticket.subject }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- Header -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <h2>Ticket #{{ ticket.ticket_id }}</h2>
+                <p class="text-muted mb-0">{{ ticket.subject }}</p>
+            </div>
+            <div>
+                <a href="{% url 'support:my_tickets' %}" class="btn btn-outline-secondary">← Back to Tickets</a>
+                {% if ticket.status in 'resolved,closed' and not ticket.rating %}
+                    <a href="{% url 'support:rate_ticket' ticket.ticket_id %}" class="btn btn-success">Rate Support</a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Display messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <div class="row">
+            <!-- Ticket Details -->
+            <div class="col-md-8">
+                <!-- Ticket Information -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Ticket Information</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <p><strong>Status:</strong> 
+                                    <span class="badge bg-{% if ticket.status == 'open' %}warning{% elif ticket.status == 'in_progress' %}info{% elif ticket.status == 'resolved' %}success{% elif ticket.status == 'closed' %}secondary{% else %}primary{% endif %}">
+                                        {{ ticket.get_status_display }}
+                                    </span>
+                                </p>
+                                <p><strong>Priority:</strong> 
+                                    <span class="badge bg-{% if ticket.priority == 'urgent' %}danger{% elif ticket.priority == 'high' %}warning{% elif ticket.priority == 'medium' %}info{% else %}secondary{% endif %}">
+                                        {{ ticket.get_priority_display }}
+                                    </span>
+                                </p>
+                                <p><strong>Category:</strong> {{ ticket.category|default:'Not specified' }}</p>
+                            </div>
+                            <div class="col-md-6">
+                                <p><strong>Created:</strong> {{ ticket.created_at|date:'M j, Y H:i' }}</p>
+                                <p><strong>Last Updated:</strong> {{ ticket.updated_at|date:'M j, Y H:i' }}</p>
+                                {% if ticket.resolved_at %}
+                                    <p><strong>Resolved:</strong> {{ ticket.resolved_at|date:'M j, Y H:i' }}</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% if ticket.order %}
+                            <p><strong>Related Order:</strong> <a href="#">#{{ ticket.order.id }}</a></p>
+                        {% endif %}
+                        
+                        <div class="mt-3">
+                            <h6>Description:</h6>
+                            <div class="p-3 bg-light rounded">
+                                {{ ticket.description|linebreaks }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Conversation -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5>Conversation</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if ticket.responses.all %}
+                            {% for response in ticket.responses.all %}
+                                {% if not response.is_internal %}
+                                    <div class="mb-3 p-3 rounded {% if response.user == ticket.user %}bg-light border-start border-primary border-3{% else %}bg-info bg-opacity-10 border-start border-info border-3{% endif %}">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <strong>
+                                                {% if response.user == ticket.user %}
+                                                    You
+                                                {% else %}
+                                                    {{ response.user.username }} (Support Agent)
+                                                {% endif %}
+                                            </strong>
+                                            <small class="text-muted">{{ response.created_at|date:'M j, Y H:i' }}</small>
+                                        </div>
+                                        <div>
+                                            {{ response.message|linebreaks }}
+                                        </div>
+                                        {% if response.attachment %}
+                                            <div class="mt-2">
+                                                <a href="{{ response.attachment.url }}" class="btn btn-sm btn-outline-primary" target="_blank">
+                                                    <i class="fas fa-paperclip"></i> Attachment
+                                                </a>
+                                            </div>
+                                        {% endif %}
+                                    </div>
+                                {% endif %}
+                            {% endfor %}
+                        {% else %}
+                            <p class="text-muted">No responses yet. Our support team will respond to your ticket soon.</p>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Add Response -->
+                {% if ticket.status != 'closed' %}
+                <div class="card">
+                    <div class="card-header">
+                        <h5>Add Response</h5>
+                    </div>
+                    <div class="card-body">
+                        <form method="post" enctype="multipart/form-data">
+                            {% csrf_token %}
+                            
+                            <div class="mb-3">
+                                <label for="{{ form.message.id_for_label }}" class="form-label">Your Message *</label>
+                                {{ form.message }}
+                                {% if form.message.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.message.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="{{ form.attachment.id_for_label }}" class="form-label">Attachment (Optional)</label>
+                                {{ form.attachment }}
+                                {% if form.attachment.errors %}
+                                    <div class="text-danger small">
+                                        {% for error in form.attachment.errors %}
+                                            <div>{{ error }}</div>
+                                        {% endfor %}
+                                    </div>
+                                {% endif %}
+                                <div class="form-text">Supported formats: PDF, DOC, DOCX, TXT, JPG, JPEG, PNG, GIF (Max 10MB)</div>
+                            </div>
+
+                            <button type="submit" class="btn btn-primary">Send Response</button>
+                        </form>
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Sidebar -->
+            <div class="col-md-4">
+                <!-- Ticket Summary -->
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h6>Ticket Summary</h6>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>ID:</strong> {{ ticket.ticket_id }}</p>
+                        <p><strong>Customer:</strong> {{ ticket.user.username }}</p>
+                        <p><strong>Email:</strong> {{ ticket.user.email }}</p>
+                        {% if ticket.assigned_to %}
+                            <p><strong>Assigned to:</strong> {{ ticket.assigned_to.username }}</p>
+                        {% endif %}
+                        
+                        {% if ticket.rating %}
+                            <div class="mt-3">
+                                <strong>Your Rating:</strong>
+                                <div>
+                                    {% for i in "12345" %}
+                                        {% if i|add:"0" <= ticket.rating %}⭐{% else %}☆{% endif %}
+                                    {% endfor %}
+                                    ({{ ticket.rating }}/5)
+                                </div>
+                                {% if ticket.feedback %}
+                                    <small class="text-muted">{{ ticket.feedback }}</small>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Quick Actions -->
+                <div class="card">
+                    <div class="card-header">
+                        <h6>Quick Actions</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'support:create_ticket' %}" class="btn btn-outline-primary btn-sm">Create New Ticket</a>
+                            <a href="{% url 'support:faq' %}" class="btn btn-outline-info btn-sm">View FAQ</a>
+                            <a href="{% url 'support:chatbot_widget' %}" class="btn btn-outline-success btn-sm">Chat Support</a>
+                            {% if ticket.status in 'resolved,closed' and not ticket.rating %}
+                                <a href="{% url 'support:rate_ticket' ticket.ticket_id %}" class="btn btn-success btn-sm">Rate This Support</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

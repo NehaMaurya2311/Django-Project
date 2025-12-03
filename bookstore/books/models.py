@@ -111,9 +111,9 @@ class Book(models.Model):
     slug = models.SlugField(max_length=300, unique=True)
     authors = models.ManyToManyField(Author, related_name='books')
     publisher = models.ForeignKey(Publisher, on_delete=models.SET_NULL, null=True, blank=True)
-    isbn = models.CharField(max_length=20, unique=True, blank=True)
-    isbn13 = models.CharField(max_length=20, unique=True, blank=True)
-    
+    isbn = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    isbn13 = models.CharField(max_length=20, unique=True, blank=True, null=True)
+
     # Updated category hierarchy
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='books')
     subcategory = models.ForeignKey(SubCategory, on_delete=models.SET_NULL, null=True, blank=True, related_name='books')
