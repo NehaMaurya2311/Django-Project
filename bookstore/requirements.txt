@@ -1,5 +1,4 @@
 Django==4.2.7
-Pillow==9.5.0
 django-crispy-forms==2.1
 crispy-bootstrap4==2023.1
 requests==2.31.0
