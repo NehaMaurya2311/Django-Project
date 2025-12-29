@@ -768,7 +768,7 @@
                     {% if order.items.exists %}
                     <div class="order-items-preview">
                         {% for item in order.items.all|slice:":4" %}
-                            <img src="{{ item.book.cover_image.url|default:'https://via.placeholder.com/50x70' }}" 
+                            <img src="{% if item.book.cover_image %}{{ item.book.cover_image.url }}{% else %}https://via.placeholder.com/50x70{% endif %}" 
                                  alt="{{ item.book.title }}" class="item-thumbnail" 
                                  title="{{ item.book.title }}">
                         {% endfor %}

@@ -17,15 +17,25 @@ import os
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
+# SECURITY WARNING: keep the secret key used in production secret!
+SECRET_KEY = config('SECRET_KEY')
+
+# SECURITY WARNING: don't run with debug turned on in production!
+DEBUG = config('DEBUG', default=False, cast=bool)
+
+# PayPal Settings
+PAYPAL_CLIENT_ID = config('PAYPAL_CLIENT_ID')
+PAYPAL_CLIENT_SECRET = config('PAYPAL_CLIENT_SECRET')
+PAYPAL_MODE = config('PAYPAL_MODE', default='sandbox')
+
+# Google Books API
+GOOGLE_BOOKS_API_KEY = config('GOOGLE_BOOKS_API_KEY')
+
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-jb51$7u2bnrd0-_c0eibt1==o_n_l_)lko%0y7pr^-+!c3qubr'
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
 ALLOWED_HOSTS = []
 
@@ -254,13 +264,7 @@ SESSION_COOKIE_AGE = 1209600  # 2 weeks
 SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 SESSION_SAVE_EVERY_REQUEST = False
 
-# PayPal Settings
-PAYPAL_CLIENT_ID = config('PAYPAL_CLIENT_ID', default='ASKWPsOZIjfn91X2biPyfLcjnP-9NRKkmwT4PdK8bLXWaWIhKs183jsrSN8ZOscZWaOJf9Cb14XaN9qA')
-PAYPAL_CLIENT_SECRET = config('PAYPAL_CLIENT_SECRET', default='EMnDRSGjW9cvU3_301bhThoF-y_IxbP28lhPAzXRLfW5PKsFXBoRvOj2f1OnsPzpJJ89X0oRW9YpQfeb')
-PAYPAL_MODE = config('PAYPAL_MODE', default='sandbox')
 
-# Google Books API
-GOOGLE_BOOKS_API_KEY = config('GOOGLE_BOOKS_API_KEY', default='AIzaSyAns_93vRLcLhEfgztk9MJGHc46liM8g3k')
 # For debugging CSRF issues (remove in production)
 LOGGING = {
     'version': 1,
